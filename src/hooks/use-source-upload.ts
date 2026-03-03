@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import type { Database } from '@/lib/supabase/types';
+import { sourcesApi } from '@/services/sources-api';
 
 type DataSource = Database['public']['Tables']['data_sources']['Row'];
 
@@ -27,24 +28,43 @@ export function useSourceUpload(themeId: string) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchSources = useCallback(async () => {
+    const sources = await sourcesApi.list(themeId);
+    setSources(sources);
+    return sources;
+  }, [themeId]);
+
   // Fetch existing sources on mount
   useEffect(() => {
-    const fetchSources = async () => {
+    const loadSources = async () => {
       try {
-        const res = await fetch(`/api/sources?themeId=${themeId}`);
-        if (!res.ok) throw new Error('Failed to fetch sources');
-
-        const data = await res.json();
-        setSources(data.sources || []);
+        await fetchSources();
       } catch (err) {
-        console.error('Failed to fetch sources:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch sources');
       }
     };
 
     if (session?.user?.id) {
-      fetchSources();
+      void loadSources();
     }
-  }, [themeId, session?.user?.id]);
+  }, [session?.user?.id, fetchSources]);
+
+  // Poll while any source is pending/processing
+  useEffect(() => {
+    const hasActiveSources = sources.some((source) =>
+      ['pending', 'processing'].includes(source.status),
+    );
+
+    if (!session?.user?.id || !hasActiveSources) return;
+
+    const timer = setInterval(() => {
+      void fetchSources().catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to refresh sources');
+      });
+    }, 2000);
+
+    return () => clearInterval(timer);
+  }, [session?.user?.id, sources, fetchSources]);
 
   const uploadText = useCallback(
     async (text: string, name?: string) => {
@@ -52,20 +72,14 @@ export function useSourceUpload(themeId: string) {
         setIsUploading(true);
         setError(null);
 
-        const res = await fetch('/api/sources/text', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ themeId, text, name }),
+        const source = await sourcesApi.create({
+          themeId,
+          type: 'text',
+          name: name || 'Pasted Text',
+          content: text,
         });
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || 'Failed to upload text');
-        }
-
-        const data = await res.json();
-        setSources((prev) => [...prev, data.source]);
-        return data.source;
+        setSources((prev) => [source, ...prev]);
+        return source;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to upload text';
         setError(message);
@@ -83,20 +97,20 @@ export function useSourceUpload(themeId: string) {
         setIsUploading(true);
         setError(null);
 
-        const res = await fetch('/api/sources/url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ themeId, url, name }),
+        const sourceType =
+          url.includes('youtube.com') || url.includes('youtu.be') ? 'youtube' : 'url';
+
+        const source = await sourcesApi.create({
+          themeId,
+          type: sourceType,
+          name: name || (sourceType === 'youtube' ? 'YouTube Source' : 'Web Source'),
+          url,
         });
 
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || 'Failed to add URL source');
-        }
-
-        const data = await res.json();
-        setSources((prev) => [...prev, data.source]);
-        return data.source;
+        setSources((prev) => [source, ...prev]);
+        await sourcesApi.process(source.id);
+        await fetchSources();
+        return source;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to add URL source';
         setError(message);
@@ -105,7 +119,7 @@ export function useSourceUpload(themeId: string) {
         setIsUploading(false);
       }
     },
-    [themeId],
+    [themeId, fetchSources],
   );
 
   const uploadFile = useCallback(
@@ -114,23 +128,11 @@ export function useSourceUpload(themeId: string) {
         setIsUploading(true);
         setError(null);
 
-        const formData = new FormData();
-        formData.append('themeId', themeId);
-        formData.append('file', file);
-
-        const res = await fetch('/api/sources/file', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || 'Failed to upload file');
-        }
-
-        const data = await res.json();
-        setSources((prev) => [...prev, data.source]);
-        return data.source;
+        const source = await sourcesApi.uploadFile(themeId, file);
+        setSources((prev) => [source, ...prev]);
+        await sourcesApi.process(source.id);
+        await fetchSources();
+        return source;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to upload file';
         setError(message);
@@ -139,20 +141,12 @@ export function useSourceUpload(themeId: string) {
         setIsUploading(false);
       }
     },
-    [themeId],
+    [themeId, fetchSources],
   );
 
   const deleteSource = useCallback(async (sourceId: string) => {
     try {
-      const res = await fetch(`/api/sources/${sourceId}`, {
-        method: 'DELETE',
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Failed to delete source');
-      }
-
+      await sourcesApi.remove(sourceId);
       setSources((prev) => prev.filter((s) => s.id !== sourceId));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete source';

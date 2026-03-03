@@ -102,19 +102,19 @@ async function generateCards(theme, count) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log(`\n🃏  Generating ${count} cards for topic: "${theme}"\n`);
+  console.log(`\n→  Generating ${count} cards for topic: "${theme}"\n`);
 
   let cards;
   try {
     cards = await generateCards(theme, count);
-    console.log(`✓  Generated ${cards.length} cards\n`);
+    console.log(`[OK] Generated ${cards.length} cards\n`);
     cards.slice(0, 3).forEach((c, i) => {
       console.log(`   [${i + 1}] Q: ${c.question}`);
       console.log(`       A: ${c.answer}\n`);
     });
     if (cards.length > 3) console.log(`   … and ${cards.length - 3} more\n`);
   } catch (err) {
-    console.error('✗  Generation failed:', err.message);
+    console.error('[ERROR] Generation failed:', err.message);
     process.exit(1);
   }
 
@@ -149,11 +149,11 @@ async function main() {
 
   const { error } = await supabase.from('cards').insert(rows);
   if (error) {
-    console.error('✗  Supabase insert failed:', error.message);
+    console.error('[FAILED] Supabase insert failed:', error.message);
     process.exit(1);
   }
 
-  console.log(`✓  Inserted ${rows.length} global cards into Supabase.\n`);
+  console.log(`[OK] Inserted ${rows.length} global cards into Supabase.\n`);
 }
 
 main().catch((err) => {

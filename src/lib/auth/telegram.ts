@@ -1,5 +1,6 @@
 import { createHmac } from 'crypto';
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
 interface TelegramUser {
   id: number;
@@ -56,10 +57,13 @@ export async function verifyTelegramAuthData(initData: string): Promise<VerifyTe
   const telegramUser = JSON.parse(userParam) as TelegramUser;
   const authDate = params.get('auth_date');
 
-  console.log('Telegram auth data verified', {
-    telegramId: telegramUser.id,
-    username: telegramUser.username,
-  });
+  logger.info(
+    {
+      telegramId: telegramUser.id,
+      username: telegramUser.username,
+    },
+    'Telegram auth data verified',
+  );
 
   return {
     userId: telegramUser.id,

@@ -3,24 +3,34 @@ import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
 import { ValidationError } from '@/lib/errors';
+import { getCacheHeaders, CACHE_PRESETS } from '@/lib/cache-utils';
 
 const createThemeSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
+  language: z.enum(['en', 'ru']).optional().default('en'),
 });
 
 export const GET = withApiHandler(async () => {
   const { user, supabase } = await requireAuth();
 
+  // Fetch user's own themes (private & public) + all public themes from other users
   const { data: themes, error } = await supabase
     .from('themes')
     .select('*')
-    .eq('user_id', user.id)
+    .or(`user_id.eq.${user.id},is_public.eq.true`)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
-  return NextResponse.json({ themes });
+  const response = NextResponse.json({ themes });
+
+  // Add cache headers - themes are fetched frequently but change on user action
+  Object.entries(getCacheHeaders(CACHE_PRESETS.userThemes)).forEach(([key, value]) =>
+    response.headers.set(key, value),
+  );
+
+  return response;
 });
 
 export const POST = withApiHandler(async (req) => {

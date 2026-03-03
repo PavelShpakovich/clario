@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { logger } from '@/lib/logger';
 import type { Database } from '@/lib/supabase/types';
 
 type Theme = Database['public']['Tables']['themes']['Row'];
@@ -16,7 +17,7 @@ export class ThemeService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Failed to fetch themes:', error);
+      logger.error({ userId, error }, 'Failed to fetch themes');
       throw new Error('Failed to fetch themes');
     }
 
@@ -35,7 +36,7 @@ export class ThemeService {
       .single();
 
     if (error || !data) {
-      console.error('Theme not found:', error);
+      logger.error({ themeId, userId, error }, 'Theme not found');
       throw new Error('Theme not found');
     }
 
@@ -60,7 +61,7 @@ export class ThemeService {
       .single();
 
     if (error || !data) {
-      console.error('Failed to create theme:', error);
+      logger.error({ userId, input, error }, 'Failed to create theme');
       throw new Error('Failed to create theme');
     }
 
@@ -84,7 +85,7 @@ export class ThemeService {
       .single();
 
     if (error || !data) {
-      console.error('Failed to update theme:', error);
+      logger.error({ themeId, userId, input, error }, 'Failed to update theme');
       throw new Error('Failed to update theme');
     }
 
@@ -102,7 +103,7 @@ export class ThemeService {
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Failed to delete theme:', error);
+      logger.error({ themeId, userId, error }, 'Failed to delete theme');
       throw new Error('Failed to delete theme');
     }
   }

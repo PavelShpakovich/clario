@@ -8,10 +8,8 @@ export class PdfExtractor implements Extractor {
     }
 
     // Dynamic import to keep `pdf-parse` out of the client bundle.
-    // pdf-parse is CJS; cast module to any to handle ESM/CJS interop.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfModule = (await import('pdf-parse')) as any;
-    const pdfParse = (pdfModule.default ?? pdfModule) as (
+    const pdfModule = await import('pdf-parse');
+    const pdfParse = ('default' in pdfModule ? pdfModule.default : pdfModule) as unknown as (
       buffer: Buffer,
     ) => Promise<{ text: string }>;
 

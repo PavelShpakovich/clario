@@ -1,10 +1,26 @@
 import { z } from 'zod';
 
 /** A single microlearning info card as validated from LLM output. */
-export const cardOutputSchema = z.object({
-  title: z.string().min(1, 'title is empty').max(100, 'title too long'), // ≤ 10 words
-  body: z.string().min(50, 'body too short').max(5000, 'body too long'), // 5-10 sentences or more for depth
+const normalizedCardSchema = z.object({
+  title: z.string().trim().min(1, 'title is empty').max(60, 'title too long'),
+  body: z.string().trim().min(100, 'body too short (≥100 chars)').max(5000, 'body too long'),
 });
+
+const legacyCardSchema = z
+  .object({
+    question: z.string().trim().min(1, 'question is empty').max(60, 'question too long'),
+    answer: z
+      .string()
+      .trim()
+      .min(100, 'answer too short (≥100 chars)')
+      .max(5000, 'answer too long'),
+  })
+  .transform((legacy) => ({
+    title: legacy.question,
+    body: legacy.answer,
+  }));
+
+export const cardOutputSchema = z.union([normalizedCardSchema, legacyCardSchema]);
 
 /** The full array of cards the LLM must return. */
 export const cardsOutputSchema = z.array(cardOutputSchema).min(1, 'LLM returned no cards');
@@ -18,4 +34,8 @@ export interface GenerateInput {
   /** Source text to base cards on. If omitted, the LLM generates from the theme alone. */
   sourceText?: string;
   count: number;
+  /** Topics already covered in this theme — LLM should avoid these. */
+  topicsToAvoid?: string[];
+  /** Language for generated cards (en or ru). Defaults to 'en'. */
+  language?: 'en' | 'ru';
 }

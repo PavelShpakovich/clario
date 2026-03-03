@@ -46,9 +46,6 @@ export class OllamaProvider implements LlmProviderAdapter {
           messages: [
             { role: 'system', content: system },
             { role: 'user', content: user },
-            // Seed the assistant turn with `[` to help guide format, but the model
-            // may still return wrapped format. The parser will handle both.
-            { role: 'assistant', content: '[' },
           ],
         }),
         signal: controller.signal,
@@ -65,12 +62,7 @@ export class OllamaProvider implements LlmProviderAdapter {
       const data = (await res.json()) as OllamaChatResponse;
       logger.info({ contentLength: data.message.content.length }, 'Ollama: Got response');
 
-      // The response is the array/object continuation. If we seeded with `[`,
-      // we need to prepend it. But if the model returned a wrapped object,
-      // the parser will handle it.
-      const raw = data.message.content.trim().startsWith('[')
-        ? data.message.content
-        : '[' + data.message.content;
+      const raw = data.message.content;
 
       logger.info({ rawLength: raw.length }, 'Ollama: Parsing output');
 

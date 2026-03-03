@@ -16,6 +16,7 @@ export type Database = {
           title: string;
           body: string;
           topic: string | null;
+          is_public?: boolean;
           created_at: string;
         };
         Insert: {
@@ -26,6 +27,7 @@ export type Database = {
           title: string;
           body: string;
           topic?: string | null;
+          is_public?: boolean;
           created_at?: string;
         };
         Update: {
@@ -36,6 +38,7 @@ export type Database = {
           title?: string;
           body?: string;
           topic?: string | null;
+          is_public?: boolean;
           created_at?: string;
         };
         Relationships: [];
@@ -46,6 +49,8 @@ export type Database = {
           user_id: string;
           name: string;
           description: string | null;
+          is_public?: boolean;
+          language: string;
           created_at: string;
         };
         Insert: {
@@ -53,6 +58,8 @@ export type Database = {
           user_id: string;
           name: string;
           description?: string | null;
+          is_public?: boolean;
+          language?: string;
           created_at?: string;
         };
         Update: {
@@ -60,6 +67,8 @@ export type Database = {
           user_id?: string;
           name?: string;
           description?: string | null;
+          is_public?: boolean;
+          language?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -142,23 +151,53 @@ export type Database = {
         };
         Relationships: [];
       };
+      bookmarked_cards: {
+        Row: {
+          id: string;
+          user_id: string;
+          card_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          card_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          card_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
           telegram_id: string | null;
           display_name: string | null;
+          streak_count: number;
+          last_study_date: string | null;
+          ui_language: string;
           created_at: string;
         };
         Insert: {
           id: string;
           telegram_id?: string | null;
           display_name?: string | null;
+          streak_count?: number;
+          last_study_date?: string | null;
+          ui_language?: string;
           created_at?: string;
         };
         Update: {
           id?: string;
           telegram_id?: string | null;
           display_name?: string | null;
+          streak_count?: number;
+          last_study_date?: string | null;
+          ui_language?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -196,4 +235,5 @@ export type ThemeRow = Tables<'themes'>;
 export type DataSourceRow = Tables<'data_sources'>;
 export type SessionRow = Tables<'sessions'>;
 export type SessionCardRow = Tables<'session_cards'>;
+export type BookmarkedCardRow = Tables<'bookmarked_cards'>;
 export type ProfileRow = Tables<'profiles'>;

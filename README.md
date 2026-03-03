@@ -57,6 +57,9 @@ TELEGRAM_BOT_TOKEN=
 
 # App base URL
 NEXTAUTH_URL=http://localhost:3000
+
+# NextAuth JWT encryption secret (recommended; keeps sessions stable across restarts)
+NEXTAUTH_SECRET=replace-with-strong-random-secret
 ```
 
 > **`mock` provider** requires no API key — returns deterministic fake cards. Useful for local development and tests.

@@ -1,5 +1,3 @@
-import type { IngestionError } from '@/lib/errors';
-
 export interface ExtractedContent {
   text: string;
   /** Approximate character count of the extracted content. */

@@ -1,5 +1,4 @@
 import {
-  AppError,
   NotFoundError,
   ValidationError,
   LlmError,

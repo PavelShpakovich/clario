@@ -1,0 +1,49 @@
+type ProfileResponse = {
+  streak_count: number;
+  display_name: string | null;
+  telegram_id: string | null;
+  last_study_date?: string | null;
+};
+
+class ProfileApi {
+  async getProfile(): Promise<ProfileResponse> {
+    const response = await fetch('/api/profile');
+
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to load profile');
+    }
+
+    return (await response.json()) as ProfileResponse;
+  }
+
+  async updateDisplayName(displayName: string): Promise<ProfileResponse> {
+    const response = await fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName }),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to update profile');
+    }
+
+    return (await response.json()) as ProfileResponse;
+  }
+
+  async updatePassword(password: string): Promise<void> {
+    const response = await fetch('/api/profile/password', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to update password');
+    }
+  }
+}
+
+export const profileApi = new ProfileApi();

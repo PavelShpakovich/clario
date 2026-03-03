@@ -44,37 +44,38 @@ export const POST = withApiHandler(async (req) => {
       .single();
 
     if (profile) {
-      const profileData = profile as unknown as { last_study_date: string | null; streak_count: number };
-      const lastStudyDate = profileData.last_study_date ? new Date(profileData.last_study_date) : null;
+      const lastStudyDate = profile.last_study_date ? new Date(profile.last_study_date) : null;
       const today_obj = new Date(today);
       today_obj.setUTCHours(0, 0, 0, 0);
-      
-      let newStreak = profileData.streak_count || 0;
-      
+
+      let newStreak = profile.streak_count || 0;
+
       if (!lastStudyDate) {
         // First time studying
         newStreak = 1;
       } else {
         const lastDate = new Date(lastStudyDate);
         lastDate.setUTCHours(0, 0, 0, 0);
-        const daysDiff = Math.floor((today_obj.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-        
+        const daysDiff = Math.floor(
+          (today_obj.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
+
         if (daysDiff === 0) {
           // Already studied today, keep streak
-          newStreak = profileData.streak_count || 1;
+          newStreak = profile.streak_count || 1;
         } else if (daysDiff === 1) {
           // Studied yesterday, increment streak
-          newStreak = (profileData.streak_count || 0) + 1;
+          newStreak = (profile.streak_count || 0) + 1;
         } else {
           // Gap in streak, reset to 1
           newStreak = 1;
         }
       }
-      
+
       // Update profile with new streak and today's date
       await supabase
         .from('profiles')
-        .update({ streak_count: newStreak, last_study_date: today } as any)
+        .update({ streak_count: newStreak, last_study_date: today })
         .eq('id', user.id);
     }
   } catch {

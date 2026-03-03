@@ -3,14 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import type { Database } from '@/lib/supabase/types';
+import { studyApi } from '@/services/study-api';
 
 type Card = Database['public']['Tables']['cards']['Row'];
-
-interface CardsResponse {
-  cards: Card[];
-  remaining: number;
-  generating: boolean;
-}
 
 /**
  * Hook to manage study session state and card fetching
@@ -35,83 +30,99 @@ export function useStudySession(themeId: string) {
   const [cards, setCards] = useState<Card[]>([]);
   const [studySession, setStudySession] = useState<{ id: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isManualGenerating, setIsManualGenerating] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [infiniteMode, setInfiniteMode] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cardCount, setCardCount] = useState(10);
 
   const pollTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const isPollingRef = useRef<boolean>(false);
 
-  // Initialize session on mount
+  interface FetchCardsOptions {
+    triggerGeneration?: boolean;
+  }
+
+  const fetchCardsForSession = useCallback(
+    async (sessionId: string, options?: FetchCardsOptions) => {
+      try {
+        const data = await studyApi.fetchCards(sessionId, themeId, options);
+
+        setCards((prev) => {
+          const existing = new Set(prev.map((c) => c.id));
+          const toAdd = data.cards.filter((c) => !existing.has(c.id));
+          return [...prev, ...toAdd];
+        });
+
+        setIsGenerating(data.generating);
+
+        if (data.generationFailed) {
+          setError('Generation failed. Please wait a minute before retrying.');
+        } else {
+          setError(null);
+        }
+
+        setIsInitialLoading(false);
+        return data;
+      } catch (err) {
+        setIsInitialLoading(false);
+        setError(err instanceof Error ? err.message : 'Failed to load cards');
+        return null;
+      }
+    },
+    [themeId],
+  );
+
+  // Initialize session and first fetch
   useEffect(() => {
     const initSession = async () => {
       try {
-        const res = await fetch('/api/session/init', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ themeId }),
+        setCards([]);
+        setError(null);
+        setIsGenerating(false);
+        setIsInitialLoading(true);
+
+        const data = await studyApi.initSession(themeId);
+        const createdSession = { id: data.sessionId };
+        setStudySession(createdSession);
+
+        const initialData = await fetchCardsForSession(data.sessionId, {
+          triggerGeneration: false,
         });
 
-        if (!res.ok) throw new Error('Failed to initialize session');
-
-        const data = await res.json();
-        setStudySession(data);
+        if (
+          infiniteMode &&
+          initialData &&
+          initialData.cards.length === 0 &&
+          !initialData.generating
+        ) {
+          await fetchCardsForSession(data.sessionId, { triggerGeneration: true });
+        }
       } catch (err) {
-        console.error('Failed to create session:', err);
+        setIsInitialLoading(false);
         setError(err instanceof Error ? err.message : 'Failed to initialize session');
       }
     };
 
     if (session?.user?.id) {
-      initSession();
+      void initSession();
     }
-  }, [themeId, session?.user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [themeId, session?.user?.id, fetchCardsForSession]);
 
-  // Main card fetching function
-  const fetchCards = useCallback(async () => {
-    if (!studySession?.id) return;
+  // Manual/public fetch
+  const fetchCards = useCallback(
+    async (options?: FetchCardsOptions) => {
+      if (!studySession) return;
 
-    try {
-      const res = await fetch(`/api/cards?sessionId=${studySession.id}&themeId=${themeId}`);
-      if (!res.ok) throw new Error('Failed to fetch cards');
+      await fetchCardsForSession(studySession.id, options);
+    },
+    [studySession, fetchCardsForSession],
+  );
 
-      const data: CardsResponse = await res.json();
-
-      setCards((prev) => {
-        // Avoid duplicates
-        const existing = new Set(prev.map((c) => c.id));
-        const toAdd = data.cards.filter((c) => !existing.has(c.id));
-        return [...prev, ...toAdd];
-      });
-
-      setIsGenerating(data.generating);
-
-      // If infinite mode is enabled and generation is running, poll again in 3s
-      if (infiniteMode && data.generating) {
-        if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
-        pollTimerRef.current = setTimeout(() => {
-          void fetchCards();
-        }, 3000);
-      } else if (pollTimerRef.current) {
-        clearTimeout(pollTimerRef.current);
-        pollTimerRef.current = undefined;
-      }
-    } catch (err) {
-      console.error('Failed to fetch cards:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load cards');
-    }
-  }, [studySession?.id, themeId, infiniteMode]);
-
-  // Initial load
+  // Poll every 2s ONLY while server is actively generating — picks up new cards as they arrive
   useEffect(() => {
-    if (studySession?.id && cards.length === 0) {
-      void fetchCards();
-    }
-  }, [studySession?.id, cards.length, fetchCards]);
-
-  // Polling logic
-  useEffect(() => {
-    if (!infiniteMode) {
-      // Clear polling when infinite mode is disabled
+    if (!isGenerating || !studySession) {
       if (pollTimerRef.current) {
         clearTimeout(pollTimerRef.current);
         pollTimerRef.current = undefined;
@@ -120,38 +131,108 @@ export function useStudySession(themeId: string) {
       return;
     }
 
-    if (!isPollingRef.current && studySession?.id) {
-      isPollingRef.current = true;
-      void fetchCards();
-    }
-  }, [infiniteMode, studySession?.id, fetchCards]);
+    if (isPollingRef.current) return;
+    isPollingRef.current = true;
+
+    const poll = async () => {
+      try {
+        const data = await studyApi.fetchCards(studySession.id, themeId, {
+          triggerGeneration: false,
+        });
+        setCards((prev) => {
+          const existing = new Set(prev.map((c) => c.id));
+          const toAdd = data.cards.filter((c) => !existing.has(c.id));
+          return [...prev, ...toAdd];
+        });
+        setIsGenerating(data.generating);
+
+        if (data.generationFailed) {
+          setError('Generation failed. Please wait a minute before retrying.');
+        } else {
+          setError(null);
+        }
+
+        // Keep polling only while still generating
+        if (data.generating) {
+          pollTimerRef.current = setTimeout(poll, 2000);
+        } else {
+          isPollingRef.current = false;
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed while polling cards');
+        isPollingRef.current = false;
+      }
+    };
+
+    pollTimerRef.current = setTimeout(poll, 2000);
+
+    return () => {
+      if (pollTimerRef.current) {
+        clearTimeout(pollTimerRef.current);
+        pollTimerRef.current = undefined;
+      }
+      isPollingRef.current = false;
+    };
+  }, [isGenerating, studySession, themeId]);
 
   const markCardSeen = useCallback(
     async (cardId: string) => {
-      if (!studySession?.id) return;
+      if (!studySession) return;
 
       try {
-        await fetch('/api/session/seen', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: studySession.id, cardId }),
-        });
-        console.log(`Marked card ${cardId} as seen`);
+        await studyApi.markCardSeen(studySession.id, cardId);
       } catch (err) {
-        console.error('Failed to mark card seen:', err);
+        setError(err instanceof Error ? err.message : 'Failed to mark card seen');
       }
     },
-    [studySession?.id],
+    [studySession],
+  );
+
+  const generateMore = useCallback(
+    async (count = cardCount) => {
+      if (isGenerating || isManualGenerating) return;
+      // Use a separate flag so the background poller can't clobber this loading state.
+      // /api/generate/cards is synchronous — GenerationService never sees it, so
+      // isGenerating would immediately be reset to false by the next poll tick.
+      setIsManualGenerating(true);
+      setError(null);
+      try {
+        const res = await fetch('/api/generate/cards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ themeId, count }),
+        });
+        if (!res.ok) {
+          const json = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(json.error ?? 'Generation failed');
+        }
+        // Cards are already in DB when the response returns (synchronous route).
+        // Refetch so the new cards appear immediately.
+        if (studySession) {
+          await fetchCardsForSession(studySession.id, { triggerGeneration: false });
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Generation failed');
+      } finally {
+        setIsManualGenerating(false);
+      }
+    },
+    [themeId, isGenerating, isManualGenerating, cardCount, studySession, fetchCardsForSession],
   );
 
   return {
     cards,
     session: studySession,
     isGenerating,
+    isManualGenerating,
+    isInitialLoading,
     infiniteMode,
     error,
+    cardCount,
     fetchCards,
     markCardSeen,
+    generateMore,
     setInfiniteMode,
+    setCardCount,
   };
 }

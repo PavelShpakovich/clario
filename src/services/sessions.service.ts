@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { logger } from '@/lib/logger';
 import type { Database } from '@/lib/supabase/types';
 
 type Session = Database['public']['Tables']['sessions']['Row'];
@@ -18,7 +19,7 @@ export class SessionService {
       .single();
 
     if (error || !data) {
-      console.error('Failed to create session:', error);
+      logger.error({ themeId, userId, error }, 'Failed to create session');
       throw new Error('Failed to create study session');
     }
 
@@ -65,7 +66,7 @@ export class SessionService {
 
     const { data: seenCards } = await supabaseAdmin
       .from('session_cards')
-      .select('id', { count: 'exact' })
+      .select('card_id', { count: 'exact' })
       .eq('session_id', sessionId);
 
     return {
@@ -85,7 +86,7 @@ export class SessionService {
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Failed to delete session:', error);
+      logger.error({ sessionId, userId, error }, 'Failed to delete session');
       throw new Error('Failed to delete session');
     }
   }

@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
 import { NotFoundError, RateLimitError, ValidationError } from '@/lib/errors';
-import { generateCards } from '@/lib/llm';
+import { generateWithSourceChunking } from '@/services/generation.service';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { logger } from '@/lib/logger';
 import { RATE_LIMIT_GENERATE_RPM, MAX_CARDS_PER_BATCH } from '@/lib/constants';
 
 const bodySchema = z.object({
@@ -52,7 +53,7 @@ export const POST = withApiHandler(async (req) => {
   // Verify theme belongs to this user
   const { data: theme } = await supabase
     .from('themes')
-    .select('name, description')
+    .select('name, description, language')
     .eq('id', themeId)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -78,16 +79,53 @@ export const POST = withApiHandler(async (req) => {
     sourceText = source.extracted_text ?? undefined;
   }
 
-  const cards = await generateCards({
-    theme: theme.name,
-    sourceText,
-    count,
+  // Fetch existing card titles for this theme to avoid duplication
+  const { data: existingCards } = await supabaseAdmin
+    .from('cards')
+    .select('title')
+    .eq('theme_id', themeId);
+
+  const topicsToAvoid = existingCards?.map((c) => c.title) ?? [];
+
+  const cards = await generateWithSourceChunking(
+    {
+      theme: theme.name,
+      sourceText,
+      count,
+      topicsToAvoid: topicsToAvoid.length > 0 ? topicsToAvoid : undefined,
+      language: theme.language as 'en' | 'ru' | undefined,
+    },
+    topicsToAvoid,
+  );
+
+  logger.info(
+    { themeId, cardCount: cards.length, existingTopics: topicsToAvoid.length },
+    'Generated cards',
+  );
+
+  // Deduplicate by normalized title before insert (in case LLM returned similar titles)
+  const seenTitles = new Set(topicsToAvoid.map((t) => t.toLowerCase()));
+  const uniqueCards = cards.filter((card) => {
+    const normalized = card.title.toLowerCase();
+    if (seenTitles.has(normalized)) {
+      logger.warn({ title: card.title }, 'Skipping duplicate card title');
+      return false;
+    }
+    seenTitles.add(normalized);
+    return true;
   });
+
+  if (uniqueCards.length === 0) {
+    return NextResponse.json(
+      { error: 'No unique cards generated (all duplicates of existing topics)' },
+      { status: 400 },
+    );
+  }
 
   const { data: inserted, error } = await supabaseAdmin
     .from('cards')
     .insert(
-      cards.map((c) => ({
+      uniqueCards.map((c) => ({
         user_id: user.id,
         theme_id: themeId,
         source_id: sourceId ?? null,

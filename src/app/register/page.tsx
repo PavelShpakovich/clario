@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { authApi } from '@/services/auth-api';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useTranslations } from 'next-intl';
 
 const registerSchema = z
   .object({
@@ -34,6 +36,7 @@ const registerSchema = z
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
+  const t = useTranslations();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -49,39 +52,23 @@ export default function RegisterPage() {
   async function onSubmit(values: RegisterFormValues) {
     try {
       setIsLoading(true);
+      await authApi.register(values.email, values.password);
 
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        toast.error(data.message || 'Registration failed');
-        return;
-      }
-
-      toast.success('Account created successfully! Please sign in.');
+      toast.success(t('auth.registerSuccess'));
       router.push('/login');
     } catch (error) {
-      console.error('Registration error:', error);
-      toast.error('Something went wrong. Please try again.');
+      toast.error(error instanceof Error ? error.message : t('auth.error'));
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl">Create account</CardTitle>
-          <CardDescription>Start learning with a new account</CardDescription>
+          <CardTitle className="text-2xl">{t('auth.registerTitle')}</CardTitle>
+          <CardDescription>{t('auth.registerDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -91,10 +78,10 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('auth.email')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="you@example.com"
+                        placeholder={t('auth.emailPlaceholder')}
                         type="email"
                         disabled={isLoading}
                         {...field}
@@ -110,10 +97,10 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t('auth.password')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="••••••••"
+                        placeholder={t('auth.passwordPlaceholder')}
                         type="password"
                         disabled={isLoading}
                         {...field}
@@ -129,10 +116,10 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
+                    <FormLabel>{t('auth.confirmPassword')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="••••••••"
+                        placeholder={t('auth.passwordPlaceholder')}
                         type="password"
                         disabled={isLoading}
                         {...field}
@@ -144,16 +131,16 @@ export default function RegisterPage() {
               />
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Creating account...' : 'Create account'}
+                {isLoading ? t('auth.creatingAccount') : t('auth.signUp')}
               </Button>
             </form>
           </Form>
 
           <div className="mt-6 space-y-2 text-center text-sm">
             <p className="text-gray-600">
-              Already have an account?{' '}
+              {t('auth.haveAccount')}{' '}
               <Link href="/login" className="font-semibold text-blue-600 hover:underline">
-                Sign in
+                {t('auth.signInLink')}
               </Link>
             </p>
           </div>

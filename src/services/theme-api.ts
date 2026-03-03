@@ -1,0 +1,59 @@
+import type { Database } from '@/lib/supabase/types';
+
+type Theme = Database['public']['Tables']['themes']['Row'];
+
+interface CreateThemeInput {
+  name: string;
+  description?: string;
+  language?: 'en' | 'ru';
+}
+
+class ThemeApi {
+  async createTheme(input: CreateThemeInput): Promise<Theme> {
+    const response = await fetch('/api/themes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+
+    const data = (await response.json()) as { theme?: Theme; error?: string; message?: string };
+
+    if (!response.ok || !data.theme) {
+      throw new Error(data.error || data.message || 'Failed to create theme');
+    }
+
+    return data.theme;
+  }
+
+  async generateCards(themeId: string, count: number): Promise<void> {
+    const response = await fetch('/api/generate/cards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ themeId, count }),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to generate cards');
+    }
+  }
+
+  async deleteTheme(themeId: string): Promise<void> {
+    const response = await fetch(`/api/themes/${themeId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      let message = 'Failed to delete theme';
+      try {
+        const data = (await response.json()) as { error?: string; message?: string };
+        message = data.error || data.message || message;
+      } catch {
+        // Ignore JSON parsing errors and keep default message
+      }
+      throw new Error(message);
+    }
+  }
+}
+
+export const themeApi = new ThemeApi();

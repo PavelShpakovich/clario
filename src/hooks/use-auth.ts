@@ -1,7 +1,6 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { Session } from 'next-auth';
 
 /**
  * Hook to access the current user session in Client Components

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { logger } from '@/lib/logger';
 import type { Database } from '@/lib/supabase/types';
 
 type Card = Database['public']['Tables']['cards']['Row'];
@@ -20,7 +21,7 @@ export class CardService {
       .limit(limit);
 
     if (error) {
-      console.error('Failed to fetch cards:', error);
+      logger.error({ themeId, userId, limit, error }, 'Failed to fetch cards');
       throw new Error('Failed to fetch cards');
     }
 
@@ -40,7 +41,7 @@ export class CardService {
     const { data, error } = await supabaseAdmin.from('cards').select('*').eq('id', cardId).single();
 
     if (error || !data) {
-      console.error('Card not found:', error);
+      logger.error({ cardId, error }, 'Card not found');
       throw new Error('Card not found');
     }
 
@@ -66,7 +67,7 @@ export class CardService {
       .single();
 
     if (error || !data) {
-      console.error('Failed to mark card seen:', error);
+      logger.error({ cardId, userId, sessionId, error }, 'Failed to mark card seen');
       throw new Error('Failed to mark card seen');
     }
 
@@ -85,7 +86,7 @@ export class CardService {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Failed to fetch all cards:', error);
+      logger.error({ themeId, userId, error }, 'Failed to fetch all cards');
       throw new Error('Failed to fetch all cards');
     }
 
@@ -101,10 +102,10 @@ export class CardService {
       .select('*')
       .eq('theme_id', themeId)
       .or(`user_id.eq.${userId},user_id.is.null`)
-      .or(`front.ilike.%${query}%,back.ilike.%${query}%`);
+      .or(`title.ilike.%${query}%,body.ilike.%${query}%`);
 
     if (error) {
-      console.error('Failed to search cards:', error);
+      logger.error({ themeId, userId, query, error }, 'Failed to search cards');
       throw new Error('Failed to search cards');
     }
 

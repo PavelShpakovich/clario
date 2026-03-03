@@ -8,6 +8,11 @@ const envSchema = z.object({
   // Supabase — server only
   SUPABASE_SERVICE_KEY: z.string().min(1, 'SUPABASE_SERVICE_KEY is required'),
 
+  // NextAuth
+  NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL'),
+  NEXTAUTH_URL: z.string().url().optional(),
+  NEXTAUTH_SECRET: z.string().optional(),
+
   // LLM
   LLM_PROVIDER: z.enum(['groq', 'openai', 'anthropic', 'ollama', 'mock']),
   GROQ_API_KEY: z.string().optional(),
@@ -40,7 +45,7 @@ function validateEnv() {
     const formatted = result.error.issues
       .map((e) => `  • ${String(e.path.join('.'))}: ${e.message}`)
       .join('\n');
-    throw new Error(`❌ Invalid environment variables:\n${formatted}`);
+    throw new Error(`[ERROR] Invalid environment variables:\n${formatted}`);
   }
   return result.data;
 }

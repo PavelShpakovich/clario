@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { logger } from '@/lib/logger';
 import type { Database } from '@/lib/supabase/types';
 
 type DataSource = Database['public']['Tables']['data_sources']['Row'];
@@ -17,7 +18,7 @@ export class SourceService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Failed to fetch sources:', error);
+      logger.error({ themeId, userId, error }, 'Failed to fetch sources');
       throw new Error('Failed to fetch sources');
     }
 
@@ -36,7 +37,7 @@ export class SourceService {
       .single();
 
     if (error || !data) {
-      console.error('Source not found:', error);
+      logger.error({ sourceId, userId, error }, 'Source not found');
       throw new Error('Source not found');
     }
 
@@ -66,7 +67,7 @@ export class SourceService {
       .single();
 
     if (error || !data) {
-      console.error('Failed to create text source:', error);
+      logger.error({ themeId, userId, name, error }, 'Failed to create text source');
       throw new Error('Failed to create text source');
     }
 
@@ -98,7 +99,7 @@ export class SourceService {
       .single();
 
     if (error || !data) {
-      console.error('Failed to create URL source:', error);
+      logger.error({ themeId, userId, url, name, error }, 'Failed to create URL source');
       throw new Error('Failed to create URL source');
     }
 
@@ -134,7 +135,7 @@ export class SourceService {
       .single();
 
     if (error || !data) {
-      console.error('Failed to create file source:', error);
+      logger.error({ themeId, userId, fileName, fileType, error }, 'Failed to create file source');
       throw new Error('Failed to create file source');
     }
 
@@ -164,7 +165,7 @@ export class SourceService {
       .single();
 
     if (error || !data) {
-      console.error('Failed to update source status:', error);
+      logger.error({ sourceId, userId, status, error }, 'Failed to update source status');
       throw new Error('Failed to update source status');
     }
 
@@ -182,7 +183,7 @@ export class SourceService {
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Failed to delete source:', error);
+      logger.error({ sourceId, userId, error }, 'Failed to delete source');
       throw new Error('Failed to delete source');
     }
   }

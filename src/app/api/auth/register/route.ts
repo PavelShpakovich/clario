@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,17 +11,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
     }
 
-    // Check if user already exists
-    const { data: existingUser } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single();
-
-    if (existingUser) {
-      return NextResponse.json({ message: 'Email already registered' }, { status: 400 });
-    }
-
     // Sign up user with Supabase Auth
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -29,7 +19,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Auth error:', error);
+      logger.error({ email, error }, 'Auth user creation failed');
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
 
@@ -40,18 +30,17 @@ export async function POST(request: NextRequest) {
     // Create profile
     const { error: profileError } = await supabaseAdmin.from('profiles').insert({
       id: data.user.id,
-      email: data.user.email,
-      nickname: data.user.email?.split('@')[0] || 'User',
+      display_name: data.user.email?.split('@')[0] || 'User',
     });
 
     if (profileError) {
-      console.error('Profile creation error:', profileError);
+      logger.error({ userId: data.user.id, profileError }, 'Profile creation failed');
       return NextResponse.json({ message: 'Failed to create profile' }, { status: 500 });
     }
 
     return NextResponse.json({ message: 'User registered successfully' }, { status: 201 });
   } catch (error) {
-    console.error('Registration error:', error);
+    logger.error({ error }, 'Registration route failed');
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

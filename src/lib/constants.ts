@@ -3,7 +3,7 @@
     Set high enough to generate proactively before user runs out of cards. */
 export const CARD_GENERATION_THRESHOLD = 15;
 /** Number of cards to generate per batch. */
-export const MAX_CARDS_PER_BATCH = 10;
+export const MAX_CARDS_PER_BATCH = 5;
 
 // ─── Session ─────────────────────────────────────────────────────────────────
 export const SESSION_COOKIE_NAME = 'ml_session';

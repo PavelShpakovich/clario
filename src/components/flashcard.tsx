@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { CardRow } from '@/lib/supabase/types';
 
 interface FlashcardProps {
@@ -9,6 +10,7 @@ interface FlashcardProps {
 }
 
 export function Flashcard({ card, onNext }: FlashcardProps) {
+  const t = useTranslations();
   const [revealed, setRevealed] = useState(false);
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -32,17 +34,13 @@ export function Flashcard({ card, onNext }: FlashcardProps) {
       <div
         role="button"
         tabIndex={0}
-        aria-label={
-          revealed
-            ? 'Card body — press Enter or Space for next card'
-            : 'Reveal body — press Enter or Space'
-        }
+        aria-label={revealed ? t('flashcard.cardBodyLabel') : t('flashcard.revealBodyLabel')}
         onKeyDown={handleKeyDown}
         className="min-h-48 cursor-pointer rounded-2xl border border-gray-200 bg-white p-8 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500"
         onClick={() => !revealed && setRevealed(true)}
       >
         <p className="mb-4 text-xs font-medium uppercase tracking-widest text-gray-400">
-          {revealed ? 'Info' : 'Title'}
+          {revealed ? t('flashcard.info') : t('flashcard.title')}
         </p>
         <p className="text-lg font-medium leading-relaxed text-gray-900">
           {revealed ? card.body : card.title}
@@ -55,14 +53,14 @@ export function Flashcard({ card, onNext }: FlashcardProps) {
             onClick={() => setRevealed(true)}
             className="flex-1 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            Reveal info
+            {t('flashcard.revealInfo')}
           </button>
         ) : (
           <button
             onClick={handleNext}
             className="flex-1 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
-            Next card →
+            {t('flashcard.nextCard')}
           </button>
         )}
       </div>
@@ -70,7 +68,7 @@ export function Flashcard({ card, onNext }: FlashcardProps) {
       <p className="text-center text-xs text-gray-400">
         Press <kbd className="rounded border border-gray-300 px-1 py-0.5 font-mono">Space</kbd> or{' '}
         <kbd className="rounded border border-gray-300 px-1 py-0.5 font-mono">Enter</kbd> to{' '}
-        {revealed ? 'go to next card' : 'reveal info'}
+        {revealed ? t('flashcard.nextInstructions') : t('flashcard.revealInstructions')}
       </p>
     </div>
   );

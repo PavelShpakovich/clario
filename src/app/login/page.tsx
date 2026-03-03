@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useTranslations } from 'next-intl';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -29,6 +30,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -51,27 +53,26 @@ export default function LoginPage() {
       });
 
       if (!result?.ok) {
-        toast.error(result?.error || 'Invalid email or password');
+        toast.error(result?.error || t('auth.invalidCredentials'));
         return;
       }
 
-      toast.success('Logged in successfully!');
+      toast.success(t('auth.loginSuccess'));
       const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
       router.push(callbackUrl);
-    } catch (error) {
-      console.error('Login error:', error);
-      toast.error('Something went wrong. Please try again.');
+    } catch {
+      toast.error(t('auth.error'));
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your account to continue learning</CardDescription>
+          <CardTitle className="text-2xl">{t('auth.loginTitle')}</CardTitle>
+          <CardDescription>{t('auth.loginDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -81,10 +82,10 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('auth.email')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="you@example.com"
+                        placeholder={t('auth.emailPlaceholder')}
                         type="email"
                         disabled={isLoading}
                         {...field}
@@ -100,10 +101,10 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t('auth.password')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="••••••••"
+                        placeholder={t('auth.passwordPlaceholder')}
                         type="password"
                         disabled={isLoading}
                         {...field}
@@ -115,16 +116,16 @@ export default function LoginPage() {
               />
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Signing in...' : 'Sign in'}
+                {isLoading ? t('auth.signingIn') : t('auth.signIn')}
               </Button>
             </form>
           </Form>
 
           <div className="mt-6 space-y-2 text-center text-sm">
             <p className="text-gray-600">
-              Don't have an account?{' '}
+              {t('auth.noAccount')}{' '}
               <Link href="/register" className="font-semibold text-blue-600 hover:underline">
-                Sign up
+                {t('auth.signUpLink')}
               </Link>
             </p>
           </div>

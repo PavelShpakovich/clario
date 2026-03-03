@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { AlertCircle } from 'lucide-react';
 import { createSupabaseClient } from '@/lib/supabase/client';
+import { authApi } from '@/services/auth-api';
 
 type Phase = 'detecting' | 'authenticating' | 'error';
 
@@ -19,6 +22,7 @@ type Phase = 'detecting' | 'authenticating' | 'error';
  */
 export default function TelegramEntryPage() {
   const router = useRouter();
+  const t = useTranslations();
   const [phase, setPhase] = useState<Phase>('detecting');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -39,7 +43,7 @@ export default function TelegramEntryPage() {
 
       const initData = tg.initData;
       if (!initData) {
-        setErrorMsg('No initData from Telegram. Please open via the bot.');
+        setErrorMsg(t('telegram.noInitData'));
         setPhase('error');
         return;
       }
@@ -48,18 +52,7 @@ export default function TelegramEntryPage() {
 
       try {
         // 1. Validate initData on the server and get a hashed magic-link token.
-        const res = await fetch('/api/auth/telegram', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData }),
-        });
-
-        if (!res.ok) {
-          const { error } = (await res.json()) as { error: string };
-          throw new Error(error ?? `Server error ${res.status}`);
-        }
-
-        const { hashedToken } = (await res.json()) as { hashedToken: string };
+        const { hashedToken } = await authApi.exchangeTelegramInitData(initData);
 
         // 2. Exchange the token for a live Supabase session.
         const supabase = createSupabaseClient();
@@ -73,7 +66,7 @@ export default function TelegramEntryPage() {
         // 3. Authenticated — go to the app.
         router.replace('/dashboard');
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Authentication failed';
+        const msg = err instanceof Error ? err.message : t('telegram.authenticationFailed');
         setErrorMsg(msg);
         setPhase('error');
       }
@@ -85,14 +78,14 @@ export default function TelegramEntryPage() {
   if (phase === 'error') {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-        <div className="mb-4 text-4xl">⚠️</div>
-        <h1 className="mb-2 text-lg font-semibold text-gray-900">Sign-in failed</h1>
+        <AlertCircle className="mb-4 h-12 w-12 text-red-600" />
+        <h1 className="mb-2 text-lg font-semibold text-gray-900">{t('telegram.signinFailed')}</h1>
         <p className="mb-6 text-sm text-gray-500">{errorMsg}</p>
         <button
           onClick={() => router.replace('/login')}
           className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          Use email login instead
+          {t('telegram.useEmailLogin')}
         </button>
       </main>
     );
@@ -102,7 +95,7 @@ export default function TelegramEntryPage() {
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
       <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       <p className="text-sm text-gray-500">
-        {phase === 'detecting' ? 'Starting…' : 'Signing you in…'}
+        {phase === 'detecting' ? t('telegram.starting') : t('telegram.signingYouIn')}
       </p>
     </main>
   );

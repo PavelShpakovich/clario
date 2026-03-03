@@ -57,7 +57,7 @@ export function parseLlmOutput(raw: string): CardsOutput {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
-  } catch (err) {
+  } catch {
     logger.error({ snippet: text.slice(0, 200) }, 'Parse: JSON parse failed');
     throw new LlmError({
       message: 'LLM returned non-JSON output',
@@ -72,16 +72,16 @@ export function parseLlmOutput(raw: string): CardsOutput {
 
   // Handle both direct array and object with "cards" field
   let cardsArray = parsed;
-  if (
-    typeof parsed === 'object' &&
-    parsed !== null &&
-    !Array.isArray(parsed) &&
-    'cards' in parsed
-  ) {
+  if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
     const obj = parsed as Record<string, unknown>;
     if (Array.isArray(obj.cards)) {
+      // { cards: [...] } wrapper
       logger.info({}, 'Parse: Extracted cards array from wrapper object');
       cardsArray = obj.cards;
+    } else if ('title' in obj || 'question' in obj) {
+      // Single card object — wrap it in an array
+      logger.info({}, 'Parse: Wrapping single card object in array');
+      cardsArray = [parsed];
     }
   }
 

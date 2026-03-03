@@ -34,10 +34,16 @@ export const POST = withApiHandler(async (req) => {
   }
 
   // Upsert — idempotent if called twice for the same card
-  await supabase.from('session_cards').upsert(
-    { session_id: sessionId, card_id: cardId, seen_at: new Date().toISOString() },
-    { onConflict: 'session_id,card_id' },
-  );
+  const { error } = await supabase
+    .from('session_cards')
+    .upsert(
+      { session_id: sessionId, card_id: cardId, seen_at: new Date().toISOString() },
+      { onConflict: 'session_id,card_id' },
+    );
+
+  if (error) {
+    throw new Error('Failed to mark card as seen');
+  }
 
   return NextResponse.json({ ok: true });
 });

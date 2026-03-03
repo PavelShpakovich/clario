@@ -23,16 +23,19 @@ export function withApiHandler(
     const start = Date.now();
 
     try {
-      const response = await handler(req);
+      const response = await handler(req, ctx);
       response.headers.set(REQUEST_ID_HEADER, requestId);
 
-      logger.info({
-        requestId,
-        method: req.method,
-        url: req.url,
-        status: response.status,
-        durationMs: Date.now() - start,
-      });
+      logger.info(
+        {
+          requestId,
+          method: req.method,
+          url: req.url,
+          status: response.status,
+          durationMs: Date.now() - start,
+        },
+        'API request completed',
+      );
 
       return response;
     } catch (err) {
@@ -41,16 +44,19 @@ export function withApiHandler(
       if (err instanceof AppError) {
         const status = httpStatusForError(err);
 
-        logger.warn({
-          requestId,
-          method: req.method,
-          url: req.url,
-          errorCode: err.code,
-          errorMessage: err.message,
-          context: err.context,
-          status,
-          durationMs,
-        });
+        logger.warn(
+          {
+            requestId,
+            method: req.method,
+            url: req.url,
+            errorCode: err.code,
+            errorMessage: err.message,
+            context: err.context,
+            status,
+            durationMs,
+          },
+          'API request failed with app error',
+        );
 
         return NextResponse.json(
           { error: safeMessage(err), code: err.code, requestId },
@@ -59,13 +65,16 @@ export function withApiHandler(
       }
 
       // Unhandled unexpected error
-      logger.error({
-        requestId,
-        method: req.method,
-        url: req.url,
-        err,
-        durationMs,
-      });
+      logger.error(
+        {
+          requestId,
+          method: req.method,
+          url: req.url,
+          err,
+          durationMs,
+        },
+        'API request failed with unhandled error',
+      );
 
       return NextResponse.json(
         { error: 'Internal server error', requestId },
