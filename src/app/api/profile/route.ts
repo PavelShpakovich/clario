@@ -23,7 +23,9 @@ export const GET = withApiHandler(async () => {
 
   if (!profile) {
     const fallbackDisplayName =
-      session?.user?.name || session?.user?.email?.split('@')[0] || user.id.slice(0, 8);
+      session?.user?.name ||
+      (session?.user?.email ? session.user.email.split('@')[0] : null) ||
+      (user.id ? user.id.slice(0, 8) : 'User');
 
     const { data: createdProfile, error: createError } = await supabase
       .from('profiles')

@@ -79,14 +79,14 @@ export const authOptions: NextAuthOptions = {
           await supabaseAdmin.from('profiles').insert({
             id: data.user.id,
             telegram_id: null,
-            display_name: data.user.email?.split('@')[0],
+            display_name: data.user.email?.split('@')[0] || 'User',
           });
         }
 
         return {
           id: data.user.id,
           email: data.user.email,
-          name: profile?.display_name || undefined,
+          name: profile?.display_name || data.user.email?.split('@')[0] || 'User',
         };
       },
     }),
@@ -112,7 +112,7 @@ export const authOptions: NextAuthOptions = {
           if (profile?.display_name) {
             token.displayName = profile.display_name;
           }
-        } catch (error) {
+        } catch {
           // If error, keep existing displayName
         }
       }
