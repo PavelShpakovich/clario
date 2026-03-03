@@ -15,6 +15,19 @@ const PUBLIC_API_ROUTES = [
   '/api/auth/telegram', // Telegram auth endpoint
 ];
 
+/**
+ * Returns true if the request carries a Supabase session cookie.
+ * Telegram users authenticate via Supabase (not NextAuth), so their session
+ * is stored in an `sb-*-auth-token` cookie rather than `next-auth.session-token`.
+ * We only check for the cookie's existence here — the API routes independently
+ * validate the token via supabase.auth.getUser().
+ */
+function hasSupabaseSession(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some((cookie) => /^sb-.+-auth-token/.test(cookie.name) && !!cookie.value);
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -28,16 +41,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Use getToken (Edge-compatible) instead of getServerSession (Node.js-only).
-  // getServerSession cannot run in the Edge Runtime and causes crypto-related
-  // TypeErrors (e.g. "Cannot read properties of undefined (reading 'slice')").
+  // Check for NextAuth JWT (email/password users — Edge-compatible).
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET ?? process.env.SUPABASE_SERVICE_KEY,
   });
 
+  // Check for Supabase session cookie (Telegram Mini App users).
+  const supabaseSession = hasSupabaseSession(request);
+
   // If user is not authenticated and trying to access protected route
-  if (!token) {
+  if (!token && !supabaseSession) {
     // If it's an API route, return 401
     if (pathname.startsWith('/api')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
