@@ -2,8 +2,11 @@
 /** Trigger new card generation when unseen count falls below this threshold.
     Set high enough to generate proactively before user runs out of cards. */
 export const CARD_GENERATION_THRESHOLD = 15;
-/** Number of cards to generate per batch. */
+/** Number of cards to generate per AI batch. */
 export const MAX_CARDS_PER_BATCH = 5;
+/** Max cards fetched per study-session API request.
+    High enough to load all existing cards in a single request for most themes. */
+export const MAX_CARDS_PER_SESSION_FETCH = 100;
 
 // ─── Session ─────────────────────────────────────────────────────────────────
 export const SESSION_COOKIE_NAME = 'ml_session';

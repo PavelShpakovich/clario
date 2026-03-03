@@ -66,7 +66,7 @@ export function DashboardClient({ initialThemes, cardCounts = {} }: DashboardCli
             {t('dashboard.heading')}
           </h1>
           <p className="mt-1 text-sm md:text-base text-gray-600 dark:text-gray-400">
-            {themes.length} {t('dashboard.cards')}
+            {t('dashboard.description', { count: themes.length })}
           </p>
         </div>
         <Link href="/themes/new" className="w-full sm:w-auto">

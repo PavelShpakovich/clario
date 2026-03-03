@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
 import { NotFoundError, ValidationError } from '@/lib/errors';
-import { CARD_GENERATION_THRESHOLD, MAX_CARDS_PER_BATCH } from '@/lib/constants';
+import { CARD_GENERATION_THRESHOLD, MAX_CARDS_PER_SESSION_FETCH } from '@/lib/constants';
 import { GenerationService } from '@/services/generation.service';
 import { logger } from '@/lib/logger';
 
@@ -63,7 +63,7 @@ export const GET = withApiHandler(async (req) => {
     .or(`user_id.eq.${user.id},user_id.is.null,is_public.eq.true`)
     .eq('theme_id', themeId)
     .order('created_at', { ascending: true })
-    .limit(MAX_CARDS_PER_BATCH);
+    .limit(MAX_CARDS_PER_SESSION_FETCH);
 
   if (seenFilter) {
     cardsQuery = cardsQuery.not('id', 'in', seenFilter);
