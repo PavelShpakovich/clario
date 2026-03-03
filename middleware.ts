@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getToken } from 'next-auth/jwt';
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
@@ -28,11 +28,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check session for protected routes
-  const session = await auth();
+  // Use getToken (Edge-compatible) instead of getServerSession (Node.js-only).
+  // getServerSession cannot run in the Edge Runtime and causes crypto-related
+  // TypeErrors (e.g. "Cannot read properties of undefined (reading 'slice')").
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET ?? process.env.SUPABASE_SERVICE_KEY,
+  });
 
   // If user is not authenticated and trying to access protected route
-  if (!session) {
+  if (!token) {
     // If it's an API route, return 401
     if (pathname.startsWith('/api')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
