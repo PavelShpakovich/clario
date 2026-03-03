@@ -36,8 +36,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow all public routes
-  if (PUBLIC_ROUTES.includes(pathname)) {
+  // Allow all public routes (exact match or sub-path, e.g. /auth/callback)
+  if (PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/'))) {
     return NextResponse.next();
   }
 

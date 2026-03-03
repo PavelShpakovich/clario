@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase/client';
 
 function Spinner() {
@@ -19,7 +19,6 @@ function Spinner() {
  * We exchange it for a session, then redirect to /dashboard.
  */
 function CallbackHandler() {
-  const router = useRouter();
   const params = useSearchParams();
 
   useEffect(() => {
@@ -32,13 +31,13 @@ function CallbackHandler() {
         await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
       }
 
-      // Whether or not OTP exchange worked, send the user to dashboard.
-      // Dashboard will redirect to /login if not authenticated.
-      router.replace('/dashboard');
+      // Hard navigate so Supabase cookies are committed before the
+      // middleware processes the next request.
+      window.location.href = '/dashboard';
     }
 
     void exchange();
-  }, [router, params]);
+  }, [params]);
 
   return <Spinner />;
 }

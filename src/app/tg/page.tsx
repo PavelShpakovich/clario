@@ -63,13 +63,14 @@ export default function TelegramEntryPage() {
         const supabase = createSupabaseClient();
         const { error: authError } = await supabase.auth.verifyOtp({
           token_hash: hashedToken,
-          type: 'email',
+          type: 'magiclink',
         });
 
         if (authError) throw authError;
 
-        // 3. Authenticated — go to the intended destination.
-        router.replace(callbackUrl);
+        // 3. Authenticated — hard navigate so cookies are committed before
+        //    the middleware processes the next request.
+        window.location.href = callbackUrl;
       } catch (err) {
         const msg = err instanceof Error ? err.message : t('telegram.authenticationFailed');
         setErrorMsg(msg);
