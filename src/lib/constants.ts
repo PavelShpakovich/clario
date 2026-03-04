@@ -4,12 +4,11 @@
 export const CARD_GENERATION_THRESHOLD = 15;
 /** Number of cards to generate per AI batch. */
 export const MAX_CARDS_PER_BATCH = 5;
+/** Card count options shown in the generate-more picker. */
+export const CARD_COUNT_OPTIONS = [5, 10, 15, 20] as const;
 /** Max cards fetched per study-session API request.
     High enough to load all existing cards in a single request for most themes. */
 export const MAX_CARDS_PER_SESSION_FETCH = 100;
-
-// ─── Session ─────────────────────────────────────────────────────────────────
-export const SESSION_COOKIE_NAME = 'ml_session';
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 /** Max generation requests per user per minute. */

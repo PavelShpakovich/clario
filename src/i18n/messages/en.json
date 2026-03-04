@@ -239,7 +239,9 @@
     "profileUpdated": "Profile updated",
     "failedUpdateProfile": "Failed to update profile",
     "passwordUpdated": "Password updated successfully",
-    "failedUpdatePassword": "Failed to update password"
+    "failedUpdatePassword": "Failed to update password",
+    "lightMode": "Switch to light mode",
+    "darkMode": "Switch to dark mode"
   },
   "validation": {
     "required": "This field is required",

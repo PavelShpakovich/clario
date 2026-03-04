@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { auth } from '@/auth';
-import { fetchTheme, fetchStudySession } from '@/lib/data-fetchers';
+import { fetchTheme } from '@/lib/data-fetchers';
 import { StudyClient } from '@/components/study/study-client';
 import { StudySkeleton } from '@/components/skeletons';
 
@@ -23,8 +23,7 @@ export default async function StudyPage({ params }: StudyPageProps) {
 
   const { themeId } = await params;
 
-  // Fetch theme and session in parallel for better performance
-  const [theme] = await Promise.all([fetchTheme(themeId), fetchStudySession(themeId)]);
+  const theme = await fetchTheme(themeId);
 
   if (!theme) {
     redirect('/dashboard');

@@ -239,7 +239,9 @@
     "profileUpdated": "Профиль обновлен",
     "failedUpdateProfile": "Ошибка при обновлении профиля",
     "passwordUpdated": "Пароль успешно обновлен",
-    "failedUpdatePassword": "Ошибка при обновлении пароля"
+    "failedUpdatePassword": "Ошибка при обновлении пароля",
+    "lightMode": "Включить светлую тему",
+    "darkMode": "Включить тёмную тему"
   },
   "validation": {
     "required": "Это поле обязательно",

@@ -25,6 +25,57 @@ class ThemeApi {
     return data.theme;
   }
 
+  async listThemes(): Promise<Theme[]> {
+    const res = await fetch('/api/themes', {
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to load themes');
+    }
+
+    const result = (await res.json()) as { themes: Theme[] };
+    return result.themes;
+  }
+
+  async getTheme(themeId: string): Promise<Theme> {
+    const res = await fetch(`/api/themes/${themeId}`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to load theme');
+    }
+
+    const result = (await res.json()) as { theme: Theme };
+    return result.theme;
+  }
+
+  async updateTheme(
+    themeId: string,
+    updates: Partial<Pick<Theme, 'name' | 'description' | 'is_public'>>,
+  ): Promise<Theme> {
+    const res = await fetch(`/api/themes/${themeId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to update theme');
+    }
+
+    const result = (await res.json()) as { theme: Theme };
+    return result.theme;
+  }
+
+  async togglePrivacy(themeId: string, isPublic: boolean): Promise<Theme> {
+    return this.updateTheme(themeId, { is_public: isPublic });
+  }
+
   async generateCards(themeId: string, count: number): Promise<void> {
     const response = await fetch('/api/generate/cards', {
       method: 'POST',

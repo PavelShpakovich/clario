@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import type { Database } from '@/lib/supabase/types';
 import { studyApi } from '@/services/study-api';
+import { themeApi } from '@/services/theme-api';
 
 type Card = Database['public']['Tables']['cards']['Row'];
 
@@ -46,13 +47,7 @@ export function useStudySession(themeId: string) {
   const fetchCardsForSession = useCallback(
     async (sessionId: string, options?: FetchCardsOptions) => {
       try {
-        console.log(`[useStudySession] Fetching cards for session ${sessionId}...`, options);
         const data = await studyApi.fetchCards(sessionId, themeId, options);
-        console.log(`[useStudySession] Received data:`, {
-          cardCount: data.cards.length,
-          generating: data.generating,
-          failed: data.generationFailed,
-        });
 
         setCards((prev) => {
           const existing = new Set(prev.map((c) => c.id));
@@ -89,7 +84,6 @@ export function useStudySession(themeId: string) {
         setIsInitialLoading(true);
 
         const data = await studyApi.initSession(themeId);
-        console.log(`[useStudySession] Session initialized:`, data.sessionId);
         const createdSession = { id: data.sessionId };
         setStudySession(createdSession);
 
@@ -103,11 +97,9 @@ export function useStudySession(themeId: string) {
           initialData.cards.length === 0 &&
           !initialData.generating
         ) {
-          console.log(`[useStudySession] Initial card list empty, triggering generation...`);
           await fetchCardsForSession(data.sessionId, { triggerGeneration: true });
         }
       } catch (err) {
-        console.error(`[useStudySession] Initialization error:`, err);
         setIsInitialLoading(false);
         setError(err instanceof Error ? err.message : 'Failed to initialize session');
       }
@@ -163,10 +155,8 @@ export function useStudySession(themeId: string) {
 
         // Keep polling only while still generating
         if (data.generating) {
-          console.log(`[useStudySession] Still generating, scheduling next poll in 2s...`);
           pollTimerRef.current = setTimeout(poll, 2000);
         } else {
-          console.log(`[useStudySession] Generation finished or not active.`);
           isPollingRef.current = false;
           // One-shot re-fetch 1 s after generation finishes to pick up any
           // final cards that arrived in the last background flush.
@@ -186,17 +176,14 @@ export function useStudySession(themeId: string) {
           }, 1000);
         }
       } catch (err) {
-        console.error(`[useStudySession] Poll error:`, err);
         setError(err instanceof Error ? err.message : 'Failed while polling cards');
         isPollingRef.current = false;
       }
     };
 
-    console.log(`[useStudySession] Starting polling loop...`);
     pollTimerRef.current = setTimeout(poll, 2000);
 
     return () => {
-      console.log(`[useStudySession] Cleaning up polling loop.`);
       if (pollTimerRef.current) {
         clearTimeout(pollTimerRef.current);
         pollTimerRef.current = undefined;
@@ -227,15 +214,7 @@ export function useStudySession(themeId: string) {
       setIsManualGenerating(true);
       setError(null);
       try {
-        const res = await fetch('/api/generate/cards', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ themeId, count }),
-        });
-        if (!res.ok) {
-          const json = (await res.json().catch(() => ({}))) as { error?: string };
-          throw new Error(json.error ?? 'Generation failed');
-        }
+        await themeApi.generateCards(themeId, count);
         // Cards are already in DB when the response returns (synchronous route).
         // Refetch so the new cards appear immediately.
         if (studySession) {

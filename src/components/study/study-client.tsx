@@ -179,7 +179,6 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
         isGenerating={isGenerating}
         isManualGenerating={isManualGenerating}
         infiniteMode={infiniteMode}
-        hasCards={cards.length > 0}
         cardCount={cardCount}
         onToggleInfiniteMode={() => setInfiniteMode((prev) => !prev)}
         onGenerateMore={(count) => void generateMore(count)}
@@ -196,7 +195,7 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
           data-card-id={card.id}
           className="w-full h-screen snap-start snap-always"
         >
-          <InfoCard card={card} themeId={themeId} />
+          <InfoCard card={card} />
         </div>
       ))}
 

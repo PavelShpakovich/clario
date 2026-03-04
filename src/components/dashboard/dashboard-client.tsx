@@ -2,17 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Trash2, BookOpen, Globe, Lock, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import type { Database } from '@/lib/supabase/types';
 import { themeApi } from '@/services/theme-api';
-import { themesApi } from '@/services/themes-api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { isTelegramWebApp } from '@/components/telegram-provider';
+import { TgSettingsBar } from './tg-settings-bar';
+import { ThemeList } from './theme-list';
 
 type Theme = Database['public']['Tables']['themes']['Row'];
 
@@ -31,6 +31,7 @@ export function DashboardClient({
   const [themes, setThemes] = useState(initialThemes);
   const [themeToDelete, setThemeToDelete] = useState<Theme | null>(null);
   const [togglingPrivacy, setTogglingPrivacy] = useState<string | null>(null);
+  const isTg = isTelegramWebApp();
 
   const handleDelete = async () => {
     if (!themeToDelete) return;
@@ -49,7 +50,7 @@ export function DashboardClient({
   const handlePrivacyToggle = async (themeId: string, currentIsPublic: boolean) => {
     setTogglingPrivacy(themeId);
     try {
-      const updated = await themesApi.togglePrivacy(themeId, !currentIsPublic);
+      const updated = await themeApi.togglePrivacy(themeId, !currentIsPublic);
       setThemes((prev) =>
         prev.map((theme) =>
           theme.id === themeId ? { ...theme, is_public: updated.is_public } : theme,
@@ -64,101 +65,21 @@ export function DashboardClient({
     }
   };
 
-  const renderThemeList = (currentThemes: Theme[], isOwner: boolean) => {
-    if (currentThemes.length === 0) {
-      return (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <BookOpen className="mb-4 h-12 w-12 text-gray-400" />
-            <h3 className="text-lg font-semibold text-gray-900">
-              {isOwner ? t('dashboard.emptyTitle') : t('dashboard.noCommunityThemes')}
-            </h3>
-            <p className="mt-2 text-gray-600">
-              {isOwner ? t('dashboard.emptyDescription') : t('dashboard.communityEmptyDescription')}
-            </p>
-            {isOwner && (
-              <Link href="/themes/new" className="mt-4">
-                <Button>{t('buttons.addTheme')}</Button>
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      );
-    }
-
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {currentThemes.map((theme) => (
-          <Card key={theme.id} className="flex flex-col">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="line-clamp-2">{theme.name}</CardTitle>
-                <span className="shrink-0 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400">
-                  {cardCounts[theme.id] ?? 0} {t('dashboard.cards')}
-                </span>
-              </div>
-              {theme.description && (
-                <CardDescription className="line-clamp-2">{theme.description}</CardDescription>
-              )}
-            </CardHeader>
-            <CardContent className="mt-auto space-y-3">
-              <div className="flex gap-2">
-                <Link href={`/study/${theme.id}`} className="flex-1">
-                  <Button className="w-full" variant="default" size="sm">
-                    {t('buttons.study')}
-                  </Button>
-                </Link>
-                {isOwner && (
-                  <Link href={`/themes/${theme.id}/edit`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full">
-                      {t('buttons.edit')}
-                    </Button>
-                  </Link>
-                )}
-              </div>
-
-              {isOwner && (
-                <div className="flex items-center justify-between border-t pt-3">
-                  <div className="flex items-center gap-2">
-                    {theme.is_public ? (
-                      <Globe className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <Lock className="h-4 w-4 text-gray-400" />
-                    )}
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                      {theme.is_public ? t('dashboard.public') : t('dashboard.private')}
-                    </span>
-                  </div>
-                  <Switch
-                    checked={theme.is_public ?? false}
-                    onCheckedChange={() =>
-                      void handlePrivacyToggle(theme.id, theme.is_public ?? false)
-                    }
-                    disabled={togglingPrivacy === theme.id}
-                  />
-                </div>
-              )}
-
-              {isOwner && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-red-600 hover:text-red-700"
-                  onClick={() => setThemeToDelete(theme)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t('buttons.delete')}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  };
+  const renderThemeList = (currentThemes: Theme[], isOwner: boolean) => (
+    <ThemeList
+      themes={currentThemes}
+      isOwner={isOwner}
+      cardCounts={cardCounts}
+      togglingPrivacy={togglingPrivacy}
+      onPrivacyToggle={(id, current) => void handlePrivacyToggle(id, current)}
+      onDelete={(theme) => setThemeToDelete(theme)}
+    />
+  );
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 md:py-10">
+      {isTg && <TgSettingsBar />}
+
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">

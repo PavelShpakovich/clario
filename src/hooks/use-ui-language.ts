@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { locales } from '@/i18n/config';
+import { profileApi } from '@/services/profile-api';
 
 type Locale = (typeof locales)[number];
 
@@ -31,11 +32,7 @@ export function useUiLanguage() {
       document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}`;
 
       // Update database preference if user is authenticated
-      await fetch('/api/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uiLanguage: newLocale }),
-      });
+      await profileApi.updateUiLanguage(newLocale);
 
       setLocale(newLocale);
 

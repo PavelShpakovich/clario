@@ -12,29 +12,6 @@ export async function fetchUserProfile() {
   return profiles?.[0] || null;
 }
 
-export async function fetchStudySession(themeId: string) {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  const { data: sessions } = await supabaseAdmin
-    .from('sessions')
-    .select('*')
-    .eq('theme_id', themeId)
-    .eq('user_id', session.user.id)
-    .order('created_at', { ascending: false })
-    .limit(1);
-  return sessions?.[0] || null;
-}
-
-export async function fetchStudyCards(sessionId: string) {
-  const { data } = await supabaseAdmin
-    .from('session_cards')
-    .select('*, cards(*)')
-    .eq('session_id', sessionId)
-    .order('seen_at', { ascending: true })
-    .limit(50);
-  return data?.map((d) => d.cards).filter(Boolean) || [];
-}
-
 export async function fetchTheme(themeId: string) {
   const session = await auth();
   if (!session?.user?.id) return null;

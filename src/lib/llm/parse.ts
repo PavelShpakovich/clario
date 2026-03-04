@@ -103,3 +103,13 @@ export function parseLlmOutput(raw: string): CardsOutput {
   logger.info({ cardCount: result.data.length }, 'Parse: Success');
   return result.data;
 }
+
+export function extractArrayFromObject(raw: string): string {
+  try {
+    const obj = JSON.parse(raw) as Record<string, unknown>;
+    const arrayValue = Object.values(obj).find(Array.isArray);
+    return arrayValue ? JSON.stringify(arrayValue) : raw;
+  } catch {
+    return raw;
+  }
+}

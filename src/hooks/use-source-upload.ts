@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import type { Database } from '@/lib/supabase/types';
 import { sourcesApi } from '@/services/sources-api';
+import { isYoutubeUrl } from '@/lib/utils';
 
 type DataSource = Database['public']['Tables']['data_sources']['Row'];
 
@@ -97,8 +98,7 @@ export function useSourceUpload(themeId: string) {
         setIsUploading(true);
         setError(null);
 
-        const sourceType =
-          url.includes('youtube.com') || url.includes('youtu.be') ? 'youtube' : 'url';
+        const sourceType = isYoutubeUrl(url) ? 'youtube' : 'url';
 
         const source = await sourcesApi.create({
           themeId,

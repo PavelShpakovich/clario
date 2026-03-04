@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Wand2, PenLine } from 'lucide-react';
+import { CARD_COUNT_OPTIONS } from '@/lib/constants';
 
 import { useAuth } from '@/hooks/use-auth';
 import { themeApi } from '@/services/theme-api';
@@ -23,8 +24,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-
-const CARD_COUNT_OPTIONS = [5, 10, 15, 20];
 
 const themeSchema = z.object({
   name: z.string().min(1, 'Theme name is required').max(100),

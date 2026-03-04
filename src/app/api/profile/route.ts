@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/api/auth';
 import { auth } from '@/auth';
 import { ValidationError } from '@/lib/errors';
 import { getCacheHeaders, CACHE_PRESETS } from '@/lib/cache-utils';
+import { deriveDisplayNameFromEmail } from '@/lib/auth/utils';
 
 const updateProfileSchema = z.object({
   displayName: z.string().trim().min(1).max(100).optional(),
@@ -17,14 +18,14 @@ export const GET = withApiHandler(async () => {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('display_name, telegram_id, ui_language')
+    .select('display_name, telegram_id, ui_language, streak_count')
     .eq('id', user.id)
     .maybeSingle();
 
   if (!profile) {
     const fallbackDisplayName =
       session?.user?.name ||
-      (session?.user?.email ? session.user.email.split('@')[0] : null) ||
+      deriveDisplayNameFromEmail(session?.user?.email) ||
       (user.id ? user.id.slice(0, 8) : 'User');
 
     const { data: createdProfile, error: createError } = await supabase
@@ -34,17 +35,14 @@ export const GET = withApiHandler(async () => {
         display_name: fallbackDisplayName,
         ui_language: 'en',
       })
-      .select('display_name, telegram_id, ui_language')
+      .select('display_name, telegram_id, ui_language, streak_count')
       .single();
 
     if (createError ?? !createdProfile) {
       throw createError ?? new Error('Failed to create profile');
     }
 
-    const response = NextResponse.json({
-      ...createdProfile,
-      streak_count: 0,
-    });
+    const response = NextResponse.json(createdProfile);
 
     // Add cache headers
     Object.entries(getCacheHeaders(CACHE_PRESETS.userProfile)).forEach(([key, value]) =>
@@ -54,10 +52,7 @@ export const GET = withApiHandler(async () => {
     return response;
   }
 
-  const response = NextResponse.json({
-    ...profile,
-    streak_count: 0,
-  });
+  const response = NextResponse.json(profile);
 
   // Add cache headers
   Object.entries(getCacheHeaders(CACHE_PRESETS.userProfile)).forEach(([key, value]) =>
@@ -92,15 +87,12 @@ export const PATCH = withApiHandler(async (req) => {
   const { data: updatedProfile, error } = await supabase
     .from('profiles')
     .upsert(updateData, { onConflict: 'id' })
-    .select('display_name, telegram_id, ui_language')
+    .select('display_name, telegram_id, ui_language, streak_count')
     .single();
 
   if (error ?? !updatedProfile) {
     throw error ?? new Error('Failed to update profile');
   }
 
-  return NextResponse.json({
-    ...updatedProfile,
-    streak_count: 0,
-  });
+  return NextResponse.json(updatedProfile);
 });

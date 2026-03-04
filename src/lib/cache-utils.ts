@@ -9,6 +9,8 @@ export interface CacheConfig {
   staleWhileRevalidate?: number; // Stale-while-revalidate duration
   revalidate?: number; // Next.js ISR revalidate time
   tags?: readonly string[]; // Revalidation tags for on-demand revalidation
+  /** When true, emits `private` instead of `public` — prevents CDN caching of user-specific data */
+  private?: boolean;
 }
 
 /**
@@ -19,10 +21,19 @@ export interface CacheConfig {
  * const headers = getCacheHeaders({ maxAge: 300, sMaxAge: 3600 });
  */
 export function getCacheHeaders(config: CacheConfig = {}): Record<string, string> {
-  const { maxAge = 60, sMaxAge = 3600, staleWhileRevalidate = 86400 } = config;
+  const {
+    maxAge = 60,
+    sMaxAge = 3600,
+    staleWhileRevalidate = 86400,
+    private: isPrivate = false,
+  } = config;
+  const scope = isPrivate ? 'private' : 'public';
+  const sMaxAgePart = isPrivate
+    ? ''
+    : `, s-maxage=${sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`;
 
   return {
-    'Cache-Control': `public, max-age=${maxAge}, s-maxage=${sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`,
+    'Cache-Control': `${scope}, max-age=${maxAge}${sMaxAgePart}`,
   };
 }
 
@@ -30,35 +41,31 @@ export function getCacheHeaders(config: CacheConfig = {}): Record<string, string
  * Get recommended cache settings for different data types
  */
 export const CACHE_PRESETS = {
-  // User profile - changes infrequently
+  // User profile - changes infrequently, user-specific → never CDN-cached
   userProfile: {
+    private: true,
     maxAge: 300, // 5 minutes
-    sMaxAge: 3600, // 1 hour
-    staleWhileRevalidate: 86400, // 1 day
     tags: ['user-profile'],
   },
 
-  // Themes - changes on user action
+  // Themes - changes on user action, user-specific → never CDN-cached
   userThemes: {
+    private: true,
     maxAge: 60, // 1 minute
-    sMaxAge: 300, // 5 minutes
-    staleWhileRevalidate: 3600, // 1 hour
     tags: ['user-themes'],
   },
 
-  // Study sessions - real-time data
+  // Study sessions - real-time data, user-specific → never CDN-cached
   studySession: {
-    maxAge: 0, // No browser cache
-    sMaxAge: 30, // 30 seconds server cache
-    staleWhileRevalidate: 300, // 5 minutes
+    private: true,
+    maxAge: 0,
     tags: ['study-session'],
   },
 
-  // Cards - frequently updated
+  // Cards - frequently updated, user-specific → never CDN-cached
   cards: {
+    private: true,
     maxAge: 0,
-    sMaxAge: 60, // 1 minute
-    staleWhileRevalidate: 600, // 10 minutes
     tags: ['cards'],
   },
 

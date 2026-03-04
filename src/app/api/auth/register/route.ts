@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
+import { deriveDisplayNameFromEmail } from '@/lib/auth/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Create profile
     const { error: profileError } = await supabaseAdmin.from('profiles').insert({
       id: data.user.id,
-      display_name: data.user.email?.split('@')[0] || 'User',
+      display_name: deriveDisplayNameFromEmail(data.user.email),
     });
 
     if (profileError) {

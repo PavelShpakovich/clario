@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { CARD_COUNT_OPTIONS } from '@/lib/constants';
 import {
   Upload,
   FileText,
@@ -16,7 +17,6 @@ import {
   Loader,
   Settings,
   Database,
-  ArrowLeft,
   Trash2,
 } from 'lucide-react';
 
@@ -551,7 +551,7 @@ export default function EditThemePage({ params }: EditThemePageProps) {
                   <div>
                     <Label className="mb-3 block">{t('themes.cardCount')}</Label>
                     <div className="flex gap-2">
-                      {[5, 10, 15, 20].map((n) => (
+                      {CARD_COUNT_OPTIONS.map((n) => (
                         <button
                           key={n}
                           onClick={() => setCardCount(n)}

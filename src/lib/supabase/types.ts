@@ -241,5 +241,4 @@ export type ThemeRow = Tables<'themes'>;
 export type DataSourceRow = Tables<'data_sources'>;
 export type SessionRow = Tables<'sessions'>;
 export type SessionCardRow = Tables<'session_cards'>;
-export type BookmarkedCardRow = Tables<'bookmarked_cards'>;
 export type ProfileRow = Tables<'profiles'>;

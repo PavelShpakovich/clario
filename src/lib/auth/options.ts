@@ -4,6 +4,7 @@ import { decode as nextAuthJwtDecode, encode as nextAuthJwtEncode } from 'next-a
 import { createHmac } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { env } from '@/lib/env';
+import { deriveDisplayNameFromEmail } from '@/lib/auth/utils';
 
 declare module 'next-auth' {
   interface User {
@@ -117,14 +118,14 @@ export const authOptions: NextAuthOptions = {
           await supabaseAdmin.from('profiles').insert({
             id: data.user.id,
             telegram_id: null,
-            display_name: data.user.email?.split('@')[0] || 'User',
+            display_name: deriveDisplayNameFromEmail(data.user.email),
           });
         }
 
         return {
           id: data.user.id,
           email: data.user.email,
-          name: profile?.display_name || data.user.email?.split('@')[0] || 'User',
+          name: profile?.display_name || deriveDisplayNameFromEmail(data.user.email),
         };
       },
     }),
