@@ -30,7 +30,9 @@ export function DashboardClient({
   const t = useTranslations();
   const [themes, setThemes] = useState(initialThemes);
   const [themeToDelete, setThemeToDelete] = useState<Theme | null>(null);
+  const [showDeleteAllThemes, setShowDeleteAllThemes] = useState(false);
   const [togglingPrivacy, setTogglingPrivacy] = useState<string | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   const isTg = isTelegramWebApp();
 
   const handleDelete = async () => {
@@ -44,6 +46,22 @@ export function DashboardClient({
       toast.error(t('messages.failedDelete'));
     } finally {
       setThemeToDelete(null);
+    }
+  };
+
+  const handleDeleteAllThemes = async () => {
+    if (themes.length === 0) return;
+    setIsDeletingAll(true);
+    try {
+      const deletePromises = themes.map((theme) => themeApi.deleteTheme(theme.id));
+      await Promise.all(deletePromises);
+      setThemes([]);
+      toast.success(t('messages.allThemesDeleted'));
+      setShowDeleteAllThemes(false);
+    } catch {
+      toast.error(t('messages.failedDeleteAll'));
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -106,6 +124,27 @@ export function DashboardClient({
         <TabsContent value="community">{renderThemeList(publicThemes, false)}</TabsContent>
       </Tabs>
 
+      {themes.length > 0 && (
+        <div className="mt-10 pt-10 border-t border-border">
+          <h3 className="text-lg font-semibold text-destructive mb-4">
+            {t('dialog.deleteAllThemes')}
+          </h3>
+          <div className="bg-red-50 dark:bg-red-950/20 p-4 rounded-lg border border-red-200 dark:border-red-900 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-red-800 dark:text-red-100">
+              {t('dialog.deleteAllThemesDescription')}
+            </p>
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteAllThemes(true)}
+              disabled={isDeletingAll}
+              className="shrink-0"
+            >
+              {isDeletingAll ? t('buttons.deleting') : t('buttons.deleteAll')}
+            </Button>
+          </div>
+        </div>
+      )}
+
       <ConfirmationDialog
         open={!!themeToDelete}
         onOpenChange={(open) => {
@@ -114,6 +153,18 @@ export function DashboardClient({
         onConfirm={() => void handleDelete()}
         title={t('dialog.deleteTheme')}
         description={t('dialog.deleteThemeDescription')}
+        confirmLabel={t('dialog.delete')}
+        cancelLabel={t('dialog.cancel')}
+      />
+
+      <ConfirmationDialog
+        open={showDeleteAllThemes}
+        onOpenChange={(open) => {
+          if (!open) setShowDeleteAllThemes(false);
+        }}
+        onConfirm={() => void handleDeleteAllThemes()}
+        title={t('dialog.deleteAllThemes')}
+        description={t('dialog.deleteAllThemesDescription')}
         confirmLabel={t('dialog.delete')}
         cancelLabel={t('dialog.cancel')}
       />

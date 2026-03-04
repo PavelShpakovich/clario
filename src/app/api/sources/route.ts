@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import * as mammoth from 'mammoth';
+import PDFParser from 'pdf2json';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
 import { ValidationError } from '@/lib/errors';
@@ -101,29 +103,103 @@ async function handleFileUpload(req: Request, userId: string): Promise<NextRespo
 
   const type = typeRaw as 'pdf' | 'docx';
   const buffer = Buffer.from(await file.arrayBuffer());
-  const storagePath = `${userId}/${themeId}/${Date.now()}-${file.name}`;
 
-  // Upload to Supabase Storage
-  const { error: storageError } = await supabaseAdmin.storage
-    .from('sources')
-    .upload(storagePath, buffer, { contentType: file.type });
+  // For DOCX, extract text immediately
+  if (type === 'docx') {
+    let extractedText: string;
+    try {
+      extractedText = await extractDocxText(buffer);
+    } catch (error) {
+      throw new ValidationError({
+        message: `Failed to extract text from DOCX: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    }
 
-  if (storageError) throw storageError;
+    if (!extractedText || extractedText.trim().length === 0) {
+      throw new ValidationError({ message: 'No text could be extracted from the DOCX file' });
+    }
 
-  const { data: source, error } = await supabaseAdmin
-    .from('data_sources')
-    .insert({
-      user_id: userId,
-      theme_id: themeId,
-      type,
-      name,
-      storage_path: storagePath,
-      status: 'pending',
-    })
-    .select()
-    .single();
+    const { data: source, error } = await supabaseAdmin
+      .from('data_sources')
+      .insert({
+        user_id: userId,
+        theme_id: themeId,
+        type,
+        name,
+        extracted_text: extractedText,
+        status: 'ready',
+      })
+      .select()
+      .single();
 
-  if (error ?? !source) throw error ?? new Error('Failed to create source');
+    if (error ?? !source) throw error ?? new Error('Failed to create source');
+    return NextResponse.json({ source }, { status: 201 });
+  }
 
-  return NextResponse.json({ source }, { status: 201 });
+  // For PDF, extract text immediately
+  if (type === 'pdf') {
+    let extractedText: string;
+    try {
+      extractedText = await extractPdfText(buffer);
+    } catch (error) {
+      throw new ValidationError({
+        message: `Failed to extract text from PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    }
+
+    if (!extractedText || extractedText.trim().length === 0) {
+      throw new ValidationError({ message: 'No text could be extracted from the PDF file' });
+    }
+
+    const { data: source, error } = await supabaseAdmin
+      .from('data_sources')
+      .insert({
+        user_id: userId,
+        theme_id: themeId,
+        type,
+        name,
+        extracted_text: extractedText,
+        status: 'ready',
+      })
+      .select()
+      .single();
+
+    if (error ?? !source) throw error ?? new Error('Failed to create source');
+    return NextResponse.json({ source }, { status: 201 });
+  }
+
+  throw new ValidationError({ message: `Unknown file type: ${type}` });
+}
+
+async function extractDocxText(buffer: Buffer): Promise<string> {
+  try {
+    const result = await mammoth.extractRawText({ buffer });
+    return result.value.trim();
+  } catch (error) {
+    throw new Error(
+      `DOCX extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
+  }
+}
+
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  return new Promise((resolve, reject) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pdfParser = new (PDFParser as any)(null, 1);
+
+      pdfParser.on('pdfParser_dataError', (errData: { parserError?: { message?: string } }) => {
+        reject(new Error(errData.parserError?.message || 'Unknown PDF parsing error'));
+      });
+
+      pdfParser.on('pdfParser_dataReady', () => {
+        const text = pdfParser.getRawTextContent();
+        resolve(text.trim());
+      });
+
+      pdfParser.parseBuffer(buffer);
+    } catch (error) {
+      reject(error);
+    }
+  });
 }

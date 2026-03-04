@@ -7,15 +7,28 @@ export class PdfExtractor implements Extractor {
       throw new ValidationError({ message: 'PDF extractor requires a buffer' });
     }
 
-    // Dynamic import to keep `pdf-parse` out of the client bundle.
-    const pdfModule = await import('pdf-parse');
-    const pdfParse = ('default' in pdfModule ? pdfModule.default : pdfModule) as unknown as (
-      buffer: Buffer,
-    ) => Promise<{ text: string }>;
+    // Make sure we use an import compatible with Node/Next boundary
+    const PDFParserModule = await import('pdf2json');
+    const PDFParser = (
+      'default' in PDFParserModule ? PDFParserModule.default : PDFParserModule
+    ) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-    let data: { text: string };
+    let text: string;
     try {
-      data = await pdfParse(input.buffer);
+      text = await new Promise<string>((resolve, reject) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pdfParser = new (PDFParser as any)(null, 1);
+
+        pdfParser.on('pdfParser_dataError', (errData: { parserError?: { message?: string } }) => {
+          reject(new Error(errData.parserError?.message || 'Unknown PDF parsing error'));
+        });
+
+        pdfParser.on('pdfParser_dataReady', () => {
+          resolve((pdfParser.getRawTextContent() as string).trim());
+        });
+
+        pdfParser.parseBuffer(input.buffer!);
+      });
     } catch (err) {
       throw new IngestionError({
         message: 'Failed to parse PDF',
@@ -23,7 +36,6 @@ export class PdfExtractor implements Extractor {
       });
     }
 
-    const text = data.text.trim();
     if (!text) {
       throw new IngestionError({ message: 'PDF contains no extractable text' });
     }

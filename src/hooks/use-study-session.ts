@@ -55,9 +55,17 @@ export function useStudySession(themeId: string) {
       try {
         const data = await studyApi.fetchCards(sessionId, themeId, options);
 
+        console.log('[fetchCardsForSession] API returned', data.cards.length, 'cards');
+
         setCards((prev) => {
           const existing = new Set(prev.map((c) => c.id));
           const toAdd = data.cards.filter((c) => !existing.has(c.id));
+          console.log(
+            '[fetchCardsForSession] Adding',
+            toAdd.length,
+            'new cards, total now:',
+            prev.length + toAdd.length,
+          );
           return [...prev, ...toAdd];
         });
 

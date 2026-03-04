@@ -264,11 +264,7 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
       {cards.length === 0 && !isInitialLoading && isGenerating && <StudyGeneratingScreen />}
 
       {cards.map((card) => (
-        <div
-          key={card.id}
-          data-card-id={card.id}
-          className="w-full h-screen snap-start snap-always"
-        >
+        <div key={card.id} className="w-full min-h-screen snap-start snap-always">
           <InfoCard card={card} fontSize={fontSize} />
         </div>
       ))}

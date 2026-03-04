@@ -139,7 +139,7 @@ export default function RegisterPage() {
           <div className="mt-6 space-y-2 text-center text-sm">
             <p className="text-gray-600">
               {t('auth.haveAccount')}{' '}
-              <Link href="/login" className="font-semibold text-blue-600 hover:underline">
+              <Link href="/login" className="font-semibold text-primary hover:underline">
                 {t('auth.signInLink')}
               </Link>
             </p>

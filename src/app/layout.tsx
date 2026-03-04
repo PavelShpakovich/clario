@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
          */}
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
       </head>
-      <body className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 antialiased">
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <Suspense fallback={<div />}>
           <RootProvidersWrapper>
             <Header />

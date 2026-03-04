@@ -7,7 +7,7 @@ import { createSupabaseClient } from '@/lib/supabase/client';
 function Spinner() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4">
-      <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       <p className="text-sm text-gray-500">Completing sign-in…</p>
     </main>
   );

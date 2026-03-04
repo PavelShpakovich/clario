@@ -86,7 +86,7 @@ export default function LoginPage() {
   if (sessionLoading || isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -148,7 +148,7 @@ export default function LoginPage() {
           <div className="mt-6 space-y-2 text-center text-sm">
             <p className="text-gray-600">
               {t('auth.noAccount')}{' '}
-              <Link href="/register" className="font-semibold text-blue-600 hover:underline">
+              <Link href="/register" className="font-semibold text-primary hover:underline">
                 {t('auth.signUpLink')}
               </Link>
             </p>

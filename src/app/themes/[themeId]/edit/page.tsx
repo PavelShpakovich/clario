@@ -261,13 +261,23 @@ export default function EditThemePage({ params }: EditThemePageProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ready':
-        return <Badge className="bg-green-100 text-green-800">{t('sources.statusReady')}</Badge>;
+        return (
+          <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
+            {t('sources.statusReady')}
+          </Badge>
+        );
       case 'processing':
-        return <Badge className="bg-blue-100 text-blue-800">{t('sources.statusProcessing')}</Badge>;
+        return (
+          <Badge className="bg-primary/10 text-primary">{t('sources.statusProcessing')}</Badge>
+        );
       case 'error':
-        return <Badge className="bg-red-100 text-red-800">{t('sources.statusError')}</Badge>;
+        return (
+          <Badge className="bg-destructive/10 text-destructive">{t('sources.statusError')}</Badge>
+        );
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{t('sources.statusPending')}</Badge>;
+        return (
+          <Badge className="bg-muted text-muted-foreground">{t('sources.statusPending')}</Badge>
+        );
     }
   };
 
@@ -331,9 +341,11 @@ export default function EditThemePage({ params }: EditThemePageProps) {
 
         <TabsContent value="content" className="space-y-6">
           {(error || localError) && (
-            <Alert className="mb-6 border-red-200 bg-red-50">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-700">{error || localError}</AlertDescription>
+            <Alert className="mb-6 border-destructive/30 bg-destructive/10">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              <AlertDescription className="text-destructive">
+                {error || localError}
+              </AlertDescription>
             </Alert>
           )}
 
@@ -668,12 +680,12 @@ export default function EditThemePage({ params }: EditThemePageProps) {
                 </form>
               </Form>
 
-              <div className="mt-10 pt-10 border-t border-gray-200 dark:border-gray-800">
-                <h3 className="text-lg font-semibold text-red-600 mb-4">
+              <div className="mt-10 pt-10 border-t border-border">
+                <h3 className="text-lg font-semibold text-destructive mb-4">
                   {t('dialog.deleteTheme')}
                 </h3>
                 <div className="bg-red-50 dark:bg-red-950/20 p-4 rounded-lg border border-red-200 dark:border-red-900 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-red-800 dark:text-red-300">
+                  <p className="text-sm text-red-800 dark:text-red-100">
                     {t('dialog.deleteThemeDescription')}
                   </p>
                   <Button

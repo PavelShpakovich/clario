@@ -87,7 +87,7 @@ export default function TelegramEntryPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-      <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       <p className="text-sm text-gray-500">
         {phase === 'detecting' ? t('telegram.starting') : t('telegram.signingYouIn')}
       </p>

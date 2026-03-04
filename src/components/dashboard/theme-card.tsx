@@ -82,7 +82,7 @@ export function ThemeCard({
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-red-600 hover:text-red-700"
+            className="w-full text-destructive dark:text-destructive-foreground hover:text-destructive dark:hover:text-destructive-foreground"
             onClick={() => onDelete(theme)}
           >
             <Trash2 className="h-4 w-4 mr-2" />

@@ -14,36 +14,21 @@ interface InfoCardProps {
 
 const FONT_CONFIG = [
   // 0 — small
-  {
-    title: 'text-lg md:text-xl',
-    body: 'prose-p:text-sm prose-li:text-sm prose-h2:text-sm prose-h3:text-xs',
-  },
+  { title: 'text-lg md:text-xl', container: 'text-sm' },
   // 1 — default
-  {
-    title: 'text-2xl md:text-3xl',
-    body: 'prose-p:text-base md:prose-p:text-lg prose-li:text-base md:prose-li:text-lg prose-h2:text-lg md:prose-h2:text-xl prose-h3:text-base md:prose-h3:text-lg',
-  },
+  { title: 'text-2xl md:text-3xl', container: 'text-base' },
   // 2 — large
-  {
-    title: 'text-3xl md:text-4xl',
-    body: 'prose-p:text-lg md:prose-p:text-xl prose-li:text-lg md:prose-li:text-xl prose-h2:text-xl md:prose-h2:text-2xl prose-h3:text-lg md:prose-h3:text-xl',
-  },
+  { title: 'text-3xl md:text-4xl', container: 'text-lg' },
   // 3 — extra-large
-  {
-    title: 'text-4xl md:text-5xl',
-    body: 'prose-p:text-xl md:prose-p:text-2xl prose-li:text-xl md:prose-li:text-2xl prose-h2:text-2xl md:prose-h2:text-3xl prose-h3:text-xl md:prose-h3:text-2xl',
-  },
+  { title: 'text-4xl md:text-5xl', container: 'text-xl' },
 ] as const;
 
 export function InfoCard({ card, fontSize = 1 }: InfoCardProps) {
   const cfg = FONT_CONFIG[fontSize];
   return (
-    <div
-      className="w-full h-full flex flex-col bg-background relative overflow-hidden"
-      data-card-id={card.id}
-    >
-      {/* Scrollable body — title inline with content */}
-      <div className="flex-1 overflow-y-auto px-5 py-6 pt-6 md:px-10 md:py-8 md:pt-10 touch-pan-y overscroll-contain">
+    <div className="w-full flex flex-col bg-background relative" data-card-id={card.id}>
+      {/* Content — flows naturally, no inner scroll */}
+      <div className={`px-5 py-6 pt-6 md:px-10 md:py-8 md:pt-10 ${cfg.container}`}>
         <div className="max-w-3xl mx-auto pb-28 md:pb-28">
           {/* Title */}
           <h1 className={`${cfg.title} font-bold text-foreground mb-4 md:mb-6 leading-snug`}>
@@ -53,7 +38,6 @@ export function InfoCard({ card, fontSize = 1 }: InfoCardProps) {
           {/* Markdown body */}
           <div
             className={`prose dark:prose-invert max-w-none
-            ${cfg.body}
             prose-p:text-foreground/80 prose-p:leading-relaxed
             prose-headings:font-semibold prose-headings:text-foreground prose-headings:mt-6 prose-headings:mb-2
             prose-h2:border-b prose-h2:border-border prose-h2:pb-1
