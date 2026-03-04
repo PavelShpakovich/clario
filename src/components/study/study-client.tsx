@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { InfoCard } from '@/components/info-card';
 import { useStudySession } from '@/hooks/use-study-session';
@@ -19,8 +20,14 @@ interface StudyClientProps {
   isOwner?: boolean;
 }
 
+const STUDY_ERROR_KEYS: Record<string, string> = {
+  GENERATION_FAILED: 'study.generationFailed',
+  LOAD_FAILED: 'study.loadFailed',
+};
+
 export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
   const t = useTranslations();
+  const router = useRouter();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const seenIdsRef = useRef<Set<string>>(new Set());
   const triggerFetchedAtRef = useRef<number>(-1);
@@ -153,13 +160,20 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
   }, [currentCardIndex, cards.length, infiniteMode, session?.id, isGenerating, fetchCards]);
 
   if (error) {
+    const errorKey = STUDY_ERROR_KEYS[error];
+    const errorMessage = errorKey ? t(errorKey) : error;
     return (
       <main className="fixed inset-0 z-50 flex items-center justify-center bg-background">
-        <div className="text-center px-6">
-          <p role="alert" className="mb-4 text-destructive font-semibold">
-            {error}
+        <div className="text-center px-6 max-w-sm">
+          <p role="alert" className="mb-6 text-destructive font-semibold">
+            {errorMessage}
           </p>
-          <Button onClick={() => void fetchCards()}>{t('study.retry')}</Button>
+          <div className="flex gap-3 justify-center">
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+              {t('study.cancel')}
+            </Button>
+            <Button onClick={() => void fetchCards()}>{t('study.retry')}</Button>
+          </div>
         </div>
       </main>
     );

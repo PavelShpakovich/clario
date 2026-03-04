@@ -110,7 +110,10 @@
     "backToDashboard": "Back to Dashboard",
     "readOnly": "Read-only view",
     "decreaseFontSize": "Decrease font size",
-    "increaseFontSize": "Increase font size"
+    "increaseFontSize": "Increase font size",
+    "generationFailed": "Generation failed. Please wait a minute before retrying.",
+    "loadFailed": "Failed to load cards. Please try again.",
+    "cancel": "Cancel"
   },
   "themes": {
     "heading": "Themes",

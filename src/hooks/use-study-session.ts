@@ -58,7 +58,7 @@ export function useStudySession(themeId: string) {
         setIsGenerating(data.generating);
 
         if (data.generationFailed) {
-          setError('Generation failed. Please wait a minute before retrying.');
+          setError('GENERATION_FAILED');
         } else {
           setError(null);
         }
@@ -67,7 +67,7 @@ export function useStudySession(themeId: string) {
         return data;
       } catch (err) {
         setIsInitialLoading(false);
-        setError(err instanceof Error ? err.message : 'Failed to load cards');
+        setError(err instanceof Error ? err.message : 'LOAD_FAILED');
         return null;
       }
     },
@@ -101,7 +101,7 @@ export function useStudySession(themeId: string) {
         }
       } catch (err) {
         setIsInitialLoading(false);
-        setError(err instanceof Error ? err.message : 'Failed to initialize session');
+        setError(err instanceof Error ? err.message : 'LOAD_FAILED');
       }
     };
 
@@ -148,7 +148,7 @@ export function useStudySession(themeId: string) {
         setIsGenerating(data.generating);
 
         if (data.generationFailed) {
-          setError('Generation failed. Please wait a minute before retrying.');
+          setError('GENERATION_FAILED');
         } else {
           setError(null);
         }
