@@ -161,6 +161,8 @@
   "dialog": {
     "deleteTheme": "Delete theme",
     "deleteThemeDescription": "Are you sure you want to delete this theme? This action cannot be undone.",
+    "deleteSource": "Delete source",
+    "deleteSourceDescription": "Are you sure you want to delete \u201c{name}\u201d? This cannot be undone and may affect card generation.",
     "delete": "Delete",
     "confirm": "Confirm",
     "cancel": "Cancel"
@@ -209,6 +211,8 @@
     "uploadTextError": "Failed to upload text",
     "addUrlError": "Failed to add URL source",
     "uploadFileError": "Failed to upload file",
+    "deleteSuccess": "Source deleted",
+    "deleteError": "Failed to delete source",
     "emptyText": "Please enter some text content",
     "emptyUrl": "Please enter a URL",
     "emptyFile": "Please select a file"

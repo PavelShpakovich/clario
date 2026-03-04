@@ -73,6 +73,7 @@ export default function EditThemePage({ params }: EditThemePageProps) {
   const [theme, setTheme] = useState<Theme | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [themeToDelete, setThemeToDelete] = useState<Theme | null>(null);
+  const [sourceToDelete, setSourceToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Upload State
   const [textContent, setTextContent] = useState('');
@@ -124,6 +125,17 @@ export default function EditThemePage({ params }: EditThemePageProps) {
       void fetchTheme();
     }
   }, [themeId, form, router, t]);
+
+  const handleDeleteSource = async (sourceId: string) => {
+    try {
+      await deleteSource(sourceId);
+      toast.success(t('sources.deleteSuccess'));
+    } catch {
+      toast.error(t('sources.deleteError'));
+    } finally {
+      setSourceToDelete(null);
+    }
+  };
 
   // Handlers for Settings
   async function onSettingsSubmit(values: ThemeFormValues) {
@@ -543,15 +555,27 @@ export default function EditThemePage({ params }: EditThemePageProps) {
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             {getStatusBadge(source.status)}
-                            {source.status === 'error' && (
+                            {source.status === 'error' ? (
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => void deleteSource(source.id)}
+                                onClick={() => void handleDeleteSource(source.id)}
                                 className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                 title={t('buttons.delete')}
                               >
                                 <X className="h-3.5 w-3.5" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  setSourceToDelete({ id: source.id, name: source.name })
+                                }
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                title={t('buttons.delete')}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </div>
@@ -706,6 +730,18 @@ export default function EditThemePage({ params }: EditThemePageProps) {
         onConfirm={() => void handleDeleteTheme()}
         title={t('dialog.deleteTheme')}
         description={t('dialog.deleteThemeDescription')}
+        confirmLabel={t('dialog.delete')}
+        cancelLabel={t('dialog.cancel')}
+      />
+
+      <ConfirmationDialog
+        open={!!sourceToDelete}
+        onOpenChange={(open) => {
+          if (!open) setSourceToDelete(null);
+        }}
+        onConfirm={() => sourceToDelete && void handleDeleteSource(sourceToDelete.id)}
+        title={t('dialog.deleteSource')}
+        description={t('dialog.deleteSourceDescription', { name: sourceToDelete?.name ?? '' })}
         confirmLabel={t('dialog.delete')}
         cancelLabel={t('dialog.cancel')}
       />
