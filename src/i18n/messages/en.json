@@ -113,7 +113,11 @@
     "increaseFontSize": "Increase font size",
     "generationFailed": "Generation failed. Please wait a minute before retrying.",
     "loadFailed": "Failed to load cards. Please try again.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "resumeTitle": "Welcome back!",
+    "resumePrompt": "You've seen {count} of {total} cards in this session.",
+    "resumeContinue": "Continue from card {number}",
+    "resumeStartOver": "Start from beginning"
   },
   "themes": {
     "heading": "Themes",

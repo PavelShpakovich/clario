@@ -30,6 +30,7 @@ export function useStudySession(themeId: string) {
 
   const [cards, setCards] = useState<Card[]>([]);
   const [studySession, setStudySession] = useState<{ id: string } | null>(null);
+  const [seenCardIds, setSeenCardIds] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isManualGenerating, setIsManualGenerating] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -86,6 +87,7 @@ export function useStudySession(themeId: string) {
         const data = await studyApi.initSession(themeId);
         const createdSession = { id: data.sessionId };
         setStudySession(createdSession);
+        setSeenCardIds(data.seenCardIds);
 
         const initialData = await fetchCardsForSession(data.sessionId, {
           triggerGeneration: false,
@@ -232,6 +234,7 @@ export function useStudySession(themeId: string) {
   return {
     cards,
     session: studySession,
+    seenCardIds,
     isGenerating,
     isManualGenerating,
     isInitialLoading,

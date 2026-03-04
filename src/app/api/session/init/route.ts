@@ -31,7 +31,16 @@ export const POST = withApiHandler(async (req) => {
     .maybeSingle();
 
   if (existingSession) {
-    return NextResponse.json({ sessionId: existingSession.id });
+    const { data: seenCards } = await supabase
+      .from('session_cards')
+      .select('card_id')
+      .eq('session_id', existingSession.id)
+      .order('seen_at', { ascending: true });
+
+    return NextResponse.json({
+      sessionId: existingSession.id,
+      seenCardIds: seenCards?.map((sc) => sc.card_id) ?? [],
+    });
   }
 
   // Update streak if this is the first session of the day
@@ -94,7 +103,7 @@ export const POST = withApiHandler(async (req) => {
   }
 
   return NextResponse.json(
-    { sessionId: session.id },
+    { sessionId: session.id, seenCardIds: [] },
     { status: 201, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } },
   );
 });

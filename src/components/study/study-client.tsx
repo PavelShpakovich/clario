@@ -29,6 +29,7 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
   const t = useTranslations();
   const router = useRouter();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [resumeDismissed, setResumeDismissed] = useState(false);
   const seenIdsRef = useRef<Set<string>>(new Set());
   const triggerFetchedAtRef = useRef<number>(-1);
   const {
@@ -42,6 +43,7 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
   const {
     cards,
     session,
+    seenCardIds,
     isGenerating,
     isManualGenerating,
     isInitialLoading,
@@ -61,6 +63,26 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
       setInfiniteMode(false);
     }
   }, [isOwner, infiniteMode, setInfiniteMode]);
+
+  // Compute resume index: first card after the last seen card in deck order
+  const resumeIndex = (() => {
+    if (seenCardIds.length === 0 || cards.length === 0) return 0;
+    const seenSet = new Set(seenCardIds);
+    let lastSeenIdx = -1;
+    for (let i = 0; i < cards.length; i++) {
+      if (seenSet.has(cards[i].id)) lastSeenIdx = i;
+    }
+    return lastSeenIdx + 1;
+  })();
+
+  // Show resume prompt when cards are ready, there's a valid resume position, and user hasn't dismissed
+  const showResumePrompt =
+    !resumeDismissed &&
+    !isInitialLoading &&
+    cards.length > 0 &&
+    seenCardIds.length > 0 &&
+    resumeIndex > 0 &&
+    resumeIndex < cards.length;
 
   const done = !infiniteMode && cards.length > 0 && !isGenerating && session?.id;
 
@@ -181,6 +203,39 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
 
   if (!session) {
     return <StudyInitialLoadingScreen />;
+  }
+
+  if (showResumePrompt) {
+    return (
+      <main className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+        <div className="text-center px-6 max-w-sm">
+          <p className="mb-2 text-lg font-semibold">{t('study.resumeTitle')}</p>
+          <p className="mb-6 text-sm text-muted-foreground">
+            {t('study.resumePrompt', { count: seenCardIds.length, total: cards.length })}
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button variant="outline" onClick={() => setResumeDismissed(true)}>
+              {t('study.resumeStartOver')}
+            </Button>
+            <Button
+              onClick={() => {
+                setResumeDismissed(true);
+                setTimeout(() => {
+                  const card = cards[resumeIndex];
+                  if (card) {
+                    document
+                      .querySelector(`[data-card-id="${card.id}"]`)
+                      ?.scrollIntoView({ behavior: 'instant' });
+                  }
+                }, 50);
+              }}
+            >
+              {t('study.resumeContinue', { number: resumeIndex + 1 })}
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (

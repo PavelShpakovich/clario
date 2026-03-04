@@ -22,7 +22,7 @@ class StudyApi {
   /**
    * Initialize a study session for a theme
    */
-  async initSession(themeId: string): Promise<{ sessionId: string }> {
+  async initSession(themeId: string): Promise<{ sessionId: string; seenCardIds: string[] }> {
     const res = await fetch('/api/session/init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
