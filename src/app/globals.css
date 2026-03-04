@@ -141,4 +141,21 @@
   body {
     @apply bg-background text-foreground;
   }
+  button,
+  a,
+  [role='button'],
+  [role='tab'],
+  [role='checkbox'],
+  [role='switch'],
+  [role='menuitem'],
+  [role='option'],
+  label[for],
+  select,
+  summary {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
 }

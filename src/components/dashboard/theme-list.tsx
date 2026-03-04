@@ -17,6 +17,7 @@ interface ThemeListProps {
   togglingPrivacy: string | null;
   onPrivacyToggle: (themeId: string, currentIsPublic: boolean) => void;
   onDelete: (theme: Theme) => void;
+  view?: 'grid' | 'list';
 }
 
 export function ThemeList({
@@ -26,6 +27,7 @@ export function ThemeList({
   togglingPrivacy,
   onPrivacyToggle,
   onDelete,
+  view = 'grid',
 }: ThemeListProps) {
   const t = useTranslations();
 
@@ -51,7 +53,11 @@ export function ThemeList({
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div
+      className={
+        view === 'list' ? 'flex flex-col gap-2' : 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'
+      }
+    >
       {themes.map((theme) => (
         <ThemeCard
           key={theme.id}
@@ -61,6 +67,7 @@ export function ThemeList({
           togglingPrivacy={togglingPrivacy}
           onPrivacyToggle={onPrivacyToggle}
           onDelete={onDelete}
+          view={view}
         />
       ))}
     </div>

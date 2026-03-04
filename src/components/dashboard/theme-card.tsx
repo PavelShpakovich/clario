@@ -17,6 +17,7 @@ interface ThemeCardProps {
   togglingPrivacy: string | null;
   onPrivacyToggle: (themeId: string, currentIsPublic: boolean) => void;
   onDelete: (theme: Theme) => void;
+  view?: 'grid' | 'list';
 }
 
 export function ThemeCard({
@@ -26,8 +27,68 @@ export function ThemeCard({
   togglingPrivacy,
   onPrivacyToggle,
   onDelete,
+  view = 'grid',
 }: ThemeCardProps) {
   const t = useTranslations();
+
+  if (view === 'list') {
+    return (
+      <Card className="flex flex-row items-center gap-3 px-4 py-3">
+        {/* Left: title + description */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate font-semibold text-sm text-foreground">{theme.name}</span>
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              {cardCount} {t('dashboard.cards')}
+            </span>
+          </div>
+          {theme.description && (
+            <p className="truncate text-xs text-muted-foreground mt-0.5">{theme.description}</p>
+          )}
+        </div>
+
+        {/* Right: actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          {isOwner && (
+            <div className="flex items-center gap-1">
+              {theme.is_public ? (
+                <Globe className="h-3.5 w-3.5 text-primary" />
+              ) : (
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+              <Switch
+                checked={theme.is_public ?? false}
+                onCheckedChange={() => onPrivacyToggle(theme.id, theme.is_public ?? false)}
+                disabled={togglingPrivacy === theme.id}
+              />
+            </div>
+          )}
+          <Link href={`/study/${theme.id}`}>
+            <Button variant="default" size="sm">
+              {t('buttons.study')}
+            </Button>
+          </Link>
+          {isOwner && (
+            <Link href={`/themes/${theme.id}/edit`}>
+              <Button variant="outline" size="sm">
+                {t('buttons.edit')}
+              </Button>
+            </Link>
+          )}
+          {isOwner && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive dark:text-destructive-foreground hover:text-destructive dark:hover:text-destructive-foreground"
+              onClick={() => onDelete(theme)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="flex flex-col">

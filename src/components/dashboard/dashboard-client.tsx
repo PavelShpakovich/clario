@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { Plus, LayoutGrid, List } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import type { Database } from '@/lib/supabase/types';
@@ -33,7 +33,18 @@ export function DashboardClient({
   const [showDeleteAllThemes, setShowDeleteAllThemes] = useState(false);
   const [togglingPrivacy, setTogglingPrivacy] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const isTg = isTelegramWebApp();
+
+  useEffect(() => {
+    const saved = localStorage.getItem('dashboard_view');
+    if (saved === 'list' || saved === 'grid') setViewMode(saved);
+  }, []);
+
+  const handleViewChange = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('dashboard_view', mode);
+  };
 
   const handleDelete = async () => {
     if (!themeToDelete) return;
@@ -91,6 +102,7 @@ export function DashboardClient({
       togglingPrivacy={togglingPrivacy}
       onPrivacyToggle={(id, current) => void handlePrivacyToggle(id, current)}
       onDelete={(theme) => setThemeToDelete(theme)}
+      view={viewMode}
     />
   );
 
@@ -116,10 +128,32 @@ export function DashboardClient({
       </div>
 
       <Tabs defaultValue="my-themes" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8">
-          <TabsTrigger value="my-themes">{t('dashboard.myThemesTab')}</TabsTrigger>
-          <TabsTrigger value="community">{t('dashboard.communityTab')}</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between mb-8">
+          <TabsList className="grid grid-cols-2">
+            <TabsTrigger value="my-themes">{t('dashboard.myThemesTab')}</TabsTrigger>
+            <TabsTrigger value="community">{t('dashboard.communityTab')}</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-1 rounded-md border p-1">
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => handleViewChange('grid')}
+              aria-label={t('dashboard.gridView')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => handleViewChange('list')}
+              aria-label={t('dashboard.listView')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
         <TabsContent value="my-themes">{renderThemeList(themes, true)}</TabsContent>
         <TabsContent value="community">{renderThemeList(publicThemes, false)}</TabsContent>
       </Tabs>

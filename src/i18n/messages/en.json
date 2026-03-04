@@ -7,14 +7,10 @@
   },
   "navigation": {
     "dashboard": "Dashboard",
-    "study": "Study",
-    "themes": "Themes",
     "settings": "Settings",
-    "profile": "Profile",
     "logout": "Logout",
     "login": "Login",
-    "register": "Sign Up",
-    "myThemes": "My Themes"
+    "register": "Sign Up"
   },
   "buttons": {
     "save": "Save",
@@ -23,19 +19,9 @@
     "deleting": "Deleting…",
     "deleteAll": "Delete All Themes",
     "edit": "Edit",
-    "create": "Create",
-    "submit": "Submit",
     "loading": "Loading...",
-    "tryAgain": "Try Again",
-    "close": "Close",
     "addTheme": "Create Theme",
-    "start": "Start",
     "study": "Study",
-    "view": "View",
-    "download": "Download",
-    "privacy": "Privacy",
-    "deleteTheme": "Delete Theme",
-    "confirmDelete": "Confirm Delete",
     "autoGenerate": "Auto Generate",
     "manual": "Manual",
     "creating": "Creating…",
@@ -47,8 +33,6 @@
   "messages": {
     "success": "Success",
     "error": "Error",
-    "loading": "Loading",
-    "noData": "No data available",
     "themeDeleted": "Theme deleted successfully",
     "failedDelete": "Failed to delete theme",
     "allThemesDeleted": "All themes deleted successfully",
@@ -81,7 +65,9 @@
     "myThemesTab": "My Themes",
     "communityTab": "Community",
     "noCommunityThemes": "No community themes found",
-    "communityEmptyDescription": "Check back later for public themes from the community."
+    "communityEmptyDescription": "Check back later for public themes from the community.",
+    "gridView": "Grid view",
+    "listView": "List view"
   },
   "study": {
     "heading": "Study",
@@ -145,17 +131,6 @@
     "descriptionPlaceholder": "What should the flashcards cover?",
     "languageLocked": "Language cannot be changed after theme creation"
   },
-  "profile": {
-    "heading": "Profile",
-    "displayName": "Display Name",
-    "email": "Email",
-    "telegram": "Telegram",
-    "connected": "Connected",
-    "notConnected": "Not Connected",
-    "language": "UI Language",
-    "streak": "Current Streak",
-    "preferences": "Preferences"
-  },
   "flashcard": {
     "cardBodyLabel": "Card body — press Enter or Space for next card",
     "revealBodyLabel": "Reveal body — press Enter or Space",
@@ -166,6 +141,9 @@
     "revealInstructions": "reveal info",
     "nextInstructions": "go to next card",
     "keyboardHint": "Press Space or Enter to {action}"
+  },
+  "validation": {
+    "passwordTooShort": "Password must be at least 6 characters"
   },
   "dialog": {
     "deleteTheme": "Delete theme",
@@ -236,51 +214,11 @@
     "starting": "Starting…",
     "signingYouIn": "Signing you in…"
   },
-  "sourceLanguage": {
-    "languageNote": "Language Setting",
-    "noteText": "Content from this source will be processed in {language}. Make sure your source material matches the selected theme language for better accuracy.",
-    "noteWarning": "If your content doesn't match the theme language, flashcard generation may be less accurate.",
-    "textLanguageHint": "The text you paste will be processed in {language}",
-    "webLanguageHint": "Content from this webpage will be processed in {language}",
-    "youtubeLanguageHint": "The video transcript will be processed in {language}"
+  "validation": {
+    "passwordTooShort": "Password must be at least 6 characters"
   },
   "settings": {
-    "heading": "Settings",
-    "profile": "Profile",
-    "preferences": "Preferences",
-    "privacy": "Privacy",
-    "data": "Data & Storage",
-    "profileTitle": "Profile Settings",
-    "profileDescription": "Manage your public profile details.",
-    "email": "Email",
-    "displayName": "Display Name",
-    "displayNamePlaceholder": "Your name",
-    "currentStreak": "Current Streak",
-    "streakDescription": "(Consecutive days you've studied)",
-    "saveProfile": "Save Profile",
-    "saving": "Saving...",
-    "security": "Security",
-    "securityDescription": "Update your password.",
-    "newPassword": "New Password",
-    "newPasswordPlaceholder": "Enter new password (min. 6 characters)",
-    "updating": "Updating...",
-    "updatePassword": "Update Password",
-    "displayNameRequired": "Display name is required",
-    "profileUpdated": "Profile updated",
-    "failedUpdateProfile": "Failed to update profile",
-    "passwordUpdated": "Password updated successfully",
-    "failedUpdatePassword": "Failed to update password",
-    "lightMode": "Switch to light mode",
-    "darkMode": "Switch to dark mode"
-  },
-  "validation": {
-    "required": "This field is required",
-    "minLength": "Too short",
-    "maxLength": "Too long",
-    "invalidEmail": "Invalid email address",
-    "passwordMismatch": "Passwords do not match",
-    "themeNameRequired": "Theme name is required",
-    "passwordTooShort": "Password must be at least 6 characters"
+    "profile": "Profile"
   },
   "auth": {
     "loginTitle": "Welcome back",
