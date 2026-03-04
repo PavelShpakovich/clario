@@ -39,6 +39,11 @@ async function getProvider(): Promise<LlmProviderAdapter> {
       _provider = new OllamaProvider();
       break;
     }
+    case 'gemini': {
+      const { GeminiProvider } = await import('@/lib/llm/providers/gemini');
+      _provider = new GeminiProvider();
+      break;
+    }
     case 'mock': {
       const { MockProvider } = await import('@/lib/llm/providers/mock');
       _provider = new MockProvider();

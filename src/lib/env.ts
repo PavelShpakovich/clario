@@ -14,9 +14,11 @@ const envSchema = z.object({
   NEXTAUTH_SECRET: z.string().optional(),
 
   // LLM
-  LLM_PROVIDER: z.enum(['groq', 'openai', 'anthropic', 'ollama', 'mock']),
+  LLM_PROVIDER: z.enum(['groq', 'openai', 'anthropic', 'ollama', 'gemini', 'mock']),
   GROQ_API_KEY: z.string().optional(),
   GROQ_MODEL: z.string().default('llama-3.3-70b-specdec'),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-2.0-flash-exp'),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o-mini'),
   ANTHROPIC_API_KEY: z.string().optional(),

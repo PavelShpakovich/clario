@@ -163,19 +163,24 @@ export function useStudySession(themeId: string) {
 
         // Keep polling only while still generating
         if (data.generating) {
+          console.log(`[useStudySession] Still generating, scheduling next poll in 2s...`);
           pollTimerRef.current = setTimeout(poll, 2000);
         } else {
+          console.log(`[useStudySession] Generation finished or not active.`);
           isPollingRef.current = false;
         }
       } catch (err) {
+        console.error(`[useStudySession] Poll error:`, err);
         setError(err instanceof Error ? err.message : 'Failed while polling cards');
         isPollingRef.current = false;
       }
     };
 
+    console.log(`[useStudySession] Starting polling loop...`);
     pollTimerRef.current = setTimeout(poll, 2000);
 
     return () => {
+      console.log(`[useStudySession] Cleaning up polling loop.`);
       if (pollTimerRef.current) {
         clearTimeout(pollTimerRef.current);
         pollTimerRef.current = undefined;

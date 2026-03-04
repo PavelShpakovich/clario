@@ -33,7 +33,7 @@ export const DATA_SOURCE_STATUSES = ['pending', 'processing', 'ready', 'error'] 
 export type DataSourceStatus = (typeof DATA_SOURCE_STATUSES)[number];
 
 // ─── LLM providers ────────────────────────────────────────────────────────────
-export const LLM_PROVIDERS = ['groq', 'openai', 'anthropic', 'ollama', 'mock'] as const;
+export const LLM_PROVIDERS = ['groq', 'openai', 'anthropic', 'ollama', 'gemini', 'mock'] as const;
 export type LlmProvider = (typeof LLM_PROVIDERS)[number];
 
 // ─── Request headers ──────────────────────────────────────────────────────────
