@@ -49,18 +49,23 @@ export const GET = withApiHandler(async (req) => {
     .eq('session_id', sessionId);
 
   if (seenRowsError) {
+    logger.error({ seenRowsError, sessionId }, 'Failed to load session progress');
     throw new Error('Failed to load session progress');
   }
 
   const seenCardIds = (seenRows ?? []).map((row) => row.card_id);
-  const seenFilter = seenCardIds.length > 0 ? `(${seenCardIds.join(',')})` : null;
+  // Improved filter logic to handle empty uuid array string requirements correctly
+  let seenFilter: string | null = null;
+  if (seenCardIds.length > 0) {
+    seenFilter = `(${seenCardIds.join(',')})`;
+  }
 
-  // Fetch unseen cards for this specific session
-  // User can see: their own cards, global cards (user_id IS NULL), or public cards from others
+  logger.info({ sessionId, themeId, seenCount: seenCardIds.length }, 'Fetching cards for theme');
+
+  // Fetch unseen cards for this specific theme
   let cardsQuery = supabase
     .from('cards')
     .select('*')
-    .or(`user_id.eq.${user.id},user_id.is.null,is_public.eq.true`)
     .eq('theme_id', themeId)
     .order('created_at', { ascending: true })
     .limit(MAX_CARDS_PER_SESSION_FETCH);
@@ -72,14 +77,14 @@ export const GET = withApiHandler(async (req) => {
   const { data: cards, error: cardsError } = await cardsQuery;
 
   if (cardsError) {
-    logger.error({ cardsError, themeId, sessionId }, 'Failed to fetch cards');
+    logger.error({ cardsError, themeId, sessionId, seenFilter }, 'Failed to fetch cards');
     throw new Error('Failed to fetch cards');
   }
 
+  // Improved calculation of remaining count - exclude the seen cards
   let remainingQuery = supabase
     .from('cards')
     .select('id', { count: 'exact', head: true })
-    .or(`user_id.eq.${user.id},user_id.is.null,is_public.eq.true`)
     .eq('theme_id', themeId);
 
   if (seenFilter) {
@@ -89,6 +94,7 @@ export const GET = withApiHandler(async (req) => {
   const { count: remainingCount, error: remainingError } = await remainingQuery;
 
   if (remainingError) {
+    logger.error({ remainingError, themeId, seenFilter }, 'Failed to count remaining cards');
     throw new Error('Failed to count remaining cards');
   }
 

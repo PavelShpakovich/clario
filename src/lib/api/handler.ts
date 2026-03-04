@@ -41,6 +41,27 @@ export function withApiHandler(
     } catch (err) {
       const durationMs = Date.now() - start;
 
+      // Log the full error for debugging
+      const errorToLog = err instanceof Error ? err : new Error(String(err));
+      logger.error(
+        {
+          requestId,
+          method: req.method,
+          url: req.url,
+          err: {
+            message: errorToLog.message,
+            stack: errorToLog.stack,
+            name: errorToLog.name,
+            // @ts-expect-error - capturing custom error properties
+            code: err?.code,
+            // @ts-expect-error - capturing custom error properties
+            status: err?.status,
+          },
+          durationMs,
+        },
+        'API handler caught error',
+      );
+
       if (err instanceof AppError) {
         const status = httpStatusForError(err);
 

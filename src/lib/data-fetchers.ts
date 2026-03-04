@@ -27,12 +27,12 @@ export async function fetchStudySession(themeId: string) {
 
 export async function fetchStudyCards(sessionId: string) {
   const { data } = await supabaseAdmin
-    .from('cards')
-    .select('*')
-    .eq('study_session_id', sessionId)
-    .order('created_at', { ascending: true })
+    .from('session_cards')
+    .select('*, cards(*)')
+    .eq('session_id', sessionId)
+    .order('seen_at', { ascending: true })
     .limit(50);
-  return data || [];
+  return data?.map((d) => d.cards).filter(Boolean) || [];
 }
 
 export async function fetchTheme(themeId: string) {

@@ -16,7 +16,7 @@ const envSchema = z.object({
   // LLM
   LLM_PROVIDER: z.enum(['groq', 'openai', 'anthropic', 'ollama', 'mock']),
   GROQ_API_KEY: z.string().optional(),
-  GROQ_MODEL: z.string().default('llama3-70b-8192'),
+  GROQ_MODEL: z.string().default('llama-3.3-70b-specdec'),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o-mini'),
   ANTHROPIC_API_KEY: z.string().optional(),

@@ -46,7 +46,13 @@ export function useStudySession(themeId: string) {
   const fetchCardsForSession = useCallback(
     async (sessionId: string, options?: FetchCardsOptions) => {
       try {
+        console.log(`[useStudySession] Fetching cards for session ${sessionId}...`, options);
         const data = await studyApi.fetchCards(sessionId, themeId, options);
+        console.log(`[useStudySession] Received data:`, {
+          cardCount: data.cards.length,
+          generating: data.generating,
+          failed: data.generationFailed,
+        });
 
         setCards((prev) => {
           const existing = new Set(prev.map((c) => c.id));
@@ -83,6 +89,7 @@ export function useStudySession(themeId: string) {
         setIsInitialLoading(true);
 
         const data = await studyApi.initSession(themeId);
+        console.log(`[useStudySession] Session initialized:`, data.sessionId);
         const createdSession = { id: data.sessionId };
         setStudySession(createdSession);
 
@@ -96,9 +103,11 @@ export function useStudySession(themeId: string) {
           initialData.cards.length === 0 &&
           !initialData.generating
         ) {
+          console.log(`[useStudySession] Initial card list empty, triggering generation...`);
           await fetchCardsForSession(data.sessionId, { triggerGeneration: true });
         }
       } catch (err) {
+        console.error(`[useStudySession] Initialization error:`, err);
         setIsInitialLoading(false);
         setError(err instanceof Error ? err.message : 'Failed to initialize session');
       }
