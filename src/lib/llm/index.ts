@@ -44,6 +44,11 @@ async function getProvider(): Promise<LlmProviderAdapter> {
       _provider = new GeminiProvider();
       break;
     }
+    case 'qwen': {
+      const { QwenProvider } = await import('@/lib/llm/providers/qwen');
+      _provider = new QwenProvider();
+      break;
+    }
     case 'mock': {
       const { MockProvider } = await import('@/lib/llm/providers/mock');
       _provider = new MockProvider();
