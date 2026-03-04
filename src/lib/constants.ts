@@ -6,6 +6,8 @@ export const CARD_GENERATION_THRESHOLD = 15;
 export const MAX_CARDS_PER_BATCH = 5;
 /** Card count options shown in the generate-more picker. */
 export const CARD_COUNT_OPTIONS = [5, 10, 15, 20] as const;
+/** Max cards allowed in a single user generation request (matches CARD_COUNT_OPTIONS max). */
+export const MAX_USER_CARD_REQUEST = 20;
 /** Max cards fetched per study-session API request.
     High enough to load all existing cards in a single request for most themes. */
 export const MAX_CARDS_PER_SESSION_FETCH = 100;

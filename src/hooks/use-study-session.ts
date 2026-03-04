@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import type { Database } from '@/lib/supabase/types';
 import { studyApi } from '@/services/study-api';
 import { themeApi } from '@/services/theme-api';
+import { sourcesApi } from '@/services/sources-api';
 
 type Card = Database['public']['Tables']['cards']['Row'];
 
@@ -27,6 +30,7 @@ type Card = Database['public']['Tables']['cards']['Row'];
  */
 export function useStudySession(themeId: string) {
   const { data: session } = useSession();
+  const t = useTranslations();
 
   const [cards, setCards] = useState<Card[]>([]);
   const [studySession, setStudySession] = useState<{ id: string } | null>(null);
@@ -37,6 +41,7 @@ export function useStudySession(themeId: string) {
   const [infiniteMode, setInfiniteMode] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cardCount, setCardCount] = useState(10);
+  const [sourceIds, setSourceIds] = useState<string[]>([]);
 
   const pollTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const isPollingRef = useRef<boolean>(false);
@@ -83,11 +88,23 @@ export function useStudySession(themeId: string) {
         setError(null);
         setIsGenerating(false);
         setIsInitialLoading(true);
+        setSourceIds([]);
 
         const data = await studyApi.initSession(themeId);
         const createdSession = { id: data.sessionId };
         setStudySession(createdSession);
         setSeenCardIds(data.seenCardIds);
+
+        // Fetch all ready sources for this theme to use in generation
+        try {
+          const allSources = await sourcesApi.list(themeId);
+          const readySources = allSources.filter((s) => s.status === 'ready').map((s) => s.id);
+          if (readySources.length > 0) {
+            setSourceIds(readySources);
+          }
+        } catch {
+          toast.error(t('messages.failedLoadSources'));
+        }
 
         const initialData = await fetchCardsForSession(data.sessionId, {
           triggerGeneration: false,
@@ -216,7 +233,7 @@ export function useStudySession(themeId: string) {
       setIsManualGenerating(true);
       setError(null);
       try {
-        await themeApi.generateCards(themeId, count);
+        await themeApi.generateCards(themeId, count, sourceIds);
         // Cards are already in DB when the response returns (synchronous route).
         // Refetch so the new cards appear immediately.
         if (studySession) {
@@ -228,7 +245,15 @@ export function useStudySession(themeId: string) {
         setIsManualGenerating(false);
       }
     },
-    [themeId, isGenerating, isManualGenerating, cardCount, studySession, fetchCardsForSession],
+    [
+      themeId,
+      isGenerating,
+      isManualGenerating,
+      cardCount,
+      studySession,
+      fetchCardsForSession,
+      sourceIds,
+    ],
   );
 
   return {

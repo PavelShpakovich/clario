@@ -6,12 +6,16 @@ import { NotFoundError, RateLimitError, ValidationError } from '@/lib/errors';
 import { generateWithSourceChunking } from '@/services/generation.service';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
-import { RATE_LIMIT_GENERATE_RPM, MAX_CARDS_PER_BATCH } from '@/lib/constants';
+import {
+  RATE_LIMIT_GENERATE_RPM,
+  MAX_CARDS_PER_BATCH,
+  MAX_USER_CARD_REQUEST,
+} from '@/lib/constants';
 
 const bodySchema = z.object({
   themeId: z.string().uuid(),
-  sourceId: z.string().uuid().optional(),
-  count: z.number().int().min(1).max(MAX_CARDS_PER_BATCH).default(MAX_CARDS_PER_BATCH),
+  sourceIds: z.array(z.string().uuid()).optional(),
+  count: z.number().int().min(1).max(MAX_USER_CARD_REQUEST).default(MAX_CARDS_PER_BATCH),
 });
 
 /** Simple in-memory rate limiter (per process). For multi-instance, swap for Redis/Vercel KV. */
@@ -48,7 +52,7 @@ export const POST = withApiHandler(async (req) => {
     });
   }
 
-  const { themeId, sourceId, count } = body.data;
+  const { themeId, sourceIds, count } = body.data;
 
   // Verify theme belongs to this user
   const { data: theme } = await supabase
@@ -60,23 +64,37 @@ export const POST = withApiHandler(async (req) => {
 
   if (!theme) throw new NotFoundError({ message: 'Theme not found' });
 
-  // Optionally enrich with source text
+  // Optionally enrich with source text from all provided sources
   let sourceText: string | undefined;
-  if (sourceId) {
-    const { data: source } = await supabase
+  let primarySourceId: string | undefined;
+  if (sourceIds && sourceIds.length > 0) {
+    const { data: sources } = await supabase
       .from('data_sources')
-      .select('extracted_text, status')
-      .eq('id', sourceId)
-      .eq('user_id', user.id)
-      .maybeSingle();
+      .select('id, extracted_text, status')
+      .in('id', sourceIds)
+      .eq('user_id', user.id);
 
-    if (!source) throw new NotFoundError({ message: 'Source not found' });
-    if (source.status !== 'ready') {
+    if (!sources || sources.length === 0) {
+      throw new NotFoundError({ message: 'No sources found' });
+    }
+
+    // Verify all sources are ready
+    const notReadySources = sources.filter((s) => s.status !== 'ready');
+    if (notReadySources.length > 0) {
       throw new ValidationError({
-        message: 'Source is not ready yet — please wait for processing',
+        message: 'One or more sources are not ready yet — please wait for processing',
       });
     }
-    sourceText = source.extracted_text ?? undefined;
+
+    // Merge text from all sources with separators
+    primarySourceId = sources[0].id;
+    sourceText = sources
+      .map((s) => s.extracted_text ?? '')
+      .filter((t) => t.length > 0)
+      .join('\n\n---\n\n');
+    if (sourceText.length === 0) {
+      sourceText = undefined;
+    }
   }
 
   // Fetch existing card titles for this theme to avoid duplication
@@ -128,7 +146,7 @@ export const POST = withApiHandler(async (req) => {
       uniqueCards.map((c) => ({
         user_id: user.id,
         theme_id: themeId,
-        source_id: sourceId ?? null,
+        source_id: primarySourceId ?? null,
         title: c.title,
         body: c.body,
         topic: theme.name,

@@ -44,6 +44,8 @@ export class QwenProvider implements LlmProviderAdapter {
         { role: 'user', content: user },
       ],
       temperature: 0.7,
+      // @ts-expect-error QWEN extended parameter - disable thinking mode for faster responses
+      enable_thinking: false,
     });
 
     const raw = response.choices[0]?.message.content ?? '';

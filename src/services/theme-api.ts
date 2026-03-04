@@ -76,11 +76,15 @@ class ThemeApi {
     return this.updateTheme(themeId, { is_public: isPublic });
   }
 
-  async generateCards(themeId: string, count: number): Promise<void> {
+  async generateCards(themeId: string, count: number, sourceIds?: string[]): Promise<void> {
     const response = await fetch('/api/generate/cards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ themeId, count }),
+      body: JSON.stringify({
+        themeId,
+        count,
+        ...(sourceIds && sourceIds.length > 0 && { sourceIds }),
+      }),
     });
 
     if (!response.ok) {

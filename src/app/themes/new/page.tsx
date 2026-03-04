@@ -290,7 +290,7 @@ export default function NewThemePage() {
                       ? t('buttons.generating')
                       : t('buttons.creating')
                     : autoGenerate
-                      ? t('buttons.createAndGenerate', { count: cardCount })
+                      ? t('buttons.createAndGenerate')
                       : t('buttons.createTheme')}
                 </Button>
               </div>

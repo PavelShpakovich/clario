@@ -19,7 +19,7 @@ export class GenerationService {
     try {
       const { data: theme } = await supabaseAdmin
         .from('themes')
-        .select('name, description')
+        .select('name, description, language')
         .eq('id', themeId)
         .single();
 
@@ -59,6 +59,7 @@ export class GenerationService {
           sourceText,
           count: MAX_CARDS_PER_BATCH,
           topicsToAvoid: topicsToAvoid.length > 0 ? topicsToAvoid : undefined,
+          language: theme.language as 'en' | 'ru' | undefined,
         },
         topicsToAvoid,
         async (newCards) => {

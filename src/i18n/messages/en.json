@@ -52,7 +52,8 @@
     "failedUpdate": "Failed to update privacy",
     "profileSaved": "Profile saved successfully",
     "privacyUpdated": "Theme is now {status}",
-    "failedLoadThemes": "Failed to load themes. Please try again."
+    "failedLoadThemes": "Failed to load themes. Please try again.",
+    "failedLoadSources": "Failed to load sources. Generation will continue without source data."
   },
   "errors": {
     "generic": "Something went wrong",

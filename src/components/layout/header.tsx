@@ -63,7 +63,7 @@ export function Header() {
 
   return (
     <header className="border-b bg-background sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1 md:py-2 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2">
           <Image
             src={theme === 'dark' ? '/logo.png' : '/logo-dark.png'}

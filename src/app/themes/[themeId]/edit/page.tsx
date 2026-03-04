@@ -363,12 +363,6 @@ export default function EditThemePage({ params }: EditThemePageProps) {
                     </TabsList>
 
                     <TabsContent value="text" className="space-y-4">
-                      <div className="p-3 bg-muted rounded-lg border border-border text-sm text-muted-foreground">
-                        {t('sourceLanguage.textLanguageHint', {
-                          language:
-                            theme.language === 'en' ? t('common.english') : t('common.russian'),
-                        })}
-                      </div>
                       <div>
                         <Label htmlFor="textName">{t('sources.sourceName')}</Label>
                         <Input
@@ -407,17 +401,6 @@ export default function EditThemePage({ params }: EditThemePageProps) {
                     </TabsContent>
 
                     <TabsContent value="url" className="space-y-4">
-                      <div className="p-3 bg-muted rounded-lg border border-border text-sm text-muted-foreground">
-                        {urlType === 'youtube'
-                          ? t('sourceLanguage.youtubeLanguageHint', {
-                              language:
-                                theme.language === 'en' ? t('common.english') : t('common.russian'),
-                            })
-                          : t('sourceLanguage.webLanguageHint', {
-                              language:
-                                theme.language === 'en' ? t('common.english') : t('common.russian'),
-                            })}
-                      </div>
                       <div>
                         <Label>{t('sources.sourceType')}</Label>
                         <div className="flex gap-4 mt-2">
@@ -477,12 +460,6 @@ export default function EditThemePage({ params }: EditThemePageProps) {
                     </TabsContent>
 
                     <TabsContent value="file" className="space-y-4">
-                      <div className="p-3 bg-muted rounded-lg border border-border text-sm text-muted-foreground">
-                        {t('sourceLanguage.noteText', {
-                          language:
-                            theme.language === 'en' ? t('common.english') : t('common.russian'),
-                        })}
-                      </div>
                       <div>
                         <Label htmlFor="file">{t('sources.selectFile')}</Label>
                         <div className="mt-2 border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-foreground/30 hover:bg-muted transition">
@@ -529,7 +506,7 @@ export default function EditThemePage({ params }: EditThemePageProps) {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">
+                  <CardTitle>
                     {t('sources.sourcesCount', {
                       count: sources.filter((s) => s.status !== 'error').length,
                     })}
@@ -589,7 +566,7 @@ export default function EditThemePage({ params }: EditThemePageProps) {
               {/* Card Generation */}
               <Card className="border-border bg-muted/50">
                 <CardHeader>
-                  <CardTitle className="text-base">{t('themes.generateMore')}</CardTitle>
+                  <CardTitle>{t('themes.generateMore')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -619,8 +596,8 @@ export default function EditThemePage({ params }: EditThemePageProps) {
                     className="w-full h-auto whitespace-normal py-2 leading-snug"
                   >
                     {isGenerating
-                      ? `${t('buttons.generating')} ${cardCount}...`
-                      : `${t('buttons.createAndGenerate', { count: cardCount })}`}
+                      ? `${t('buttons.generating')}`
+                      : `${t('buttons.createAndGenerate')}`}
                   </Button>
                   {sources.filter((s) => s.status === 'ready').length === 0 && (
                     <p className="text-xs text-center text-muted-foreground mt-2">
@@ -679,19 +656,11 @@ export default function EditThemePage({ params }: EditThemePageProps) {
                     )}
                   />
 
-                  <div className="space-y-2 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
-                    <p>
-                      <strong>{t('themes.language')}:</strong>{' '}
-                      {theme.language === 'en' ? t('common.english') : t('common.russian')}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{t('themes.languageLocked')}</p>
-                  </div>
-
                   <div className="flex justify-end pt-4">
                     <Button
                       type="submit"
                       disabled={isSubmitting || form.formState.isSubmitting}
-                      className="min-w-[120px]"
+                      className="min-w-3"
                     >
                       {isSubmitting ? t('buttons.saving') : t('buttons.save')}
                     </Button>
