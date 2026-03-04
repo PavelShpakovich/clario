@@ -43,58 +43,32 @@ export const GET = withApiHandler(async (req) => {
     throw new NotFoundError({ message: 'Session not found' });
   }
 
-  const { data: seenRows, error: seenRowsError } = await supabase
-    .from('session_cards')
-    .select('card_id')
-    .eq('session_id', sessionId);
+  logger.info({ sessionId, themeId }, 'Fetching cards for theme');
 
-  if (seenRowsError) {
-    logger.error({ seenRowsError, sessionId }, 'Failed to load session progress');
-    throw new Error('Failed to load session progress');
-  }
-
-  const seenCardIds = (seenRows ?? []).map((row) => row.card_id);
-  // Improved filter logic to handle empty uuid array string requirements correctly
-  let seenFilter: string | null = null;
-  if (seenCardIds.length > 0) {
-    seenFilter = `(${seenCardIds.join(',')})`;
-  }
-
-  logger.info({ sessionId, themeId, seenCount: seenCardIds.length }, 'Fetching cards for theme');
-
-  // Fetch unseen cards for this specific theme
-  let cardsQuery = supabase
+  // Fetch ALL cards for this theme — seen status is tracked in session_cards for
+  // analytics/streak but must NOT hide cards from the study view.
+  // (Previously, seen cards were filtered out, which caused users to see fewer
+  //  cards than the theme actually contains when returning to a session same day.)
+  const { data: cards, error: cardsError } = await supabase
     .from('cards')
     .select('*')
     .eq('theme_id', themeId)
     .order('created_at', { ascending: true })
     .limit(MAX_CARDS_PER_SESSION_FETCH);
 
-  if (seenFilter) {
-    cardsQuery = cardsQuery.not('id', 'in', seenFilter);
-  }
-
-  const { data: cards, error: cardsError } = await cardsQuery;
-
   if (cardsError) {
-    logger.error({ cardsError, themeId, sessionId, seenFilter }, 'Failed to fetch cards');
+    logger.error({ cardsError, themeId, sessionId }, 'Failed to fetch cards');
     throw new Error('Failed to fetch cards');
   }
 
-  // Improved calculation of remaining count - exclude the seen cards
-  let remainingQuery = supabase
+  // remaining = total cards in theme (used to decide whether to trigger generation)
+  const { count: remainingCount, error: remainingError } = await supabase
     .from('cards')
     .select('id', { count: 'exact', head: true })
     .eq('theme_id', themeId);
 
-  if (seenFilter) {
-    remainingQuery = remainingQuery.not('id', 'in', seenFilter);
-  }
-
-  const { count: remainingCount, error: remainingError } = await remainingQuery;
-
   if (remainingError) {
-    logger.error({ remainingError, themeId, seenFilter }, 'Failed to count remaining cards');
+    logger.error({ remainingError, themeId }, 'Failed to count remaining cards');
     throw new Error('Failed to count remaining cards');
   }
 

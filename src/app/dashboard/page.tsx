@@ -20,8 +20,8 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  // Fetch private themes and public shared themes
-  const [themesResult, publicThemesResult, cardCountsResult] = await Promise.all([
+  // Fetch private themes and public shared themes first, then card counts for all of them
+  const [themesResult, publicThemesResult] = await Promise.all([
     // My Themes (owned by me)
     supabaseAdmin
       .from('themes')
@@ -35,13 +35,20 @@ export default async function DashboardPage() {
       .eq('is_public', true)
       .neq('user_id', session.user.id)
       .limit(50),
-    // Card counts (owned only for now, can expand later)
-    supabaseAdmin
-      .from('cards')
-      .select('theme_id, user_id')
-      .or(`user_id.eq.${session.user.id},is_public.eq.true`)
-      .not('theme_id', 'is', null),
   ]);
+
+  // Collect every theme ID we care about, then fetch card counts in one query.
+  // Previously the query used `.or('is_public.eq.true')` on the cards table which
+  // has no such column — community-theme cards were always counted as 0.
+  const allThemeIds = [
+    ...(themesResult.data ?? []).map((t) => t.id),
+    ...(publicThemesResult.data ?? []).map((t) => t.id),
+  ];
+
+  const cardCountsResult =
+    allThemeIds.length > 0
+      ? await supabaseAdmin.from('cards').select('theme_id').in('theme_id', allThemeIds)
+      : { data: [] };
 
   if (themesResult.error || publicThemesResult.error) {
     return (
