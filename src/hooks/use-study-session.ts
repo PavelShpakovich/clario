@@ -168,6 +168,22 @@ export function useStudySession(themeId: string) {
         } else {
           console.log(`[useStudySession] Generation finished or not active.`);
           isPollingRef.current = false;
+          // One-shot re-fetch 1 s after generation finishes to pick up any
+          // final cards that arrived in the last background flush.
+          setTimeout(async () => {
+            try {
+              const finalData = await studyApi.fetchCards(studySession.id, themeId, {
+                triggerGeneration: false,
+              });
+              setCards((prev) => {
+                const existing = new Set(prev.map((c) => c.id));
+                const toAdd = finalData.cards.filter((c) => !existing.has(c.id));
+                return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+              });
+            } catch {
+              // best-effort, ignore errors
+            }
+          }, 1000);
         }
       } catch (err) {
         console.error(`[useStudySession] Poll error:`, err);

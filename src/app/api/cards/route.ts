@@ -150,10 +150,13 @@ export const GET = withApiHandler(async (req) => {
     'Cards fetched',
   );
 
-  return NextResponse.json({
-    cards: cards ?? [],
-    remaining,
-    generating: isGenerating,
-    generationFailed,
-  });
+  return NextResponse.json(
+    {
+      cards: cards ?? [],
+      remaining,
+      generating: isGenerating,
+      generationFailed,
+    },
+    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } },
+  );
 });

@@ -19,12 +19,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // API routes must NEVER be cached — they return per-user,
+        // per-session data and dynamic generation state.
         source: '/api/:path*',
         headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, s-maxage=300, stale-while-revalidate=600',
-          },
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
+          { key: 'Pragma', value: 'no-cache' },
         ],
       },
       {
@@ -52,6 +52,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Enable cache components for better server-side caching
     cacheComponents: true,
+    // Required to use `after()` from next/server for background tasks
+    after: true,
   },
 
   // Compression settings

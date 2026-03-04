@@ -93,5 +93,8 @@ export const POST = withApiHandler(async (req) => {
     throw new Error('Failed to create session');
   }
 
-  return NextResponse.json({ sessionId: session.id }, { status: 201 });
+  return NextResponse.json(
+    { sessionId: session.id },
+    { status: 201, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } },
+  );
 });
