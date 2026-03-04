@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { InfoCard } from '@/components/info-card';
 import { useStudySession } from '@/hooks/use-study-session';
+import { useCardFontSize } from '@/hooks/use-card-font-size';
 import { StudyBottomBar } from '@/components/study/study-bottom-bar';
 import {
   StudyDoneScreen,
@@ -23,6 +24,13 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const seenIdsRef = useRef<Set<string>>(new Set());
   const triggerFetchedAtRef = useRef<number>(-1);
+  const {
+    fontSize,
+    increase: increaseFontSize,
+    decrease: decreaseFontSize,
+    canIncrease: canIncreaseFontSize,
+    canDecrease: canDecreaseFontSize,
+  } = useCardFontSize();
 
   const {
     cards,
@@ -149,26 +157,14 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
           <p role="alert" className="mb-4 text-destructive font-semibold">
             {error}
           </p>
-          <button
-            onClick={() => void fetchCards()}
-            className="rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            {t('study.retry')}
-          </button>
+          <Button onClick={() => void fetchCards()}>{t('study.retry')}</Button>
         </div>
       </main>
     );
   }
 
   if (!session) {
-    return (
-      <main className="fixed inset-0 z-50 flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">{t('study.loadingSession')}</p>
-        </div>
-      </main>
-    );
+    return <StudyInitialLoadingScreen />;
   }
 
   return (
@@ -180,9 +176,14 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
         isManualGenerating={isManualGenerating}
         infiniteMode={infiniteMode}
         cardCount={cardCount}
+        fontSize={fontSize}
         onToggleInfiniteMode={() => setInfiniteMode((prev) => !prev)}
         onGenerateMore={(count) => void generateMore(count)}
         onSetCardCount={setCardCount}
+        onIncreaseFontSize={increaseFontSize}
+        onDecreaseFontSize={decreaseFontSize}
+        canIncreaseFontSize={canIncreaseFontSize}
+        canDecreaseFontSize={canDecreaseFontSize}
         canGenerate={isOwner}
       />
 
@@ -195,7 +196,7 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
           data-card-id={card.id}
           className="w-full h-screen snap-start snap-always"
         >
-          <InfoCard card={card} />
+          <InfoCard card={card} fontSize={fontSize} />
         </div>
       ))}
 

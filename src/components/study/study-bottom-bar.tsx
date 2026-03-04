@@ -13,9 +13,14 @@ interface StudyBottomBarProps {
   isManualGenerating: boolean;
   infiniteMode: boolean;
   cardCount: number;
+  fontSize: number;
   onToggleInfiniteMode: () => void;
   onGenerateMore: (count: number) => void;
   onSetCardCount: (count: number) => void;
+  onIncreaseFontSize: () => void;
+  onDecreaseFontSize: () => void;
+  canIncreaseFontSize: boolean;
+  canDecreaseFontSize: boolean;
   canGenerate?: boolean;
 }
 
@@ -26,9 +31,14 @@ export function StudyBottomBar({
   isManualGenerating,
   infiniteMode,
   cardCount,
+  fontSize,
   onToggleInfiniteMode,
   onGenerateMore,
   onSetCardCount,
+  onIncreaseFontSize,
+  onDecreaseFontSize,
+  canIncreaseFontSize,
+  canDecreaseFontSize,
   canGenerate = true,
 }: StudyBottomBarProps) {
   const t = useTranslations();
@@ -40,6 +50,31 @@ export function StudyBottomBar({
       <span className="shrink-0 text-xs md:text-sm font-semibold text-foreground tabular-nums">
         {totalCards > 0 ? `${Math.min(currentCardIndex + 1, totalCards)}/${totalCards}` : '—'}
       </span>
+
+      <div className="shrink-0 w-px h-3 md:h-4 bg-border" />
+
+      {/* Font size controls */}
+      <div className="shrink-0 flex items-center gap-0.5">
+        <button
+          onClick={onDecreaseFontSize}
+          disabled={!canDecreaseFontSize}
+          title={t('study.decreaseFontSize')}
+          className="flex items-center justify-center w-6 h-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+        >
+          A
+        </button>
+        <span className="text-[10px] text-muted-foreground tabular-nums w-3 text-center">
+          {fontSize + 1}
+        </span>
+        <button
+          onClick={onIncreaseFontSize}
+          disabled={!canIncreaseFontSize}
+          title={t('study.increaseFontSize')}
+          className="flex items-center justify-center w-6 h-6 rounded text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+        >
+          A
+        </button>
+      </div>
 
       <div className="shrink-0 w-px h-3 md:h-4 bg-border" />
 

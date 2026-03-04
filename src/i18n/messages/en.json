@@ -58,7 +58,11 @@
     "generic": "Something went wrong",
     "notFound": "Not found",
     "unauthorized": "Unauthorized",
-    "forbidden": "Forbidden"
+    "forbidden": "Forbidden",
+    "authRequired": "Authentication required",
+    "tooManyRequests": "Too many requests — please slow down",
+    "generationFailed": "Card generation failed — please try again",
+    "internalError": "Internal server error"
   },
   "dashboard": {
     "heading": "My Themes",
@@ -104,7 +108,9 @@
     "finished": "All caught up!",
     "completedSession": "You've completed all cards for this session.",
     "backToDashboard": "Back to Dashboard",
-    "readOnly": "Read-only view"
+    "readOnly": "Read-only view",
+    "decreaseFontSize": "Decrease font size",
+    "increaseFontSize": "Increase font size"
   },
   "themes": {
     "heading": "Themes",

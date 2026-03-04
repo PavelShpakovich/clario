@@ -4,6 +4,7 @@ import { Globe, Moon, Sun } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { useUiLanguage } from '@/hooks/use-ui-language';
+import { Button } from '@/components/ui/button';
 
 export function TgSettingsBar() {
   const t = useTranslations();
@@ -30,13 +31,14 @@ export function TgSettingsBar() {
         ))}
       </div>
       {/* Colour scheme */}
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={() => setColorTheme(colorTheme === 'dark' ? 'light' : 'dark')}
-        className="flex items-center justify-center rounded-full border border-border bg-background p-2 text-muted-foreground hover:text-foreground transition-colors"
         title={colorTheme === 'dark' ? t('settings.lightMode') : t('settings.darkMode')}
       >
         {colorTheme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { AlertCircle } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { authApi } from '@/services/auth-api';
+import { Button } from '@/components/ui/button';
 
 type Phase = 'detecting' | 'authenticating' | 'error';
 
@@ -79,12 +80,7 @@ export default function TelegramEntryPage() {
         <AlertCircle className="mb-4 h-12 w-12 text-red-600" />
         <h1 className="mb-2 text-lg font-semibold text-gray-900">{t('telegram.signinFailed')}</h1>
         <p className="mb-6 text-sm text-gray-500">{errorMsg}</p>
-        <button
-          onClick={() => router.replace('/login')}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          {t('telegram.useEmailLogin')}
-        </button>
+        <Button onClick={() => router.replace('/login')}>{t('telegram.useEmailLogin')}</Button>
       </main>
     );
   }

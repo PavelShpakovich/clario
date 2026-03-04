@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { revalidateDashboard } from '@/app/api/actions/revalidate';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
@@ -11,6 +12,7 @@ import { Wand2, PenLine } from 'lucide-react';
 import { CARD_COUNT_OPTIONS } from '@/lib/constants';
 
 import { useAuth } from '@/hooks/use-auth';
+import { useUiLanguage } from '@/hooks/use-ui-language';
 import { themeApi } from '@/services/theme-api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +41,7 @@ export default function NewThemePage() {
   const t = useTranslations();
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { locale } = useUiLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ThemeFormValues>({
@@ -54,6 +57,11 @@ export default function NewThemePage() {
 
   const autoGenerate = form.watch('autoGenerate');
   const cardCount = form.watch('cardCount');
+
+  // Sync card language default with UI language once the cookie is read
+  useEffect(() => {
+    form.setValue('language', locale);
+  }, [locale, form]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -78,8 +86,10 @@ export default function NewThemePage() {
       if (values.autoGenerate) {
         // Navigate immediately — study hook auto-triggers generation on mount
         // when infiniteMode=true and there are 0 cards
+        await revalidateDashboard();
         router.push(`/study/${theme.id}`);
       } else {
+        await revalidateDashboard();
         toast.success(t('messages.success'));
         router.push(`/themes/${theme.id}/edit`);
       }

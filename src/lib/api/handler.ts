@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
+import { getTranslations } from 'next-intl/server';
 import { AppError, httpStatusForError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 import { REQUEST_ID_HEADER } from '@/lib/constants';
@@ -80,7 +81,7 @@ export function withApiHandler(
         );
 
         return NextResponse.json(
-          { error: safeMessage(err), code: err.code, requestId },
+          { error: await safeMessage(err), code: err.code, requestId },
           { status, headers: { [REQUEST_ID_HEADER]: requestId } },
         );
       }
@@ -105,23 +106,39 @@ export function withApiHandler(
   };
 }
 
-/** Returns a user-safe error message — never exposes internal details. */
-function safeMessage(err: AppError): string {
+/** Returns a user-safe, translated error message — never exposes internal details. */
+async function safeMessage(err: AppError): Promise<string> {
+  let t: Awaited<ReturnType<typeof getTranslations>>;
+  try {
+    t = await getTranslations();
+  } catch {
+    // Outside a Next.js request context (e.g. tests) — fall back to raw keys
+    const fallback: Record<string, string> = {
+      NOT_FOUND: err.message,
+      VALIDATION_ERROR: err.message,
+      INGESTION_ERROR: err.message,
+      AUTH_ERROR: 'Authentication required',
+      RATE_LIMIT_ERROR: 'Too many requests — please slow down',
+      LLM_ERROR: 'Card generation failed — please try again',
+      INTERNAL_ERROR: 'Internal server error',
+    };
+    return fallback[err.code] ?? 'Internal server error';
+  }
+
   switch (err.code) {
     case 'NOT_FOUND':
-      return err.message;
     case 'VALIDATION_ERROR':
+    case 'INGESTION_ERROR':
+      // These carry specific user-facing messages crafted at the throw site
       return err.message;
     case 'AUTH_ERROR':
-      return 'Authentication required';
+      return t('errors.authRequired');
     case 'RATE_LIMIT_ERROR':
-      return 'Too many requests — please slow down';
+      return t('errors.tooManyRequests');
     case 'LLM_ERROR':
-      return 'Card generation failed — please try again';
-    case 'INGESTION_ERROR':
-      return 'Failed to process the provided source — please check the file or URL';
+      return t('errors.generationFailed');
     case 'INTERNAL_ERROR':
     default:
-      return 'Internal server error';
+      return t('errors.internalError');
   }
 }

@@ -18,6 +18,7 @@ import {
   Settings,
   Database,
   Trash2,
+  X,
 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -65,7 +66,7 @@ export default function EditThemePage({ params }: EditThemePageProps) {
   const { themeId } = use(params);
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { sources, isUploading, error, uploadText, uploadUrl, uploadFile } =
+  const { sources, isUploading, error, uploadText, uploadUrl, uploadFile, deleteSource } =
     useSourceUpload(themeId);
 
   // Theme & Form State
@@ -296,7 +297,9 @@ export default function EditThemePage({ params }: EditThemePageProps) {
             </Button>
           ) : (
             <Link href={`/study/${themeId}`} className="w-full sm:w-auto">
-              <Button className="w-full sm:w-auto">{t('sources.studyButton')}</Button>
+              <Button variant="outline" className="w-full sm:w-auto">
+                {t('sources.studyButton')}
+              </Button>
             </Link>
           )}
         </div>
@@ -515,7 +518,9 @@ export default function EditThemePage({ params }: EditThemePageProps) {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    {t('sources.sourcesCount', { count: sources.length })}
+                    {t('sources.sourcesCount', {
+                      count: sources.filter((s) => s.status !== 'error').length,
+                    })}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -536,7 +541,20 @@ export default function EditThemePage({ params }: EditThemePageProps) {
                               {new Date(source.created_at).toLocaleDateString()}
                             </p>
                           </div>
-                          {getStatusBadge(source.status)}
+                          <div className="flex items-center gap-1 shrink-0">
+                            {getStatusBadge(source.status)}
+                            {source.status === 'error' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => void deleteSource(source.id)}
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                title={t('buttons.delete')}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -571,14 +589,16 @@ export default function EditThemePage({ params }: EditThemePageProps) {
                   </div>
                   <Button
                     onClick={() => void handleGenerateCards()}
-                    disabled={isGenerating || sources.length === 0}
+                    disabled={
+                      isGenerating || sources.filter((s) => s.status === 'ready').length === 0
+                    }
                     className="w-full h-auto whitespace-normal py-2 leading-snug"
                   >
                     {isGenerating
                       ? `${t('buttons.generating')} ${cardCount}...`
                       : `${t('buttons.createAndGenerate', { count: cardCount })}`}
                   </Button>
-                  {sources.length === 0 && (
+                  {sources.filter((s) => s.status === 'ready').length === 0 && (
                     <p className="text-xs text-center text-muted-foreground mt-2">
                       {t('sources.noSources')}
                     </p>

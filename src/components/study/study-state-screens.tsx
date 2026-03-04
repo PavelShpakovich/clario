@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
+import { revalidateDashboard } from '@/app/api/actions/revalidate';
 
 function ScreenShell({ children }: { children: React.ReactNode }) {
   return (
@@ -15,8 +17,8 @@ function ScreenShell({ children }: { children: React.ReactNode }) {
 function SpinnerBlock({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center gap-4">
-      <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
-      <p className="text-sm text-muted-foreground">{label}</p>
+      <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+      <p className="text-md text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -37,7 +39,7 @@ export function StudyGeneratingScreen() {
       <div className="w-full max-w-sm text-center space-y-6">
         <div className="flex justify-center">
           <div className="flex items-center justify-center w-12 h-12 rounded-2xl border border-border">
-            <Sparkles className="w-5 h-5 text-foreground animate-pulse" />
+            <Sparkles className="w-6 h-6 text-foreground animate-pulse" />
           </div>
         </div>
 
@@ -93,15 +95,15 @@ export function StudyDoneScreen() {
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            router.refresh();
+        <Button
+          onClick={async () => {
+            await revalidateDashboard();
             router.push('/dashboard');
           }}
-          className="inline-flex items-center justify-center w-full rounded-xl bg-primary text-primary-foreground px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-90 active:opacity-80"
+          className="w-full rounded-xl"
         >
           {t('study.backToDashboard')}
-        </button>
+        </Button>
       </div>
     </ScreenShell>
   );
