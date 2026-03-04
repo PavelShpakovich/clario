@@ -83,6 +83,12 @@ export function buildPrompt(input: GenerateInput): { system: string; user: strin
     ? `${t.context}${input.sourceText.slice(0, 8000)}\n---\n\n`
     : '';
 
+  const descriptionBlock = input.description
+    ? lang === 'ru'
+      ? `\nОписание темы: ${input.description}\n`
+      : `\nTheme description: ${input.description}\n`
+    : '';
+
   const avoidBlock =
     input.topicsToAvoid && input.topicsToAvoid.length > 0
       ? `${t.avoid}- ${input.topicsToAvoid.join('\n- ')}\n`
@@ -93,7 +99,7 @@ export function buildPrompt(input: GenerateInput): { system: string; user: strin
   const user = `${contextBlock}${t.instructions(
     input.count,
     input.theme,
-  )}${avoidBlock}${languageBlock}
+  )}${descriptionBlock}${avoidBlock}${languageBlock}
 ${lang === 'ru' ? 'Каждая карточка должна:' : 'Each card must:'}
 ${t.requirements}
 

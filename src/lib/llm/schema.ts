@@ -27,6 +27,8 @@ export type CardsOutput = z.infer<typeof cardsOutputSchema>;
 /** Input to the LLM generate function. */
 export interface GenerateInput {
   theme: string;
+  /** Optional theme description to guide card generation focus. */
+  description?: string;
   /** Source text to base cards on. If omitted, the LLM generates from the theme alone. */
   sourceText?: string;
   count: number;

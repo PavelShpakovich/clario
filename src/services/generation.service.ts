@@ -55,6 +55,7 @@ export class GenerationService {
       const cards = await generateWithSourceChunking(
         {
           theme: theme.name,
+          description: theme.description ?? undefined,
           sourceText,
           count: MAX_CARDS_PER_BATCH,
           topicsToAvoid: topicsToAvoid.length > 0 ? topicsToAvoid : undefined,
