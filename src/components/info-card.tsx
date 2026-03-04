@@ -16,22 +16,22 @@ const FONT_CONFIG = [
   // 0 — small
   {
     title: 'text-lg md:text-xl',
-    body: 'prose-p:text-sm md:prose-p:text-base prose-li:text-sm md:prose-li:text-base',
+    body: 'prose-p:text-sm prose-li:text-sm prose-h2:text-sm prose-h3:text-xs',
   },
   // 1 — default
   {
     title: 'text-2xl md:text-3xl',
-    body: 'prose-p:text-base md:prose-p:text-lg prose-li:text-base md:prose-li:text-lg',
+    body: 'prose-p:text-base md:prose-p:text-lg prose-li:text-base md:prose-li:text-lg prose-h2:text-lg md:prose-h2:text-xl prose-h3:text-base md:prose-h3:text-lg',
   },
   // 2 — large
   {
     title: 'text-3xl md:text-4xl',
-    body: 'prose-p:text-lg md:prose-p:text-xl prose-li:text-lg md:prose-li:text-xl',
+    body: 'prose-p:text-lg md:prose-p:text-xl prose-li:text-lg md:prose-li:text-xl prose-h2:text-xl md:prose-h2:text-2xl prose-h3:text-lg md:prose-h3:text-xl',
   },
   // 3 — extra-large
   {
     title: 'text-4xl md:text-5xl',
-    body: 'prose-p:text-xl md:prose-p:text-2xl prose-li:text-xl md:prose-li:text-2xl',
+    body: 'prose-p:text-xl md:prose-p:text-2xl prose-li:text-xl md:prose-li:text-2xl prose-h2:text-2xl md:prose-h2:text-3xl prose-h3:text-xl md:prose-h3:text-2xl',
   },
 ] as const;
 
@@ -55,11 +55,14 @@ export function InfoCard({ card, fontSize = 1 }: InfoCardProps) {
             className={`prose dark:prose-invert max-w-none
             ${cfg.body}
             prose-p:text-foreground/80 prose-p:leading-relaxed
-            prose-headings:font-semibold prose-headings:text-foreground
+            prose-headings:font-semibold prose-headings:text-foreground prose-headings:mt-6 prose-headings:mb-2
+            prose-h2:border-b prose-h2:border-border prose-h2:pb-1
             prose-strong:text-foreground prose-strong:font-semibold
             prose-a:text-foreground prose-a:no-underline hover:prose-a:opacity-70
             prose-ul:text-foreground/80 prose-ol:text-foreground/80
-            prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:bg-muted/50 prose-blockquote:rounded-r-lg prose-blockquote:py-1 prose-blockquote:not-italic
+            prose-li:text-foreground/80 prose-li:leading-relaxed prose-li:my-0.5
+            prose-code:text-foreground prose-code:bg-muted prose-code:rounded prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.875em] prose-code:font-mono prose-code:before:content-none prose-code:after:content-none
+            prose-blockquote:border-l-[3px] prose-blockquote:border-primary/40 prose-blockquote:bg-primary/5 prose-blockquote:rounded-r-lg prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:not-italic prose-blockquote:text-foreground/70
             prose-table:rounded-xl prose-table:overflow-hidden
             prose-th:bg-muted prose-th:font-semibold
             prose-td:border-border
