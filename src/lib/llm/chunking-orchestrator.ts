@@ -2,6 +2,7 @@ import { generateCards as llmGenerateCards } from '@/lib/llm';
 import { chunkSourceText, distributeCount } from '@/lib/llm/chunking';
 import { LlmError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+import { MAX_CARDS_PER_BATCH } from '@/lib/constants';
 import type { CardsOutput } from '@/lib/llm/schema';
 
 /** Retry LLM generation up to maxAttempts times on schema/parse failures */
@@ -40,8 +41,10 @@ export async function generateWithSourceChunking(
 ): Promise<CardsOutput> {
   const sourceText = input.sourceText;
   const CHUNK_THRESHOLD = 8000;
-  // Use small internal batches for short text to show progress quickly
-  const MINI_BATCH_SIZE = 4;
+  // Match batch size to generation batch so we never split into multiple LLM calls
+  // for a single generation trigger. Splitting causes timeout issues with slower providers
+  // (e.g. QWEN) on Vercel Hobby's 60-second limit.
+  const MINI_BATCH_SIZE = MAX_CARDS_PER_BATCH;
 
   const allCards: CardsOutput = [];
   const seenTitles = new Set(existingTitles.map((t) => t.toLowerCase()));
