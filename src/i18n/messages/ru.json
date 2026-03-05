@@ -28,7 +28,7 @@
     "generating": "Генерация…",
     "saving": "Сохранение…",
     "createTheme": "Создать тему",
-    "createAndGenerate": "Создать и создать {count} карточек"
+    "createAndGenerate": "Создать"
   },
   "messages": {
     "success": "Успешно",

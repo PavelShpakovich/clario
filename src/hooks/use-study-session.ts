@@ -50,10 +50,12 @@ export function useStudySession(themeId: string) {
 
   const pollTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const isPollingRef = useRef<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   interface FetchCardsOptions {
     triggerGeneration?: boolean;
     count?: number;
+    signal?: AbortSignal;
   }
 
   const fetchCardsForSession = useCallback(
@@ -87,6 +89,10 @@ export function useStudySession(themeId: string) {
         setIsInitialLoading(false);
         return data;
       } catch (err) {
+        // Ignore abort errors (user navigated away)
+        if (err instanceof Error && err.name === 'AbortError') {
+          return null;
+        }
         setIsInitialLoading(false);
         setError(err instanceof Error ? err.message : 'LOAD_FAILED');
         return null;
@@ -97,6 +103,9 @@ export function useStudySession(themeId: string) {
 
   // Initialize session and first fetch
   useEffect(() => {
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     const initSession = async () => {
       try {
         setCards([]);
@@ -105,7 +114,7 @@ export function useStudySession(themeId: string) {
         setIsInitialLoading(true);
         setSourceIds([]);
 
-        const data = await studyApi.initSession(themeId);
+        const data = await studyApi.initSession(themeId, abortController.signal);
         const createdSession = { id: data.sessionId };
         setStudySession(createdSession);
         setSeenCardIds(data.seenCardIds);
@@ -123,6 +132,7 @@ export function useStudySession(themeId: string) {
 
         const initialData = await fetchCardsForSession(data.sessionId, {
           triggerGeneration: false,
+          signal: abortController.signal,
         });
 
         if (
@@ -134,9 +144,14 @@ export function useStudySession(themeId: string) {
           await fetchCardsForSession(data.sessionId, {
             triggerGeneration: true,
             count: cardCount,
+            signal: abortController.signal,
           });
         }
       } catch (err) {
+        // Ignore abort errors (user navigated away)
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
         setIsInitialLoading(false);
         setError(err instanceof Error ? err.message : 'LOAD_FAILED');
       }
@@ -145,6 +160,11 @@ export function useStudySession(themeId: string) {
     if (session?.user?.id) {
       void initSession();
     }
+
+    return () => {
+      abortController.abort();
+      abortControllerRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [themeId, session?.user?.id, fetchCardsForSession]);
 
@@ -176,10 +196,13 @@ export function useStudySession(themeId: string) {
     if (isPollingRef.current) return;
     isPollingRef.current = true;
 
+    const abortController = new AbortController();
+
     const poll = async () => {
       try {
         const data = await studyApi.fetchCards(studySession.id, themeId, {
           triggerGeneration: false,
+          signal: abortController.signal,
         });
         setCards((prev) => {
           const existing = new Set(prev.map((c) => c.id));
@@ -205,6 +228,7 @@ export function useStudySession(themeId: string) {
             try {
               const finalData = await studyApi.fetchCards(studySession.id, themeId, {
                 triggerGeneration: false,
+                signal: abortController.signal,
               });
               setCards((prev) => {
                 const existing = new Set(prev.map((c) => c.id));
@@ -217,6 +241,10 @@ export function useStudySession(themeId: string) {
           }, 1000);
         }
       } catch (err) {
+        // Ignore abort errors (user navigated away)
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
         setError(err instanceof Error ? err.message : 'Failed while polling cards');
         isPollingRef.current = false;
       }
@@ -225,6 +253,7 @@ export function useStudySession(themeId: string) {
     pollTimerRef.current = setTimeout(poll, 2000);
 
     return () => {
+      abortController.abort();
       if (pollTimerRef.current) {
         clearTimeout(pollTimerRef.current);
         pollTimerRef.current = undefined;

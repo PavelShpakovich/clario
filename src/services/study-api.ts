@@ -23,11 +23,15 @@ class StudyApi {
   /**
    * Initialize a study session for a theme
    */
-  async initSession(themeId: string): Promise<{ sessionId: string; seenCardIds: string[] }> {
+  async initSession(
+    themeId: string,
+    signal?: AbortSignal,
+  ): Promise<{ sessionId: string; seenCardIds: string[] }> {
     const res = await fetch('/api/session/init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ themeId }),
+      signal,
     });
 
     if (!res.ok) {
@@ -43,7 +47,7 @@ class StudyApi {
   async fetchCards(
     sessionId: string,
     themeId: string,
-    options?: FetchCardsOptions,
+    options?: FetchCardsOptions & { signal?: AbortSignal },
   ): Promise<CardsResponse> {
     const params = new URLSearchParams({
       sessionId,
@@ -55,7 +59,9 @@ class StudyApi {
       params.append('count', options.count.toString());
     }
 
-    const res = await fetch(`/api/cards?${params.toString()}`);
+    const res = await fetch(`/api/cards?${params.toString()}`, {
+      signal: options?.signal,
+    });
 
     if (!res.ok) {
       throw new Error('Failed to fetch cards');
@@ -67,11 +73,12 @@ class StudyApi {
   /**
    * Mark a card as seen in the session
    */
-  async markCardSeen(sessionId: string, cardId: string): Promise<void> {
+  async markCardSeen(sessionId: string, cardId: string, signal?: AbortSignal): Promise<void> {
     const res = await fetch('/api/session/seen', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId, cardId }),
+      signal,
     });
 
     if (!res.ok) {
