@@ -115,6 +115,8 @@
     "createNew": "Create New Theme",
     "name": "Theme Name",
     "description": "Description",
+    "settingsTitle": "Theme Configuration",
+    "settingsDescription": "Manage your theme's name and description",
     "language": "Card Language",
     "cardLanguage": "Cards will be generated in this language",
     "addSource": "Add Source",
@@ -215,7 +217,19 @@
     "signingYouIn": "Signing you in…"
   },
   "settings": {
-    "profile": "Profile"
+    "profile": "Profile",
+    "profileTitle": "Profile Settings",
+    "profileDescription": "Manage your personal information and preferences",
+    "email": "Email",
+    "displayName": "Display Name",
+    "currentStreak": "Current Streak",
+    "streakDescription": "Keep learning daily to maintain your streak",
+    "saveProfile": "Save Profile",
+    "security": "Security",
+    "securityDescription": "Update your password and security settings",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter new password",
+    "updatePassword": "Update Password"
   },
   "auth": {
     "loginTitle": "Welcome back",

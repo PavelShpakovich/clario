@@ -115,6 +115,8 @@
     "createNew": "Создать новую тему",
     "name": "Название темы",
     "description": "Описание",
+    "settingsTitle": "Настройки темы",
+    "settingsDescription": "Управляйте названием и описанием темы",
     "language": "Язык карточек",
     "cardLanguage": "Карточки будут сгенерированы на этом языке",
     "addSource": "Добавить источник",
@@ -239,6 +241,18 @@
     "creatingAccount": "Создание аккаунта..."
   },
   "settings": {
-    "profile": "Профиль"
+    "profile": "Профиль",
+    "profileTitle": "Настройки профиля",
+    "profileDescription": "Управляйте своей личной информацией и настройками",
+    "email": "Электронная почта",
+    "displayName": "Отображаемое имя",
+    "currentStreak": "Текущая серия",
+    "streakDescription": "Продолжайте изучать каждый день, чтобы сохранить серию",
+    "saveProfile": "Сохранить профиль",
+    "security": "Безопасность",
+    "securityDescription": "Обновите пароль и настройки безопасности",
+    "newPassword": "Новый пароль",
+    "newPasswordPlaceholder": "Введите новый пароль",
+    "updatePassword": "Обновить пароль"
   }
 }

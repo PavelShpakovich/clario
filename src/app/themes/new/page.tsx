@@ -272,15 +272,6 @@ export default function NewThemePage() {
 
               <div className="flex flex-col gap-3 pt-2 sm:flex-row">
                 <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => router.back()}
-                  disabled={isSubmitting}
-                >
-                  {t('buttons.cancel')}
-                </Button>
-                <Button
                   type="submit"
                   className="flex-1 h-auto whitespace-normal py-2 leading-snug"
                   disabled={isSubmitting || form.formState.isSubmitting}
@@ -292,6 +283,15 @@ export default function NewThemePage() {
                     : autoGenerate
                       ? t('buttons.createAndGenerate')
                       : t('buttons.createTheme')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => router.back()}
+                  disabled={isSubmitting}
+                >
+                  {t('buttons.cancel')}
                 </Button>
               </div>
             </form>

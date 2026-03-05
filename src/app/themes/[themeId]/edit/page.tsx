@@ -16,13 +16,15 @@ import {
   AlertCircle,
   Loader,
   Settings,
-  Database,
+  Database as DatabaseIcon,
   Trash2,
   X,
 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useSourceUpload } from '@/hooks/use-source-upload';
+import { themeApi } from '@/services/theme-api';
+import type { Database } from '@/lib/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -53,13 +55,7 @@ const themeSchema = z.object({
 
 type ThemeFormValues = z.infer<typeof themeSchema>;
 
-interface Theme {
-  id: string;
-  name: string;
-  description?: string;
-  language: 'en' | 'ru';
-  is_public?: boolean;
-}
+type Theme = Database['public']['Tables']['themes']['Row'];
 
 export default function EditThemePage({ params }: EditThemePageProps) {
   const t = useTranslations();
@@ -103,18 +99,12 @@ export default function EditThemePage({ params }: EditThemePageProps) {
   useEffect(() => {
     const fetchTheme = async () => {
       try {
-        const res = await fetch(`/api/themes/${themeId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setTheme(data.theme);
-          form.reset({
-            name: data.theme.name,
-            description: data.theme.description || '',
-          });
-        } else {
-          toast.error(t('messages.error'));
-          router.push('/dashboard');
-        }
+        const themeData = await themeApi.getTheme(themeId);
+        setTheme(themeData);
+        form.reset({
+          name: themeData.name,
+          description: themeData.description || '',
+        });
       } catch (err) {
         console.error('Failed to fetch theme:', err);
         toast.error(t('messages.error'));
@@ -141,22 +131,14 @@ export default function EditThemePage({ params }: EditThemePageProps) {
   async function onSettingsSubmit(values: ThemeFormValues) {
     try {
       setIsSubmitting(true);
-      const response = await fetch(`/api/themes/${themeId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: values.name,
-          description: values.description,
-        }),
+      const updatedTheme = await themeApi.updateTheme(themeId, {
+        name: values.name,
+        description: values.description,
       });
-
-      if (!response.ok) {
-        throw new Error(t('messages.error'));
-      }
 
       toast.success(t('messages.success'));
       // Update local state
-      setTheme((prev) => (prev ? { ...prev, ...values } : null));
+      setTheme((prev) => (prev ? { ...prev, ...updatedTheme } : null));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('messages.error'));
     } finally {
@@ -168,12 +150,7 @@ export default function EditThemePage({ params }: EditThemePageProps) {
     if (!themeToDelete) return;
 
     try {
-      const res = await fetch(`/api/themes/${themeToDelete.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!res.ok) throw new Error(t('messages.failedDelete'));
-
+      await themeApi.deleteTheme(themeToDelete.id);
       toast.success(t('messages.themeDeleted'));
       router.push('/dashboard');
     } catch (error) {
@@ -238,17 +215,7 @@ export default function EditThemePage({ params }: EditThemePageProps) {
     const toastId = toast.loading(t('themes.generating'));
     try {
       setIsGenerating(true);
-      const response = await fetch('/api/generate/cards', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ themeId, count: cardCount }),
-      });
-
-      if (!response.ok) {
-        const data = (await response.json()) as { error?: string; message?: string };
-        throw new Error(data.error || data.message || t('messages.error'));
-      }
-
+      await themeApi.generateCards(themeId, cardCount);
       toast.success(t('themes.success'), { id: toastId });
       router.push(`/study/${themeId}`);
     } catch (error) {
@@ -330,7 +297,7 @@ export default function EditThemePage({ params }: EditThemePageProps) {
       <Tabs defaultValue="content" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2 mb-8">
           <TabsTrigger value="content" className="flex gap-2">
-            <Database className="h-4 w-4" />
+            <DatabaseIcon className="h-4 w-4" />
             {t('dashboard.sources')}
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex gap-2">
@@ -625,8 +592,8 @@ export default function EditThemePage({ params }: EditThemePageProps) {
         <TabsContent value="settings" className="max-w-2xl">
           <Card>
             <CardHeader>
-              <CardTitle>{t('navigation.settings')}</CardTitle>
-              <CardDescription>{t('themes.description')}</CardDescription>
+              <CardTitle>{t('themes.settingsTitle')}</CardTitle>
+              <CardDescription>{t('themes.settingsDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>

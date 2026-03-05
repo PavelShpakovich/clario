@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { profileApi } from '@/services/profile-api';
 
 // Module-level cache so all hook instances share state
 let cachedName: string | null = null;
@@ -33,10 +34,10 @@ export function useDisplayName() {
 
     let cancelled = false;
 
-    fetch('/api/profile')
-      .then((res) => (res.ok ? (res.json() as Promise<{ display_name: string | null }>) : null))
+    profileApi
+      .getProfile()
       .then((data) => {
-        if (cancelled || !data) return;
+        if (cancelled) return;
         const name = data.display_name ?? session?.user?.name ?? null;
         cachedName = name;
         if (name) setDisplayName(name);
