@@ -113,7 +113,7 @@ export function DashboardClient({
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 md:py-10">
-      {isTg && <TgSettingsBar viewMode={viewMode} onViewChange={handleViewChange} />}
+      {isTg && <TgSettingsBar />}
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
         <div>
@@ -138,7 +138,7 @@ export function DashboardClient({
             <TabsTrigger value="my-themes">{t('dashboard.myThemesTab')}</TabsTrigger>
             <TabsTrigger value="community">{t('dashboard.communityTab')}</TabsTrigger>
           </TabsList>
-          {!isTg && <ViewToggle viewMode={viewMode} onViewChange={handleViewChange} />}
+          <ViewToggle viewMode={viewMode} onViewChange={handleViewChange} />
         </div>
         <TabsContent value="my-themes">{renderThemeList(themes, true)}</TabsContent>
         <TabsContent value="community">{renderThemeList(publicThemes, false)}</TabsContent>

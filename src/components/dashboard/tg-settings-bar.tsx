@@ -5,21 +5,14 @@ import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { useUiLanguage } from '@/hooks/use-ui-language';
 import { Button } from '@/components/ui/button';
-import { ViewToggle } from '@/components/common/view-toggle';
 
-interface TgSettingsBarProps {
-  viewMode?: 'grid' | 'list';
-  onViewChange?: (mode: 'grid' | 'list') => void;
-}
-
-export function TgSettingsBar({ viewMode, onViewChange }: TgSettingsBarProps) {
+export function TgSettingsBar() {
   const t = useTranslations();
   const { theme: colorTheme, setTheme: setColorTheme } = useTheme();
   const { locale, setLanguage } = useUiLanguage();
 
   return (
     <div className="mb-4 flex items-center justify-end gap-2">
-      {viewMode && onViewChange && <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />}
       {/* Language */}
       <div className="flex items-center gap-1 rounded-full border border-border bg-background px-1 py-1">
         <Globe className="mx-1.5 h-3.5 w-3.5 text-muted-foreground" />
