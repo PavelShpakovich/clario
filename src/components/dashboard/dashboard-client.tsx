@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, LayoutGrid, List } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { ViewToggle } from '@/components/common/view-toggle';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import type { Database } from '@/lib/supabase/types';
@@ -35,6 +36,10 @@ export function DashboardClient({
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const isTg = isTelegramWebApp();
+
+  useEffect(() => {
+    setThemes(initialThemes);
+  }, [initialThemes]);
 
   useEffect(() => {
     const saved = localStorage.getItem('dashboard_view');
@@ -108,7 +113,7 @@ export function DashboardClient({
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 md:py-10">
-      {isTg && <TgSettingsBar />}
+      {isTg && <TgSettingsBar viewMode={viewMode} onViewChange={handleViewChange} />}
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
         <div>
@@ -133,26 +138,7 @@ export function DashboardClient({
             <TabsTrigger value="my-themes">{t('dashboard.myThemesTab')}</TabsTrigger>
             <TabsTrigger value="community">{t('dashboard.communityTab')}</TabsTrigger>
           </TabsList>
-          <div className="flex items-center gap-1 rounded-md border p-1">
-            <Button
-              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => handleViewChange('grid')}
-              aria-label={t('dashboard.gridView')}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => handleViewChange('list')}
-              aria-label={t('dashboard.listView')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
+          {!isTg && <ViewToggle viewMode={viewMode} onViewChange={handleViewChange} />}
         </div>
         <TabsContent value="my-themes">{renderThemeList(themes, true)}</TabsContent>
         <TabsContent value="community">{renderThemeList(publicThemes, false)}</TabsContent>

@@ -14,7 +14,7 @@ export class GenerationService {
    * written to the DB (so polls from other instances see generating=true).
    * Clears the DB flag on success or failure.
    */
-  static async doGenerate(userId: string, themeId: string): Promise<void> {
+  static async doGenerate(userId: string, themeId: string, customCount?: number): Promise<void> {
     logger.info({ themeId }, 'Starting card generation');
     try {
       const { data: theme } = await supabaseAdmin
@@ -57,7 +57,7 @@ export class GenerationService {
           theme: theme.name,
           description: theme.description ?? undefined,
           sourceText,
-          count: MAX_CARDS_PER_BATCH,
+          count: customCount ?? MAX_CARDS_PER_BATCH,
           topicsToAvoid: topicsToAvoid.length > 0 ? topicsToAvoid : undefined,
           language: theme.language as 'en' | 'ru' | undefined,
         },

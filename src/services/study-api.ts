@@ -16,6 +16,7 @@ export interface CardsResponse {
 
 interface FetchCardsOptions {
   triggerGeneration?: boolean;
+  count?: number;
 }
 
 class StudyApi {
@@ -49,6 +50,10 @@ class StudyApi {
       themeId,
       triggerGeneration: options?.triggerGeneration ? '1' : '0',
     });
+
+    if (options?.count) {
+      params.append('count', options.count.toString());
+    }
 
     const res = await fetch(`/api/cards?${params.toString()}`);
 

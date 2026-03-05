@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import type { Database } from '@/lib/supabase/types';
 import { studyApi } from '@/services/study-api';
@@ -31,6 +32,8 @@ type Card = Database['public']['Tables']['cards']['Row'];
 export function useStudySession(themeId: string) {
   const { data: session } = useSession();
   const t = useTranslations();
+  const searchParams = useSearchParams();
+  const initialCountParam = searchParams.get('count');
 
   const [cards, setCards] = useState<Card[]>([]);
   const [studySession, setStudySession] = useState<{ id: string } | null>(null);
@@ -40,7 +43,9 @@ export function useStudySession(themeId: string) {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [infiniteMode, setInfiniteMode] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cardCount, setCardCount] = useState(10);
+  const [cardCount, setCardCount] = useState(
+    initialCountParam ? parseInt(initialCountParam, 10) : 10,
+  );
   const [sourceIds, setSourceIds] = useState<string[]>([]);
 
   const pollTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -48,10 +53,12 @@ export function useStudySession(themeId: string) {
 
   interface FetchCardsOptions {
     triggerGeneration?: boolean;
+    count?: number;
   }
 
   const fetchCardsForSession = useCallback(
     async (sessionId: string, options?: FetchCardsOptions) => {
+      setError(null);
       try {
         const data = await studyApi.fetchCards(sessionId, themeId, options);
 
@@ -124,7 +131,10 @@ export function useStudySession(themeId: string) {
           initialData.cards.length === 0 &&
           !initialData.generating
         ) {
-          await fetchCardsForSession(data.sessionId, { triggerGeneration: true });
+          await fetchCardsForSession(data.sessionId, {
+            triggerGeneration: true,
+            count: cardCount,
+          });
         }
       } catch (err) {
         setIsInitialLoading(false);
@@ -142,6 +152,10 @@ export function useStudySession(themeId: string) {
   const fetchCards = useCallback(
     async (options?: FetchCardsOptions) => {
       if (!studySession) return;
+
+      if (options?.triggerGeneration) {
+        setIsGenerating(true);
+      }
 
       await fetchCardsForSession(studySession.id, options);
     },

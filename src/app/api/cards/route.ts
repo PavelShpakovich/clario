@@ -11,6 +11,7 @@ const querySchema = z.object({
   sessionId: z.string().uuid(),
   themeId: z.string().uuid(),
   triggerGeneration: z.enum(['0', '1']).optional(),
+  count: z.string().regex(/^\d+$/).transform(Number).optional(),
 });
 
 export const GET = withApiHandler(async (req) => {
@@ -21,6 +22,7 @@ export const GET = withApiHandler(async (req) => {
     sessionId: searchParams.get('sessionId'),
     themeId: searchParams.get('themeId'),
     triggerGeneration: searchParams.get('triggerGeneration') ?? undefined,
+    count: searchParams.get('count') ?? undefined,
   });
 
   if (!query.success) {
@@ -29,7 +31,7 @@ export const GET = withApiHandler(async (req) => {
     });
   }
 
-  const { sessionId, themeId, triggerGeneration } = query.data;
+  const { sessionId, themeId, triggerGeneration, count } = query.data;
 
   // Verify session belongs to this user
   const { data: sessions } = await supabase
@@ -106,7 +108,7 @@ export const GET = withApiHandler(async (req) => {
       // Use next/server after() so Vercel keeps the lambda alive for the full
       // generation run even after the HTTP response has been sent.
       after(async () => {
-        await GenerationService.doGenerate(user.id, themeId).catch((err: unknown) => {
+        await GenerationService.doGenerate(user.id, themeId, count).catch((err: unknown) => {
           logger.error({ themeId, err }, 'Background generation failed');
         });
       });

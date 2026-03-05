@@ -87,7 +87,7 @@ export default function NewThemePage() {
         // Navigate immediately — study hook auto-triggers generation on mount
         // when infiniteMode=true and there are 0 cards
         await revalidateDashboard();
-        router.push(`/study/${theme.id}`);
+        router.push(`/study/${theme.id}?count=${values.cardCount}`);
       } else {
         await revalidateDashboard();
         toast.success(t('messages.success'));

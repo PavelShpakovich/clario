@@ -25,7 +25,7 @@
     "autoGenerate": "Автоматическая генерация",
     "manual": "Ручное",
     "creating": "Создание…",
-    "generating": "Генерирование…",
+    "generating": "Генерация…",
     "saving": "Сохранение…",
     "createTheme": "Создать тему",
     "createAndGenerate": "Создать и создать {count} карточек"
