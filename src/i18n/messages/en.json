@@ -214,9 +214,6 @@
     "starting": "Starting…",
     "signingYouIn": "Signing you in…"
   },
-  "validation": {
-    "passwordTooShort": "Password must be at least 6 characters"
-  },
   "settings": {
     "profile": "Profile"
   },
