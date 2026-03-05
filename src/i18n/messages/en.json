@@ -10,7 +10,8 @@
     "settings": "Settings",
     "logout": "Logout",
     "login": "Login",
-    "register": "Sign Up"
+    "register": "Sign Up",
+    "adminPanel": "Admin Panel"
   },
   "buttons": {
     "save": "Save",
@@ -222,6 +223,7 @@
     "profileDescription": "Manage your personal information and preferences",
     "email": "Email",
     "displayName": "Display Name",
+    "displayNamePlaceholder": "Your name",
     "currentStreak": "Current Streak",
     "streakDescription": "Keep learning daily to maintain your streak",
     "saveProfile": "Save Profile",

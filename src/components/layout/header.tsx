@@ -135,6 +135,17 @@ export function Header() {
                     {t('navigation.settings')}
                   </Link>
                 </DropdownMenuItem>
+                {user?.isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="flex items-center gap-2">
+                        <Settings className="w-4 h-4" />
+                        {t('navigation.adminPanel')}
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => signOut({ callbackUrl: '/login' })}

@@ -4,6 +4,7 @@ import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
 import { NotFoundError, RateLimitError, ValidationError } from '@/lib/errors';
 import { generateWithSourceChunking } from '@/services/generation.service';
+import { SubscriptionService } from '@/lib/subscriptions/service';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 import {
@@ -53,6 +54,20 @@ export const POST = withApiHandler(async (req) => {
   }
 
   const { themeId, sourceIds, count } = body.data;
+
+  // Check usage limits
+  const subscription = await SubscriptionService.getSubscriptionStatus(user.id);
+  if (!subscription.canGenerate) {
+    throw new ValidationError({
+      message: `Usage limit reached. You have ${subscription.usage.cardsRemaining} cards remaining for this month. Upgrade your plan to generate more.`,
+    });
+  }
+
+  if (subscription.usage.cardsRemaining < count) {
+    throw new ValidationError({
+      message: `Not enough cards remaining (${subscription.usage.cardsRemaining}/${count}). Upgrade your plan or reduce the card count.`,
+    });
+  }
 
   // Verify theme belongs to this user
   const { data: theme } = await supabase
@@ -155,6 +170,15 @@ export const POST = withApiHandler(async (req) => {
     .select();
 
   if (error) throw error;
+
+  // Track usage
+  if (inserted && inserted.length > 0) {
+    await SubscriptionService.incrementCardCount(user.id, inserted.length);
+    logger.info(
+      { userId: user.id, cardsGenerated: inserted.length, plan: subscription.plan.planId },
+      'Updated user card usage',
+    );
+  }
 
   return NextResponse.json({ cards: inserted, count: inserted?.length ?? 0 }, { status: 201 });
 });

@@ -10,7 +10,8 @@
     "settings": "Настройки",
     "logout": "Выход",
     "login": "Вход",
-    "register": "Регистрация"
+    "register": "Регистрация",
+    "adminPanel": "Панель администратора"
   },
   "buttons": {
     "save": "Сохранить",
@@ -246,6 +247,7 @@
     "profileDescription": "Управляйте своей личной информацией и настройками",
     "email": "Электронная почта",
     "displayName": "Отображаемое имя",
+    "displayNamePlaceholder": "Ваше имя",
     "currentStreak": "Текущая серия",
     "streakDescription": "Продолжайте изучать каждый день, чтобы сохранить серию",
     "saveProfile": "Сохранить профиль",

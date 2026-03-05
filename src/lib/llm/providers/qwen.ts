@@ -40,11 +40,16 @@ export class QwenProvider implements LlmProviderAdapter {
     const response = await this.client.chat.completions.create({
       model: this.model,
       messages: [
-        { role: 'system', content: system },
+        {
+          role: 'system',
+          content: system,
+          // Cache system prompt for 5-minute TTL (QWEN default)
+          // @ts-expect-error QWEN supports cache_control via OpenAI SDK extended params
+          cache_control: { type: 'ephemeral' },
+        },
         { role: 'user', content: user },
       ],
       temperature: 0.7,
-      // @ts-expect-error QWEN extended parameter - disable thinking mode for faster responses
       enable_thinking: false,
     });
 

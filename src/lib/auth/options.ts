@@ -9,10 +9,12 @@ import { deriveDisplayNameFromEmail } from '@/lib/auth/utils';
 declare module 'next-auth' {
   interface User {
     id: string;
+    isAdmin?: boolean;
   }
   interface Session {
     user: User & {
       id: string;
+      isAdmin?: boolean;
     };
   }
 }
@@ -21,6 +23,7 @@ declare module 'next-auth/jwt' {
   interface JWT {
     userId: string;
     displayName?: string;
+    isAdmin?: boolean;
   }
 }
 
@@ -139,20 +142,36 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.userId = user.id;
         token.displayName = user.name || undefined;
+        token.isAdmin = user.isAdmin || false;
       } else if (token.userId) {
-        // On refresh, fetch the latest display_name from database
+        // On refresh, fetch the latest display_name and isAdmin from database
         try {
           const { data: profile } = await supabaseAdmin
             .from('profiles')
-            .select('display_name')
+            .select('display_name, is_admin')
             .eq('id', token.userId)
             .single();
 
           if (profile?.display_name) {
             token.displayName = profile.display_name;
           }
+
+          // Check if admin via is_admin column or ADMIN_EMAILS env
+          let isAdmin = profile?.is_admin || false;
+          if (!isAdmin && env.ADMIN_EMAILS) {
+            try {
+              const { data } = await supabaseAdmin.auth.admin.getUserById(token.userId);
+              if (data.user?.email) {
+                const adminEmails = env.ADMIN_EMAILS.split(',').map((e) => e.trim());
+                isAdmin = adminEmails.includes(data.user.email);
+              }
+            } catch {
+              // If error, keep existing isAdmin
+            }
+          }
+          token.isAdmin = isAdmin;
         } catch {
-          // If error, keep existing displayName
+          // If error, keep existing values
         }
       }
       return token;
@@ -163,6 +182,7 @@ export const authOptions: NextAuthOptions = {
         if (token.displayName) {
           session.user.name = token.displayName;
         }
+        session.user.isAdmin = token.isAdmin || false;
       }
       return session;
     },

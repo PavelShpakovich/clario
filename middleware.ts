@@ -46,6 +46,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(tgUrl);
   }
 
+  // Admin routes: check isAdmin flag
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    const isAdmin = (token as Record<string, unknown>).isAdmin === true;
+    if (!isAdmin) {
+      if (pathname.startsWith('/api')) {
+        return NextResponse.json({ error: 'Forbidden - admin access required' }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 

@@ -32,6 +32,10 @@ const envSchema = z.object({
   // Telegram
   TELEGRAM_BOT_TOKEN: z.string().optional(),
 
+  // Support
+  SUPPORT_EMAIL: z.string().email().optional().default('support@example.com'),
+  ADMIN_EMAILS: z.string().optional(), // Comma-separated email list
+
   // Sentry
   SENTRY_DSN: z.string().url().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
