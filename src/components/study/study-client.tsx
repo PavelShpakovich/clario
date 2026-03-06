@@ -173,7 +173,22 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
         }
       });
       const maxIndex = Math.max(0, cardCountRef.current - 1);
-      setCurrentCardIndex(Math.max(0, Math.min(closestIndex, maxIndex)));
+      const settled = Math.max(0, Math.min(closestIndex, maxIndex));
+      setCurrentCardIndex(settled);
+
+      // Mark the settled card AND the immediately preceding card as seen.
+      // The IntersectionObserver can miss cards during fast swipes (the card
+      // spends < threshold time at ≥ 80% intersection). Doing it here on
+      // scrollend guarantees both are recorded — the settled card is
+      // definitively on-screen, and the previous card was just on-screen.
+      const indicesToMark = settled > 0 ? [settled - 1, settled] : [settled];
+      for (const idx of indicesToMark) {
+        const card = cardsRef.current[idx];
+        if (card && !seenIdsRef.current.has(card.id)) {
+          seenIdsRef.current.add(card.id);
+          void markCardSeenRef.current(card.id);
+        }
+      }
     };
 
     main.addEventListener('scrollend', handleScrollEnd);
@@ -186,9 +201,16 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
   // without needing cards in its dependency array (which would re-register
   // the listener on every card append).
   const cardCountRef = useRef(cards.length);
+  // Keep a ref to the cards array so the scrollend handler can read card IDs
+  // without forming a stale closure.
+  const cardsRef = useRef(cards);
+  // Keep a ref to markCardSeen so the scrollend handler doesn't need it as a dep.
+  const markCardSeenRef = useRef(markCardSeen);
   // Update synchronously during render (safe for refs — no re-render triggered)
 
   cardCountRef.current = cards.length;
+  cardsRef.current = cards;
+  markCardSeenRef.current = markCardSeen;
   useEffect(() => {
     if (cards.length > prevCardCountRef.current) {
       // If user was viewing the loader (index == prevLength) or further
