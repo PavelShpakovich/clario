@@ -13,12 +13,7 @@ import { logger } from '@/lib/logger';
  *  - perPage: items per page (default 20, max 100)
  */
 export const GET = withApiHandler(async (req: Request) => {
-  const { user } = await requireAuth();
-
-  // Verify admin access (middleware already checked, but double-verify)
-  if (!('isAdmin' in user) || !(user as Record<string, unknown>).isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  await requireAuth();
 
   const url = new URL(req.url);
   const pageStr = url.searchParams.get('page') ?? '1';

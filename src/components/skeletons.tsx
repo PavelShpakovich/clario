@@ -50,6 +50,75 @@ export function SettingsSkeleton() {
   );
 }
 
+export function AdminTableSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Mobile skeleton */}
+      <div className="md:hidden space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="border rounded-lg p-4 space-y-3 bg-card">
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-1.5 flex-1">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <Skeleton className="h-3 w-28" />
+            <div className="flex gap-2 pt-1">
+              <Skeleton className="h-8 w-32 rounded-md" />
+              <Skeleton className="h-8 w-20 rounded-md" />
+              <Skeleton className="h-8 w-8 rounded-md" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop skeleton */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <th key={i} className="px-4 py-3">
+                  <Skeleton className="h-4 w-20" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <tr key={i} className="border-b">
+                <td className="px-4 py-3">
+                  <Skeleton className="h-4 w-40" />
+                </td>
+                <td className="px-4 py-3">
+                  <Skeleton className="h-4 w-28" />
+                </td>
+                <td className="px-4 py-3">
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </td>
+                <td className="px-4 py-3">
+                  <Skeleton className="h-4 w-12 mx-auto" />
+                </td>
+                <td className="px-4 py-3">
+                  <Skeleton className="h-8 w-32 rounded-md" />
+                </td>
+                <td className="px-4 py-3">
+                  <Skeleton className="h-8 w-20 rounded-md" />
+                </td>
+                <td className="px-4 py-3">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function DashboardSkeleton() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">

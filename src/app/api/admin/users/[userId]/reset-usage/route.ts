@@ -1,0 +1,36 @@
+import { NextResponse } from 'next/server';
+import { withApiHandler } from '@/lib/api/handler';
+import { requireAuth } from '@/lib/api/auth';
+import { SubscriptionService } from '@/lib/subscriptions/service';
+import { ValidationError } from '@/lib/errors';
+import { logger } from '@/lib/logger';
+
+/**
+ * POST /api/admin/users/[userId]/reset-usage
+ * Admin endpoint to reset a user's card usage to zero for the current period.
+ */
+export const POST = withApiHandler(async (_req: Request, ctx?: unknown) => {
+  const { user } = await requireAuth();
+
+  const { params } = (ctx as { params: Promise<Record<string, string>> } | undefined) || {};
+  const { userId } = (await params) || {};
+
+  if (!userId || typeof userId !== 'string') {
+    throw new ValidationError({ message: 'userId is required' });
+  }
+
+  try {
+    await SubscriptionService.resetUsage(userId);
+
+    logger.info({ adminId: user.id, userId }, 'Admin reset user card usage');
+
+    return NextResponse.json({
+      success: true,
+      message: 'Usage reset successfully',
+      userId,
+    });
+  } catch (error) {
+    logger.error({ error, userId, adminId: user.id }, 'Failed to reset user usage');
+    return NextResponse.json({ error: 'Failed to reset usage' }, { status: 500 });
+  }
+});

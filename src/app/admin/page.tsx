@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,8 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { logger } from '@/lib/logger';
+import { ChevronLeft, ChevronRight, Loader2, RotateCcw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
+import { AdminTableSkeleton } from '@/components/skeletons';
+import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { adminApi, type AdminUser } from '@/services/admin-api';
 
 function PlanBadge({ plan }: { plan: string }) {
@@ -27,11 +31,18 @@ function PlanBadge({ plan }: { plan: string }) {
   return <Badge className={colors[plan] || colors.free}>{plan.toUpperCase()}</Badge>;
 }
 
-function UserRow({ user, onRefresh }: { user: AdminUser; onRefresh: () => void }) {
+interface UserRowProps {
+  user: AdminUser;
+  onRefresh: () => void;
+  currentUserId: string;
+}
+
+function useUserActions(user: AdminUser, onRefresh: () => void) {
+  const t = useTranslations('admin');
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(user.plan);
   const [isAdminState, setIsAdminState] = useState(user.isAdmin);
-  const [showToggleAdmin, setShowToggleAdmin] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'toggleAdmin' | 'resetUsage' | null>(null);
 
   const handlePlanChange = async (newPlan: string) => {
     setLoading(true);
@@ -40,92 +51,253 @@ function UserRow({ user, onRefresh }: { user: AdminUser; onRefresh: () => void }
       setSelectedPlan(newPlan);
       onRefresh();
     } catch (error) {
-      logger.error({ error }, 'Failed to change user plan');
-      alert('Failed to change plan');
+      console.error('Failed to change user plan', error);
+      toast.error(t('failedChangePlan'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleAdmin = async () => {
-    if (!confirm(`Are you sure you want to ${isAdminState ? 'demote' : 'promote'} this user?`)) {
-      return;
-    }
-
+  const executeToggleAdmin = async () => {
     setLoading(true);
     try {
       await adminApi.toggleAdmin(user.id, !isAdminState);
       setIsAdminState(!isAdminState);
       onRefresh();
     } catch (error) {
-      logger.error({ error }, 'Failed to toggle admin status');
-      alert('Failed to toggle admin status');
+      console.error('Failed to toggle admin status', error);
+      toast.error(t('failedToggleAdmin'));
     } finally {
       setLoading(false);
-      setShowToggleAdmin(false);
     }
   };
 
+  const executeResetUsage = async () => {
+    setLoading(true);
+    try {
+      await adminApi.resetUsage(user.id);
+      toast.success(t('resetUsageSuccess'));
+      onRefresh();
+    } catch (error) {
+      console.error('Failed to reset usage', error);
+      toast.error(t('failedResetUsage'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const executeConfirmed = async () => {
+    setPendingAction(null);
+    if (pendingAction === 'toggleAdmin') await executeToggleAdmin();
+    if (pendingAction === 'resetUsage') await executeResetUsage();
+  };
+
+  const action = isAdminState ? t('demote').toLowerCase() : t('promote').toLowerCase();
+  const dialogDescription =
+    pendingAction === 'toggleAdmin' ? t('confirmToggleAdmin', { action }) : t('confirmResetUsage');
+
+  return {
+    t,
+    loading,
+    selectedPlan,
+    isAdminState,
+    handlePlanChange,
+    handleToggleAdmin: () => setPendingAction('toggleAdmin'),
+    handleResetUsage: () => setPendingAction('resetUsage'),
+    dialogOpen: pendingAction !== null,
+    dialogDescription,
+    closeDialog: () => setPendingAction(null),
+    executeConfirmed,
+  };
+}
+
+function AdminToggle({
+  t,
+  loading,
+  isAdminState,
+  handleToggleAdmin,
+  isSelf,
+}: {
+  t: ReturnType<typeof useTranslations>;
+  loading: boolean;
+  isAdminState: boolean;
+  handleToggleAdmin: () => void;
+  isSelf: boolean;
+}) {
+  if (isSelf) return null;
   return (
-    <tr className="border-b hover:bg-gray-50">
-      <td className="px-4 py-3 text-sm">{user.email}</td>
-      <td className="px-4 py-3 text-sm">{user.displayName}</td>
-      <td className="px-4 py-3">
-        <PlanBadge plan={selectedPlan} />
-      </td>
-      <td className="px-4 py-3 text-sm text-center">
-        {user.cardsUsed}/{user.cardsPerMonth}
-      </td>
-      <td className="px-4 py-3">
-        <Select value={selectedPlan} onValueChange={handlePlanChange} disabled={loading}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="free">Free</SelectItem>
-            <SelectItem value="basic">Basic</SelectItem>
-            <SelectItem value="pro">Pro</SelectItem>
-            <SelectItem value="unlimited">Unlimited</SelectItem>
-          </SelectContent>
-        </Select>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex gap-2">
-          {showToggleAdmin ? (
-            <>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleToggleAdmin}
-                disabled={loading}
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm'}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowToggleAdmin(false)}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              variant={isAdminState ? 'destructive' : 'outline'}
-              onClick={() => setShowToggleAdmin(true)}
-            >
-              {isAdminState ? 'Demote' : 'Promote'}
-            </Button>
-          )}
+    <Button
+      size="sm"
+      variant={isAdminState ? 'destructive' : 'outline'}
+      onClick={handleToggleAdmin}
+      disabled={loading}
+    >
+      {isAdminState ? t('demote') : t('promote')}
+    </Button>
+  );
+}
+
+/** Mobile card view */
+function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
+  const {
+    t,
+    loading,
+    selectedPlan,
+    isAdminState,
+    handlePlanChange,
+    handleToggleAdmin,
+    handleResetUsage,
+    dialogOpen,
+    dialogDescription,
+    closeDialog,
+    executeConfirmed,
+  } = useUserActions(user, onRefresh);
+  const isSelf = user.id === currentUserId;
+  return (
+    <>
+      <ConfirmationDialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+        onConfirm={() => void executeConfirmed()}
+        title={t('confirmTitle')}
+        description={dialogDescription}
+        confirmLabel={t('confirm')}
+        cancelLabel={t('cancel')}
+      />
+      <div className="border rounded-lg p-4 space-y-3 bg-card">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-medium text-sm truncate">{user.email}</p>
+            <p className="text-xs text-muted-foreground truncate">{user.displayName}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <PlanBadge plan={selectedPlan} />
+            {isAdminState && (
+              <Badge variant="secondary" className="text-xs">
+                Admin
+              </Badge>
+            )}
+          </div>
         </div>
-      </td>
-    </tr>
+        <p className="text-xs text-muted-foreground">
+          {t('colCardsUsed')}: {user.cardsUsed}/{user.cardsPerMonth}
+        </p>
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <Select value={selectedPlan} onValueChange={handlePlanChange} disabled={loading}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="free">Free</SelectItem>
+              <SelectItem value="basic">Basic</SelectItem>
+              <SelectItem value="pro">Pro</SelectItem>
+              <SelectItem value="unlimited">Unlimited</SelectItem>
+            </SelectContent>
+          </Select>
+          <AdminToggle
+            t={t}
+            loading={loading}
+            isAdminState={isAdminState}
+            handleToggleAdmin={handleToggleAdmin}
+            isSelf={isSelf}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleResetUsage}
+            disabled={loading}
+            title={t('resetUsage')}
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** Desktop table row */
+function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
+  const {
+    t,
+    loading,
+    selectedPlan,
+    isAdminState,
+    handlePlanChange,
+    handleToggleAdmin,
+    handleResetUsage,
+    dialogOpen,
+    dialogDescription,
+    closeDialog,
+    executeConfirmed,
+  } = useUserActions(user, onRefresh);
+  const isSelf = user.id === currentUserId;
+  return (
+    <>
+      <ConfirmationDialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+        onConfirm={() => void executeConfirmed()}
+        title={t('confirmTitle')}
+        description={dialogDescription}
+        confirmLabel={t('confirm')}
+        cancelLabel={t('cancel')}
+      />
+      <tr className="border-b hover:bg-muted/40">
+        <td className="px-4 py-3 text-sm">{user.email}</td>
+        <td className="px-4 py-3 text-sm">{user.displayName}</td>
+        <td className="px-4 py-3">
+          <PlanBadge plan={selectedPlan} />
+        </td>
+        <td className="px-4 py-3 text-sm text-center">
+          {user.cardsUsed}/{user.cardsPerMonth}
+        </td>
+        <td className="px-4 py-3">
+          <Select value={selectedPlan} onValueChange={handlePlanChange} disabled={loading}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="free">Free</SelectItem>
+              <SelectItem value="basic">Basic</SelectItem>
+              <SelectItem value="pro">Pro</SelectItem>
+              <SelectItem value="unlimited">Unlimited</SelectItem>
+            </SelectContent>
+          </Select>
+        </td>
+        <td className="px-4 py-3">
+          <AdminToggle
+            t={t}
+            loading={loading}
+            isAdminState={isAdminState}
+            handleToggleAdmin={handleToggleAdmin}
+            isSelf={isSelf}
+          />
+        </td>
+        <td className="px-4 py-3">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleResetUsage}
+            disabled={loading}
+            title={t('resetUsage')}
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </td>
+      </tr>
+    </>
   );
 }
 
 function AdminTableContent() {
+  const t = useTranslations('admin');
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id ?? '';
   const searchParams = useSearchParams();
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
   const perPage = 20;
@@ -141,30 +313,24 @@ function AdminTableContent() {
       const result = await adminApi.listUsers(page, perPage);
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load users');
+      setError(err instanceof Error ? err.message : t('failedLoadUsers'));
     } finally {
       setLoading(false);
     }
-  }, [page, perPage]);
+  }, [page, perPage, t]);
 
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
+  if (loading) return <AdminTableSkeleton />;
 
   if (error) {
     return <div className="text-center py-8 text-red-600">{error}</div>;
   }
 
   if (!data?.users?.length) {
-    return <div className="text-center py-8 text-gray-500">No users found</div>;
+    return <div className="text-center py-8 text-gray-500">{t('noUsers')}</div>;
   }
 
   const nextUrl = new URL(window.location.href);
@@ -175,57 +341,86 @@ function AdminTableContent() {
 
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto">
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {data.users.map((user) => (
+          <UserMobileCard
+            key={user.id}
+            user={user}
+            onRefresh={loadUsers}
+            currentUserId={currentUserId}
+          />
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-gray-50">
-              <th className="px-4 py-3 text-left font-semibold">Email</th>
-              <th className="px-4 py-3 text-left font-semibold">Display Name</th>
-              <th className="px-4 py-3 text-left font-semibold">Plan</th>
-              <th className="px-4 py-3 text-left font-semibold">Cards Used</th>
-              <th className="px-4 py-3 text-left font-semibold">Change Plan</th>
-              <th className="px-4 py-3 text-left font-semibold">Admin</th>
+            <tr className="border-b bg-muted/50">
+              <th className="px-4 py-3 text-left font-semibold">{t('colEmail')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('colDisplayName')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('colPlan')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('colCardsUsed')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('colChangePlan')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('colAdmin')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('resetUsage')}</th>
             </tr>
           </thead>
           <tbody>
             {data.users.map((user) => (
-              <UserRow key={user.id} user={user} onRefresh={loadUsers} />
+              <UserRow
+                key={user.id}
+                user={user}
+                onRefresh={loadUsers}
+                currentUserId={currentUserId}
+              />
             ))}
           </tbody>
         </table>
       </div>
 
       <div className="flex items-center justify-between">
-        <Link href={prevUrl.toString()}>
-          <Button variant="outline" size="sm" disabled={page === 1} className="gap-2">
+        {page === 1 ? (
+          <Button variant="outline" size="sm" disabled className="gap-2">
             <ChevronLeft className="h-4 w-4" />
-            Previous
+            {t('previous')}
           </Button>
-        </Link>
-        <span className="text-sm text-gray-600">Page {page}</span>
-        <Link href={nextUrl.toString()}>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={data.users.length < perPage}
-            className="gap-2"
-          >
-            Next
+        ) : (
+          <Button variant="outline" size="sm" asChild className="gap-2">
+            <Link href={prevUrl.toString()}>
+              <ChevronLeft className="h-4 w-4" />
+              {t('previous')}
+            </Link>
+          </Button>
+        )}
+        <span className="text-sm text-muted-foreground">{t('page', { page })}</span>
+        {data.users.length < perPage ? (
+          <Button variant="outline" size="sm" disabled className="gap-2">
+            {t('next')}
             <ChevronRight className="h-4 w-4" />
           </Button>
-        </Link>
+        ) : (
+          <Button variant="outline" size="sm" asChild className="gap-2">
+            <Link href={nextUrl.toString()}>
+              {t('next')}
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        )}
       </div>
     </div>
   );
 }
 
 export default function AdminPage() {
+  const t = useTranslations('admin');
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Admin Panel</h1>
-          <p className="text-gray-600 mt-2">Manage users, subscriptions, and permissions</p>
+          <h1 className="text-3xl font-bold">{t('title')}</h1>
+          <p className="text-muted-foreground mt-2">{t('description')}</p>
         </div>
 
         <Card className="p-6">

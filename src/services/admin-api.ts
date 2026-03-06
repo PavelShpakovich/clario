@@ -32,7 +32,7 @@ interface ToggleAdminResponse {
   success: boolean;
   message: string;
   userId: string;
-  isAdmin: boolean;
+  makeAdmin: boolean;
 }
 
 class AdminApi {
@@ -70,13 +70,30 @@ class AdminApi {
   }
 
   /**
+   * Reset a user's card usage to zero for the current period
+   */
+  async resetUsage(userId: string): Promise<{ success: boolean; message: string; userId: string }> {
+    const res = await fetch(`/api/admin/users/${userId}/reset-usage`, {
+      method: 'POST',
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to reset usage');
+    }
+
+    return data;
+  }
+
+  /**
    * Toggle admin status for a user
    */
   async toggleAdmin(userId: string, isAdmin: boolean): Promise<ToggleAdminResponse> {
     const res = await fetch(`/api/admin/users/${userId}/admin`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isAdmin }),
+      body: JSON.stringify({ makeAdmin: isAdmin }),
     });
 
     const data = await res.json();

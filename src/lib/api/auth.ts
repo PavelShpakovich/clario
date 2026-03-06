@@ -24,7 +24,7 @@ export async function requireAuth() {
 
   if (nextAuthUserId) {
     return {
-      user: { id: nextAuthUserId },
+      user: { id: nextAuthUserId, isAdmin: session?.user?.isAdmin ?? false },
       supabase: supabaseAdmin,
     };
   }

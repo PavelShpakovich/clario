@@ -292,5 +292,32 @@
     "registerSuccess": "Account created successfully! Please sign in.",
     "error": "Something went wrong. Please try again.",
     "creatingAccount": "Creating account..."
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "description": "Manage users, subscriptions, and permissions",
+    "colEmail": "Email",
+    "colDisplayName": "Display Name",
+    "colPlan": "Plan",
+    "colCardsUsed": "Cards Used",
+    "colChangePlan": "Change Plan",
+    "colAdmin": "Admin",
+    "noUsers": "No users found",
+    "page": "Page {page}",
+    "previous": "Previous",
+    "next": "Next",
+    "promote": "Promote",
+    "demote": "Demote",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "confirmTitle": "Confirm Action",
+    "confirmToggleAdmin": "Are you sure you want to {action} this user?",
+    "failedLoadUsers": "Failed to load users",
+    "failedChangePlan": "Failed to change plan",
+    "failedToggleAdmin": "Failed to toggle admin status",
+    "resetUsage": "Reset Usage",
+    "confirmResetUsage": "Reset card usage to zero for this user?",
+    "failedResetUsage": "Failed to reset usage",
+    "resetUsageSuccess": "Usage reset successfully"
   }
 }

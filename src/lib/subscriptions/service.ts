@@ -191,6 +191,21 @@ export class SubscriptionService {
   }
 
   /**
+   * Reset a user's card usage count to zero for the current billing period.
+   */
+  static async resetUsage(userId: string): Promise<void> {
+    const { error } = await supabaseAdmin
+      .from('user_usage')
+      .update({ cards_generated: 0 })
+      .eq('user_id', userId)
+      .gte('period_end', new Date().toISOString());
+
+    if (error) {
+      throw new Error(`Failed to reset usage: ${error.message}`);
+    }
+  }
+
+  /**
    * Cancel user's subscription
    */
   static async cancelSubscription(userId: string): Promise<void> {

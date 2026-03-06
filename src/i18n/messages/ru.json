@@ -292,5 +292,32 @@
     "newPassword": "Новый пароль",
     "newPasswordPlaceholder": "Введите новый пароль",
     "updatePassword": "Обновить пароль"
+  },
+  "admin": {
+    "title": "Панель администратора",
+    "description": "Управление пользователями, подписками и правами доступа",
+    "colEmail": "Email",
+    "colDisplayName": "Имя",
+    "colPlan": "Тариф",
+    "colCardsUsed": "Карточек использовано",
+    "colChangePlan": "Сменить тариф",
+    "colAdmin": "Администратор",
+    "noUsers": "Пользователи не найдены",
+    "page": "Страница {page}",
+    "previous": "Назад",
+    "next": "Вперёд",
+    "promote": "Назначить",
+    "demote": "Снять права",
+    "confirm": "Подтвердить",
+    "cancel": "Отмена",
+    "confirmTitle": "Подтверждение",
+    "confirmToggleAdmin": "Вы уверены, что хотите {action} этого пользователя?",
+    "failedLoadUsers": "Не удалось загрузить пользователей",
+    "failedChangePlan": "Не удалось сменить тариф",
+    "failedToggleAdmin": "Не удалось изменить права администратора",
+    "resetUsage": "Сбросить использование",
+    "confirmResetUsage": "Сбросить счётчик карточек до нуля для этого пользователя?",
+    "failedResetUsage": "Не удалось сбросить использование",
+    "resetUsageSuccess": "Использование успешно сброшено"
   }
 }

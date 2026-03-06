@@ -211,7 +211,12 @@ export default function EditThemePage({ params }: EditThemePageProps) {
       toast.success(t('themes.success'), { id: toastId });
       router.push(`/study/${themeId}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('themes.error'), { id: toastId });
+      const msg = error instanceof Error ? error.message : '';
+      const errorText =
+        msg === 'GENERATION_LIMIT_REACHED'
+          ? t('messages.generationLimitReached')
+          : t('themes.error');
+      toast.error(errorText, { id: toastId });
     } finally {
       setIsGenerating(false);
     }

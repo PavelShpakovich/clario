@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -34,6 +34,7 @@ function UsageProgressBar({ pct }: { pct: number }) {
 /** Full usage card for Settings page — always shown. */
 export function UsageCard() {
   const t = useTranslations();
+  const locale = useLocale();
   const { status, isLoading } = useSubscription();
 
   const pct =
@@ -48,7 +49,7 @@ export function UsageCard() {
     : null;
 
   const periodEnd = status
-    ? new Date(status.usage.periodEnd).toLocaleDateString(undefined, {
+    ? new Date(status.usage.periodEnd).toLocaleDateString(locale, {
         month: 'long',
         day: 'numeric',
         year: 'numeric',

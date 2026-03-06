@@ -17,13 +17,8 @@ const changePlanSchema = z.object({
 export const PUT = withApiHandler(async (req: Request, ctx?: unknown) => {
   const { user } = await requireAuth();
 
-  // Verify admin access
-  if (!('isAdmin' in user) || !(user as Record<string, unknown>).isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
-  const { params } = (ctx as Record<string, unknown> | undefined) || {};
-  const { userId } = (params as Record<string, unknown> | undefined) || {};
+  const { params } = (ctx as { params: Promise<Record<string, string>> } | undefined) || {};
+  const { userId } = (await params) || {};
 
   if (!userId || typeof userId !== 'string') {
     throw new ValidationError({ message: 'userId is required' });

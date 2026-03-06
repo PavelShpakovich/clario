@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, Settings, User, Moon, Sun, Globe } from 'lucide-react';
+import { LogOut, Settings, ShieldCheck, User, Moon, Sun, Globe } from 'lucide-react';
 
 export function Header() {
   const t = useTranslations();
@@ -140,7 +140,7 @@ export function Header() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/admin" className="flex items-center gap-2">
-                        <Settings className="w-4 h-4" />
+                        <ShieldCheck className="w-4 h-4" />
                         {t('navigation.adminPanel')}
                       </Link>
                     </DropdownMenuItem>

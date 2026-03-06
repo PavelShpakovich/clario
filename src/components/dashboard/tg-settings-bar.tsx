@@ -1,8 +1,10 @@
 'use client';
 
-import { Globe, Moon, Sun } from 'lucide-react';
+import { Globe, Moon, Settings, ShieldCheck, Sun } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
+import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
 import { useUiLanguage } from '@/hooks/use-ui-language';
 import { Button } from '@/components/ui/button';
 
@@ -10,6 +12,7 @@ export function TgSettingsBar() {
   const t = useTranslations();
   const { theme: colorTheme, setTheme: setColorTheme } = useTheme();
   const { locale, setLanguage } = useUiLanguage();
+  const { user } = useAuth();
 
   return (
     <div className="mb-4 flex items-center justify-end gap-2">
@@ -30,6 +33,7 @@ export function TgSettingsBar() {
           </button>
         ))}
       </div>
+
       {/* Colour scheme */}
       <Button
         variant="ghost"
@@ -39,6 +43,22 @@ export function TgSettingsBar() {
       >
         {colorTheme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
       </Button>
+
+      {/* Settings */}
+      <Button variant="ghost" size="icon" asChild title={t('navigation.settings')}>
+        <Link href="/settings">
+          <Settings className="h-3.5 w-3.5" />
+        </Link>
+      </Button>
+
+      {/* Admin Panel (admin users only) */}
+      {user?.isAdmin && (
+        <Button variant="ghost" size="icon" asChild title={t('navigation.adminPanel')}>
+          <Link href="/admin">
+            <ShieldCheck className="h-3.5 w-3.5" />
+          </Link>
+        </Button>
+      )}
     </div>
   );
 }
