@@ -6,8 +6,8 @@ import { SettingsClient } from '@/components/settings/settings-client';
 import { SettingsSkeleton } from '@/components/skeletons';
 
 export const metadata = {
-  title: 'Settings | Microlearning',
-  description: 'Manage your profile and account settings',
+  title: 'Settings',
+  description: 'Manage your Clario profile, preferences, and account settings.',
 };
 
 export default async function SettingsPage() {

@@ -77,7 +77,7 @@ export const POST = withApiHandler(async (req) => {
     userId = existingProfile.id;
   } else {
     // Create a new Supabase Auth user for this Telegram account
-    const email = `telegram_${telegramId}@noreply.microlearning.app`;
+    const email = `telegram_${telegramId}@noreply.clario.app`;
     const { data: newUser, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       email_confirm: true,

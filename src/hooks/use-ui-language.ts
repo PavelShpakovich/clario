@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { locales } from '@/i18n/config';
 import { profileApi } from '@/services/profile-api';
 
@@ -11,6 +12,7 @@ export function useUiLanguage() {
   const [locale, setLocale] = useState<Locale>('en');
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const { status } = useSession();
 
   // Load initial locale from cookie
   useEffect(() => {
@@ -31,8 +33,10 @@ export function useUiLanguage() {
       // Update cookie
       document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}`;
 
-      // Update database preference if user is authenticated
-      await profileApi.updateUiLanguage(newLocale);
+      // Update database preference only if authenticated
+      if (status === 'authenticated') {
+        await profileApi.updateUiLanguage(newLocale);
+      }
 
       setLocale(newLocale);
 

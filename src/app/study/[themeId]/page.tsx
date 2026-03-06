@@ -8,8 +8,8 @@ interface StudyPageProps {
 }
 
 export const metadata = {
-  title: 'Study | Microlearning',
-  description: 'Study your learning cards',
+  title: 'Study',
+  description: 'Study your AI-generated flashcards.',
 };
 
 export default async function StudyPage({ params }: StudyPageProps) {

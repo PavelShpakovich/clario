@@ -39,7 +39,7 @@ export class UrlExtractor implements Extractor {
     let html: string;
     try {
       const res = await fetch(url.toString(), {
-        headers: { 'User-Agent': 'MicrolearningBot/1.0' },
+        headers: { 'User-Agent': 'ClarioBot/1.0' },
         signal: AbortSignal.timeout(10_000),
       });
 

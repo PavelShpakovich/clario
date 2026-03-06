@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         const entryUrl = `${appUrl}/tg`;
         await bot.sendMessage(
           chat.id,
-          'Welcome to Microlearning! 🚀\n\nTransform long content into bite-sized flashcards and study them right here in Telegram.',
+          'Welcome to Clario! 🚀\n\nTransform long content into bite-sized flashcards and study them right here in Telegram.',
           {
             reply_markup: {
               inline_keyboard: [

@@ -3,9 +3,12 @@ import { getToken } from 'next-auth/jwt';
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
+  '/', // Landing / home page
   '/login',
   '/register',
   '/auth',
+  '/privacy',
+  '/terms',
   '/tg', // Telegram Mini App entry point
 ];
 

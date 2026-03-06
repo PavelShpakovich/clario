@@ -6,8 +6,8 @@ import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { DashboardSkeleton } from '@/components/skeletons';
 
 export const metadata = {
-  title: 'Dashboard | Microlearning',
-  description: 'Manage your learning themes',
+  title: 'Dashboard',
+  description: 'Manage your learning themes and generate AI flashcards.',
 };
 
 export default async function DashboardPage() {

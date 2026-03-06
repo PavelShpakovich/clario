@@ -5,9 +5,51 @@ import { RootProviders } from '@/components/root-providers';
 import { Header } from '@/components/layout/header';
 import './globals.css';
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://clario.app';
+
 export const metadata: Metadata = {
-  title: 'Microlearning',
-  description: 'Learn anything, one card at a time',
+  metadataBase: new URL(APP_URL),
+  title: {
+    default: 'Clario — AI Flashcard Generator',
+    template: '%s | Clario',
+  },
+  description:
+    'Clario turns any topic, document, or URL into AI-generated flashcards in seconds. Study smarter on the web or in Telegram.',
+  keywords: [
+    'AI flashcards',
+    'flashcard generator',
+    'microlearning',
+    'study app',
+    'spaced learning',
+    'Telegram study bot',
+    'AI learning',
+    'knowledge cards',
+  ],
+  authors: [{ name: 'Clario' }],
+  creator: 'Clario',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: APP_URL,
+    siteName: 'Clario',
+    title: 'Clario — AI Flashcard Generator',
+    description:
+      'Clario turns any topic, document, or URL into AI-generated flashcards in seconds. Study smarter on the web or in Telegram.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Clario — AI Flashcard Generator',
+    description:
+      'Clario turns any topic, document, or URL into AI-generated flashcards in seconds. Study smarter on the web or in Telegram.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
 };
 
 async function RootProvidersWrapper({ children }: { children: React.ReactNode }) {
@@ -47,7 +89,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
          */}
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body className="min-h-screen flex flex-col bg-background text-foreground antialiased">
         <Suspense fallback={<div />}>
           <RootProvidersWrapper>
             <Header />
