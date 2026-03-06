@@ -157,11 +157,23 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
     if (!main) return;
 
     const handleScrollEnd = () => {
-      // scrollend fires once the snap animation has settled, so scrollTop is
-      // exactly at the snapped position — Math.round gives the precise card index.
-      const index = Math.round(main.scrollTop / window.innerHeight);
+      // Find the card whose top edge is closest to the viewport top.
+      // This works correctly even when cards are taller than the viewport,
+      // because snap positions are at each card's offsetTop (not multiples of
+      // innerHeight), so dividing scrollTop by innerHeight gives wrong results
+      // for tall cards.
+      const cardElements = document.querySelectorAll('[data-card-id]');
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+      cardElements.forEach((el, i) => {
+        const distance = Math.abs(el.getBoundingClientRect().top);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = i;
+        }
+      });
       const maxIndex = Math.max(0, cardCountRef.current - 1);
-      setCurrentCardIndex(Math.max(0, Math.min(index, maxIndex)));
+      setCurrentCardIndex(Math.max(0, Math.min(closestIndex, maxIndex)));
     };
 
     main.addEventListener('scrollend', handleScrollEnd);
