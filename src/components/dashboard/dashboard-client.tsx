@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { isTelegramWebApp } from '@/components/telegram-provider';
 import { TgSettingsBar } from './tg-settings-bar';
 import { ThemeList } from './theme-list';
+import { UsageBanner } from '@/components/common/usage-banner';
 
 type Theme = Database['public']['Tables']['themes']['Row'];
 
@@ -115,6 +116,8 @@ export function DashboardClient({
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 md:py-10">
       {isTg && <TgSettingsBar />}
+
+      <UsageBanner />
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
         <div>

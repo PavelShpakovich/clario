@@ -2,6 +2,7 @@ import { generateWithSourceChunking } from '@/lib/llm/chunking-orchestrator';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 import { MAX_CARDS_PER_BATCH } from '@/lib/constants';
+import { SubscriptionService } from '@/lib/subscriptions/service';
 
 export { generateWithRetry, generateWithSourceChunking } from '@/lib/llm/chunking-orchestrator';
 
@@ -17,6 +18,28 @@ export class GenerationService {
   static async doGenerate(userId: string, themeId: string, customCount?: number): Promise<void> {
     logger.info({ themeId }, 'Starting card generation');
     try {
+      // Check subscription quota before doing any work
+      const subscription = await SubscriptionService.getSubscriptionStatus(userId);
+      if (!subscription.canGenerate) {
+        logger.info(
+          { themeId, userId, cardsRemaining: subscription.usage.cardsRemaining },
+          'Skipping auto-generation — user has reached their monthly card limit',
+        );
+        // Clear the generation_started_at flag that was set before this method was
+        // called (defensive: route.ts now guards this, but keep it here as a fallback)
+        await supabaseAdmin
+          .from('themes')
+          .update({ generation_started_at: null })
+          .eq('id', themeId);
+        return;
+      }
+
+      // Cap the requested count to how many cards the user still has left this period
+      const effectiveCount = Math.min(
+        customCount ?? MAX_CARDS_PER_BATCH,
+        subscription.usage.cardsRemaining,
+      );
+
       const { data: theme } = await supabaseAdmin
         .from('themes')
         .select('name, description, language')
@@ -52,12 +75,14 @@ export class GenerationService {
         'Generating cards for theme',
       );
 
+      let totalInserted = 0;
+
       const cards = await generateWithSourceChunking(
         {
           theme: theme.name,
           description: theme.description ?? undefined,
           sourceText,
-          count: customCount ?? MAX_CARDS_PER_BATCH,
+          count: effectiveCount,
           topicsToAvoid: topicsToAvoid.length > 0 ? topicsToAvoid : undefined,
           language: theme.language as 'en' | 'ru' | undefined,
         },
@@ -76,6 +101,8 @@ export class GenerationService {
             })),
           );
 
+          totalInserted += newCards.length;
+
           logger.info(
             { themeId, batchCount: newCards.length },
             'Inserted streaming batch of cards',
@@ -84,6 +111,15 @@ export class GenerationService {
       );
 
       logger.info({ themeId, totalCount: cards.length }, 'Card generation complete');
+
+      // Track usage for cards inserted via the auto-generation path
+      if (totalInserted > 0) {
+        await SubscriptionService.incrementCardCount(userId, totalInserted);
+        logger.info(
+          { userId, themeId, totalInserted, plan: subscription.plan.planId },
+          'Updated user card usage after auto-generation',
+        );
+      }
 
       // Clear generating flag on success
       await supabaseAdmin

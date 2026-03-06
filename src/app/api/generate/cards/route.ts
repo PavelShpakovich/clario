@@ -58,16 +58,19 @@ export const POST = withApiHandler(async (req) => {
   // Check usage limits
   const subscription = await SubscriptionService.getSubscriptionStatus(user.id);
   if (!subscription.canGenerate) {
-    throw new ValidationError({
-      message: `Usage limit reached. You have ${subscription.usage.cardsRemaining} cards remaining for this month. Upgrade your plan to generate more.`,
-    });
+    return NextResponse.json({ errorCode: 'GENERATION_LIMIT_REACHED' }, { status: 400 });
   }
 
-  if (subscription.usage.cardsRemaining < count) {
-    throw new ValidationError({
-      message: `Not enough cards remaining (${subscription.usage.cardsRemaining}/${count}). Upgrade your plan or reduce the card count.`,
-    });
-  }
+  // Cap to cardsRemaining if the user requested more than they have left.
+  // Return a machine-readable warning code so the client can translate it.
+  const effectiveCount = Math.min(count, subscription.usage.cardsRemaining);
+  const partialWarning =
+    effectiveCount < count
+      ? {
+          warningCode: 'PARTIAL_GENERATION',
+          warningMeta: { generated: effectiveCount, requested: count },
+        }
+      : null;
 
   // Verify theme belongs to this user
   const { data: theme } = await supabase
@@ -124,7 +127,7 @@ export const POST = withApiHandler(async (req) => {
     {
       theme: theme.name,
       sourceText,
-      count,
+      count: effectiveCount,
       topicsToAvoid: topicsToAvoid.length > 0 ? topicsToAvoid : undefined,
       language: theme.language as 'en' | 'ru' | undefined,
     },
@@ -180,5 +183,15 @@ export const POST = withApiHandler(async (req) => {
     );
   }
 
-  return NextResponse.json({ cards: inserted, count: inserted?.length ?? 0 }, { status: 201 });
+  const cardsRemaining = Math.max(0, subscription.usage.cardsRemaining - (inserted?.length ?? 0));
+
+  return NextResponse.json(
+    {
+      cards: inserted,
+      count: inserted?.length ?? 0,
+      cardsRemaining,
+      ...(partialWarning && partialWarning),
+    },
+    { status: 201 },
+  );
 });

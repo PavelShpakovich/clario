@@ -12,6 +12,8 @@ export interface CardsResponse {
   remaining: number;
   generating: boolean;
   generationFailed?: boolean;
+  limitReached?: boolean;
+  cardsRemaining?: number;
 }
 
 interface FetchCardsOptions {

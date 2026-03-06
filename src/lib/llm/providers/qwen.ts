@@ -43,13 +43,11 @@ export class QwenProvider implements LlmProviderAdapter {
         {
           role: 'system',
           content: system,
-          // Cache system prompt for 5-minute TTL (QWEN default)
-          // @ts-expect-error QWEN supports cache_control via OpenAI SDK extended params
-          cache_control: { type: 'ephemeral' },
         },
         { role: 'user', content: user },
       ],
       temperature: 0.7,
+      // @ts-expect-error enable_thinking is not in OpenAI SDK types yet, but is supported by QWEN for better performance
       enable_thinking: false,
     });
 

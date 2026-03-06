@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Loader2, RefreshCw, Plus, Infinity, LogOut } from 'lucide-react';
+import { Loader2, RefreshCw, Plus, Infinity, LogOut, AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CARD_COUNT_OPTIONS } from '@/lib/constants';
+import { CARD_COUNT_OPTIONS, LOW_CARDS_THRESHOLD } from '@/lib/constants';
 
 interface StudyBottomBarProps {
   totalCards: number;
@@ -22,6 +22,7 @@ interface StudyBottomBarProps {
   canIncreaseFontSize: boolean;
   canDecreaseFontSize: boolean;
   canGenerate?: boolean;
+  cardsRemaining?: number | null;
 }
 
 export function StudyBottomBar({
@@ -40,9 +41,12 @@ export function StudyBottomBar({
   canIncreaseFontSize,
   canDecreaseFontSize,
   canGenerate = true,
+  cardsRemaining,
 }: StudyBottomBarProps) {
   const t = useTranslations();
   const anyGenerating = isGenerating || isManualGenerating;
+  const isLowOnCards =
+    cardsRemaining != null && cardsRemaining > 0 && cardsRemaining <= LOW_CARDS_THRESHOLD;
 
   return (
     <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 bg-background border border-border rounded-full shadow-lg max-w-[90vw] overflow-x-auto no-scrollbar">
@@ -96,13 +100,25 @@ export function StudyBottomBar({
             <PopoverTrigger asChild>
               <button
                 title={t('study.generateMore')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/30 cursor-pointer"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border cursor-pointer ${
+                  isLowOnCards
+                    ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30 hover:border-yellow-500/60'
+                    : 'bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
+                }`}
               >
-                <Plus className="w-3 h-3" />
+                {isLowOnCards ? (
+                  <AlertTriangle className="w-3 h-3" />
+                ) : (
+                  <Plus className="w-3 h-3" />
+                )}
                 <span className="hidden sm:inline">
-                  {t('study.generateCount', { count: cardCount })}
+                  {isLowOnCards
+                    ? t('study.generateCountLow', { count: cardCount, remaining: cardsRemaining })
+                    : t('study.generateCount', { count: cardCount })}
                 </span>
-                <span className="sm:hidden">{cardCount}</span>
+                <span className="sm:hidden">
+                  {isLowOnCards ? `${cardsRemaining ?? ''}` : cardCount}
+                </span>
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-36 p-1.5" align="center" side="top">
@@ -138,10 +154,18 @@ export function StudyBottomBar({
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border cursor-pointer ${
             infiniteMode
               ? 'bg-primary text-primary-foreground border-primary hover:opacity-90'
-              : 'bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
+              : isLowOnCards
+                ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30 hover:border-yellow-500/60'
+                : 'bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
           }`}
         >
-          {infiniteMode ? <Infinity className="w-3 h-3" /> : <RefreshCw className="w-3 h-3" />}
+          {infiniteMode ? (
+            <Infinity className="w-3 h-3" />
+          ) : isLowOnCards ? (
+            <AlertTriangle className="w-3 h-3" />
+          ) : (
+            <RefreshCw className="w-3 h-3" />
+          )}
           <span className="hidden sm:inline">
             {infiniteMode ? t('study.auto') : t('study.manual')}
           </span>

@@ -76,7 +76,16 @@ class ThemeApi {
     return this.updateTheme(themeId, { is_public: isPublic });
   }
 
-  async generateCards(themeId: string, count: number, sourceIds?: string[]): Promise<void> {
+  async generateCards(
+    themeId: string,
+    count: number,
+    sourceIds?: string[],
+  ): Promise<{
+    count: number;
+    cardsRemaining: number;
+    warningCode?: string;
+    warningMeta?: Record<string, number>;
+  }> {
     const response = await fetch('/api/generate/cards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -88,9 +97,21 @@ class ThemeApi {
     });
 
     if (!response.ok) {
-      const data = (await response.json()) as { error?: string; message?: string };
-      throw new Error(data.error || data.message || 'Failed to generate cards');
+      const data = (await response.json()) as {
+        errorCode?: string;
+        error?: string;
+        message?: string;
+      };
+      throw new Error(data.errorCode || data.error || data.message || 'Failed to generate cards');
     }
+
+    const data = (await response.json()) as {
+      count: number;
+      cardsRemaining: number;
+      warningCode?: string;
+      warningMeta?: Record<string, number>;
+    };
+    return data;
   }
 
   async deleteTheme(themeId: string): Promise<void> {

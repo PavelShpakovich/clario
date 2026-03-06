@@ -11,6 +11,8 @@ export const MAX_USER_CARD_REQUEST = 20;
 /** Max cards fetched per study-session API request.
     High enough to load all existing cards in a single request for most themes. */
 export const MAX_CARDS_PER_SESSION_FETCH = 100;
+/** Show a "running low" toast warning when this many cards remain in the billing period. */
+export const LOW_CARDS_THRESHOLD = 5;
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 /** Max generation requests per user per minute. */

@@ -9,8 +9,10 @@ import { useCardFontSize } from '@/hooks/use-card-font-size';
 import { StudyBottomBar } from '@/components/study/study-bottom-bar';
 import {
   StudyDoneScreen,
+  StudyEmptyScreen,
   StudyGeneratingScreen,
   StudyInitialLoadingScreen,
+  StudyLimitReachedScreen,
   StudyLoadingMoreScreen,
 } from '@/components/study/study-state-screens';
 import { useTranslations } from 'next-intl';
@@ -47,6 +49,8 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
     isGenerating,
     isManualGenerating,
     isInitialLoading,
+    isLimitReached,
+    cardsRemaining,
     infiniteMode,
     error,
     cardCount,
@@ -142,7 +146,10 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
 
     const handleScroll = () => {
       const index = Math.floor((main.scrollTop + window.innerHeight / 2) / window.innerHeight);
-      setCurrentCardIndex(Math.max(0, index));
+      // Clamp to [0, cards.length - 1] so that snap-items appended for loading/done
+      // screens never push currentCardIndex past the real card count.
+      const maxIndex = Math.max(0, cardCountRef.current - 1);
+      setCurrentCardIndex(Math.max(0, Math.min(index, maxIndex)));
     };
 
     main.addEventListener('scroll', handleScroll);
@@ -151,6 +158,13 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
 
   // Auto-scroll to newly generated cards if the user is at the bottom (viewing the loader)
   const prevCardCountRef = useRef(cards.length);
+  // Keep a ref to cards.length so the scroll handler can clamp the index
+  // without needing cards in its dependency array (which would re-register
+  // the listener on every card append).
+  const cardCountRef = useRef(cards.length);
+  // Update synchronously during render (safe for refs — no re-render triggered)
+  // eslint-disable-next-line react-hooks/immutability
+  cardCountRef.current = cards.length;
   useEffect(() => {
     if (cards.length > prevCardCountRef.current) {
       // If user was viewing the loader (index == prevLength) or further
@@ -170,7 +184,8 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
   }, [cards, currentCardIndex]);
 
   useEffect(() => {
-    if (!infiniteMode || !session?.id || cards.length === 0 || isGenerating) return;
+    if (!infiniteMode || !session?.id || cards.length === 0 || isGenerating || isLimitReached)
+      return;
 
     const cardsLeft = cards.length - currentCardIndex;
     const alreadyTriggeredForBatch = triggerFetchedAtRef.current === cards.length;
@@ -179,7 +194,15 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
       triggerFetchedAtRef.current = cards.length;
       void fetchCards({ triggerGeneration: true });
     }
-  }, [currentCardIndex, cards.length, infiniteMode, session?.id, isGenerating, fetchCards]);
+  }, [
+    currentCardIndex,
+    cards.length,
+    infiniteMode,
+    session?.id,
+    isGenerating,
+    isLimitReached,
+    fetchCards,
+  ]);
 
   if (error) {
     const errorKey = STUDY_ERROR_KEYS[error];
@@ -257,11 +280,22 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
         onDecreaseFontSize={decreaseFontSize}
         canIncreaseFontSize={canIncreaseFontSize}
         canDecreaseFontSize={canDecreaseFontSize}
-        canGenerate={isOwner}
+        canGenerate={isOwner && !isLimitReached}
+        cardsRemaining={isOwner ? cardsRemaining : null}
       />
 
       {cards.length === 0 && isInitialLoading && <StudyInitialLoadingScreen />}
       {cards.length === 0 && !isInitialLoading && isGenerating && <StudyGeneratingScreen />}
+      {cards.length === 0 && !isInitialLoading && !isGenerating && isLimitReached && (
+        <StudyLimitReachedScreen />
+      )}
+      {cards.length === 0 && !isInitialLoading && !isGenerating && !isLimitReached && (
+        <StudyEmptyScreen
+          canGenerate={isOwner && !isLimitReached}
+          onGenerate={() => void generateMore(cardCount)}
+          isGenerating={isManualGenerating}
+        />
+      )}
 
       {cards.map((card) => (
         <div key={card.id} className="w-full min-h-screen snap-start snap-always">

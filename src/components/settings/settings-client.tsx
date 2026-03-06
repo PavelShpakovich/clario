@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslations } from 'next-intl';
+import { UsageCard } from '@/components/common/usage-card';
+import { PlansCard } from '@/components/common/plans-card';
 
 interface SettingsClientProps {
   userEmail: string;
@@ -79,6 +81,8 @@ export function SettingsClient({ userEmail, initialProfile, userName }: Settings
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
+      <UsageCard />
+      <PlansCard />
       <Card>
         <CardHeader>
           <CardTitle>{t('settings.profileTitle')}</CardTitle>
@@ -112,7 +116,7 @@ export function SettingsClient({ userEmail, initialProfile, userName }: Settings
               </div>
               <Input
                 id="streak"
-                value={`${streakCount} day${streakCount !== 1 ? 's' : ''}`}
+                value={t('settings.streakDays', { count: streakCount })}
                 disabled
               />
             </div>

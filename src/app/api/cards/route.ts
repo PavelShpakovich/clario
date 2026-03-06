@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/api/auth';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { CARD_GENERATION_THRESHOLD, MAX_CARDS_PER_SESSION_FETCH } from '@/lib/constants';
 import { GenerationService } from '@/services/generation.service';
+import { SubscriptionService } from '@/lib/subscriptions/service';
 import { logger } from '@/lib/logger';
 
 const querySchema = z.object({
@@ -81,12 +82,17 @@ export const GET = withApiHandler(async (req) => {
 
   let isGenerating: boolean;
   let generationFailed: boolean;
+  let limitReached = false;
 
   if (shouldTriggerGeneration) {
-    const [checkResult, isFailed] = await Promise.all([
+    const [checkResult, isFailed, subscription] = await Promise.all([
       GenerationService.checkShouldGenerate(themeId, remaining, CARD_GENERATION_THRESHOLD),
       GenerationService.isGenerationFailed(themeId),
+      SubscriptionService.getSubscriptionStatus(user.id),
     ]);
+
+    const canGenerate = subscription.canGenerate;
+    const cardsRemaining = subscription.usage.cardsRemaining;
 
     // For explicit retry attempts, clear the failure cooldown so user can retry
     // immediately without waiting for the 60-second recovery window
@@ -99,7 +105,7 @@ export const GET = withApiHandler(async (req) => {
 
     isGenerating = checkResult.isGenerating;
 
-    if (checkResult.shouldGenerate || isFailed) {
+    if ((checkResult.shouldGenerate || isFailed) && canGenerate) {
       // Write generation_started_at to DB NOW (before response) so every instance
       // sees generating=true on the very next poll.
       await GenerationService.markGenerationStarted(themeId);
@@ -114,33 +120,78 @@ export const GET = withApiHandler(async (req) => {
       });
 
       logger.info({ themeId }, 'Triggering card generation in background');
+    } else if (!canGenerate) {
+      // Quota exhausted — clear any stale DB flag that might have been set
+      // by a previous request, so polls don't get stuck on generating=true.
+      if (isGenerating) {
+        await GenerationService.clearState(themeId);
+      }
+      isGenerating = false;
+      limitReached = true;
+      logger.info(
+        { themeId, userId: user.id },
+        'Skipping auto-generation trigger — user has reached their monthly card limit',
+      );
     }
+
+    return NextResponse.json(
+      {
+        cards: cards ?? [],
+        remaining,
+        generating: isGenerating,
+        generationFailed,
+        limitReached,
+        cardsRemaining,
+      },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } },
+    );
   } else {
-    [isGenerating, generationFailed] = await Promise.all([
+    const [dbIsGenerating, isFailed, subscription] = await Promise.all([
       GenerationService.isGenerating(themeId),
       GenerationService.isGenerationFailed(themeId),
+      SubscriptionService.getSubscriptionStatus(user.id),
     ]);
+
+    const cardsRemaining = subscription.usage.cardsRemaining;
+
+    generationFailed = isFailed;
+
+    // If the DB flag says generating but the user has no quota, it's a stale flag
+    // (doGenerate would have returned early without clearing it). Clear it now so
+    // the client polling loop doesn't get stuck on generating=true forever.
+    if (!subscription.canGenerate) {
+      if (dbIsGenerating) {
+        await GenerationService.clearState(themeId);
+      }
+      isGenerating = false;
+      limitReached = true;
+      logger.info({ themeId, userId: user.id }, 'Non-trigger fetch: user has no quota remaining');
+    } else {
+      isGenerating = dbIsGenerating;
+    }
+
+    logger.info(
+      {
+        themeId,
+        remaining,
+        isGenerating,
+        generationFailed,
+        cardCount: cards?.length,
+        shouldTriggerGeneration,
+      },
+      'Cards fetched',
+    );
+
+    return NextResponse.json(
+      {
+        cards: cards ?? [],
+        remaining,
+        generating: isGenerating,
+        generationFailed,
+        limitReached,
+        cardsRemaining,
+      },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } },
+    );
   }
-
-  logger.info(
-    {
-      themeId,
-      remaining,
-      isGenerating,
-      generationFailed,
-      cardCount: cards?.length,
-      shouldTriggerGeneration,
-    },
-    'Cards fetched',
-  );
-
-  return NextResponse.json(
-    {
-      cards: cards ?? [],
-      remaining,
-      generating: isGenerating,
-      generationFailed,
-    },
-    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } },
-  );
 });

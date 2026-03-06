@@ -1,3 +1,5 @@
+import type { SubscriptionResponse } from '@/lib/subscriptions/types';
+
 type ProfileResponse = {
   streak_count: number;
   display_name: string | null;
@@ -58,6 +60,28 @@ class ProfileApi {
       const data = (await response.json()) as { error?: string; message?: string };
       throw new Error(data.error || data.message || 'Failed to update password');
     }
+  }
+
+  async getSubscription(): Promise<SubscriptionResponse> {
+    const response = await fetch('/api/profile/subscription');
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to load subscription');
+    }
+    return (await response.json()) as SubscriptionResponse;
+  }
+
+  async requestUpgrade(planId: string): Promise<{ supportEmail: string }> {
+    const response = await fetch('/api/subscription/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planId }),
+    });
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to request upgrade');
+    }
+    return (await response.json()) as { supportEmail: string };
   }
 }
 

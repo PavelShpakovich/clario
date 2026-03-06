@@ -9,6 +9,7 @@ import type { Database } from '@/lib/supabase/types';
 import { studyApi } from '@/services/study-api';
 import { themeApi } from '@/services/theme-api';
 import { sourcesApi } from '@/services/sources-api';
+import { LOW_CARDS_THRESHOLD } from '@/lib/constants';
 
 type Card = Database['public']['Tables']['cards']['Row'];
 
@@ -41,6 +42,8 @@ export function useStudySession(themeId: string) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isManualGenerating, setIsManualGenerating] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLimitReached, setIsLimitReached] = useState(false);
+  const [cardsRemaining, setCardsRemaining] = useState<number | null>(null);
   const [infiniteMode, setInfiniteMode] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cardCount, setCardCount] = useState(
@@ -80,13 +83,22 @@ export function useStudySession(themeId: string) {
 
         setIsGenerating(data.generating);
 
+        // Always sync limit / remaining from server — both true and false — so
+        // stale state from a previous theme never bleeds into the new one.
+        setIsLimitReached(!!data.limitReached);
+        if (data.cardsRemaining !== undefined) {
+          setCardsRemaining(data.cardsRemaining);
+        }
+
         if (data.generationFailed) {
           setError('GENERATION_FAILED');
         } else {
           setError(null);
         }
 
-        setIsInitialLoading(false);
+        // NOTE: setIsInitialLoading(false) is intentionally NOT called here.
+        // It is called once at the end of initSession so the 2-step init
+        // (non-trigger fetch → trigger fetch) never shows a blank render between steps.
         return data;
       } catch (err) {
         // Ignore abort errors (user navigated away)
@@ -112,6 +124,8 @@ export function useStudySession(themeId: string) {
         setError(null);
         setIsGenerating(false);
         setIsInitialLoading(true);
+        setIsLimitReached(false);
+        setCardsRemaining(null);
         setSourceIds([]);
 
         const data = await studyApi.initSession(themeId, abortController.signal);
@@ -139,7 +153,8 @@ export function useStudySession(themeId: string) {
           infiniteMode &&
           initialData &&
           initialData.cards.length === 0 &&
-          !initialData.generating
+          !initialData.generating &&
+          !initialData.limitReached
         ) {
           await fetchCardsForSession(data.sessionId, {
             triggerGeneration: true,
@@ -147,6 +162,11 @@ export function useStudySession(themeId: string) {
             signal: abortController.signal,
           });
         }
+
+        // Only mark initial loading done once BOTH fetches (non-trigger + trigger)
+        // have completed. Moving this out of fetchCardsForSession prevents a blank
+        // render between the two fetches when the theme has no cards yet.
+        setIsInitialLoading(false);
       } catch (err) {
         // Ignore abort errors (user navigated away)
         if (err instanceof Error && err.name === 'AbortError') {
@@ -284,14 +304,35 @@ export function useStudySession(themeId: string) {
       setIsManualGenerating(true);
       setError(null);
       try {
-        await themeApi.generateCards(themeId, count, sourceIds);
+        const result = await themeApi.generateCards(themeId, count, sourceIds);
+
+        // Surface limit warnings as toasts so user is informed
+        if (result.warningCode === 'PARTIAL_GENERATION' && result.warningMeta) {
+          toast.warning(
+            t('messages.cardsGeneratedPartial', {
+              generated: result.warningMeta.generated,
+              requested: result.warningMeta.requested,
+            }),
+          );
+        } else if (result.cardsRemaining === 0) {
+          toast.error(t('messages.generationLimitReached'));
+        } else if (result.cardsRemaining <= LOW_CARDS_THRESHOLD) {
+          toast.info(t('messages.cardsRemainingLow', { count: result.cardsRemaining }));
+        }
+
         // Cards are already in DB when the response returns (synchronous route).
         // Refetch so the new cards appear immediately.
         if (studySession) {
           await fetchCardsForSession(studySession.id, { triggerGeneration: false });
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Generation failed');
+        const msg = err instanceof Error ? err.message : '';
+        if (msg === 'GENERATION_LIMIT_REACHED') {
+          setIsLimitReached(true);
+          toast.error(t('messages.generationLimitReached'));
+        } else {
+          setError(msg || 'GENERATION_FAILED');
+        }
       } finally {
         setIsManualGenerating(false);
       }
@@ -304,6 +345,7 @@ export function useStudySession(themeId: string) {
       studySession,
       fetchCardsForSession,
       sourceIds,
+      t,
     ],
   );
 
@@ -314,6 +356,8 @@ export function useStudySession(themeId: string) {
     isGenerating,
     isManualGenerating,
     isInitialLoading,
+    isLimitReached,
+    cardsRemaining,
     infiniteMode,
     error,
     cardCount,

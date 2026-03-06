@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/api/auth';
 import { ValidationError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 import { env } from '@/lib/env';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const upgradePlanSchema = z.object({
   planId: z.enum(['basic', 'pro', 'unlimited']),
@@ -29,13 +30,21 @@ export const POST = withApiHandler(async (req) => {
 
   const { planId } = body.data;
 
+  // Resolve user email — Supabase users carry it directly; NextAuth users only have id.
+  const supabaseEmail = (user as { email?: string }).email;
+  let userEmail = supabaseEmail;
+  if (!userEmail) {
+    const { data: adminUser } = await supabaseAdmin.auth.admin.getUserById(user.id);
+    userEmail = adminUser?.user?.email;
+  }
+
   // TODO: In production:
   // 1. Create payment intent with payment processor
   // 2. Return checkout URL
   // 3. Webhook would update subscription after payment
 
   logger.info(
-    { userId: user.id, planId, userEmail: (user as Record<string, unknown>).email },
+    { userId: user.id, planId, userEmail },
     'Plan upgrade requested - awaiting payment integration',
   );
 
@@ -44,7 +53,7 @@ export const POST = withApiHandler(async (req) => {
       status: 'pending',
       message: `Payment processing is not yet available. Please contact ${env.SUPPORT_EMAIL} for upgrades.`,
       planId,
-      userEmail: (user as Record<string, unknown>).email,
+      supportEmail: env.SUPPORT_EMAIL,
     },
     { status: 202 },
   );
