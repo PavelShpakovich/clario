@@ -25,6 +25,11 @@ declare global {
           start_param?: string;
         };
         HapticFeedback: { impactOccurred: (style: string) => void };
+        openLink: (url: string) => void;
+        openInvoice: (
+          url: string,
+          callback?: (status: 'paid' | 'cancelled' | 'failed' | 'pending') => void,
+        ) => void;
       };
     };
   }
@@ -36,6 +41,11 @@ export function isTelegramWebApp(): boolean {
     !!window.Telegram?.WebApp &&
     !!window.Telegram?.WebApp?.initData
   );
+}
+
+export function getTelegramWebApp() {
+  if (typeof window === 'undefined') return null;
+  return window.Telegram?.WebApp || null;
 }
 
 /**

@@ -45,7 +45,7 @@ export class SubscriptionService {
     };
 
     return {
-      planId: data.plan_id as 'free' | 'basic' | 'pro' | 'unlimited',
+      planId: data.plan_id as 'free' | 'basic' | 'pro' | 'max',
       cardsPerMonth: planData.cards_per_month,
       maxThemes: planData.max_themes,
       communityThemes: planData.community_themes,

@@ -48,7 +48,7 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
   const handlePlanChange = async (newPlan: string) => {
     setLoading(true);
     try {
-      await adminApi.changePlan(user.id, newPlan as 'free' | 'basic' | 'pro' | 'unlimited');
+      await adminApi.changePlan(user.id, newPlan as 'free' | 'basic' | 'pro' | 'max');
       setSelectedPlan(newPlan);
       onRefresh();
     } catch (error) {

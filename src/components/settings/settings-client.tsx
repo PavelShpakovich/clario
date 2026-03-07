@@ -31,6 +31,9 @@ interface SettingsClientProps {
   isStub?: boolean;
 }
 
+import { signOut } from 'next-auth/react';
+import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
+
 export function SettingsClient({
   userEmail,
   initialProfile,
@@ -45,6 +48,9 @@ export function SettingsClient({
 
   const [newPassword, setNewPassword] = useState('');
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const telegramId = initialProfile?.telegram_id ?? null;
   // Stub accounts were created by Telegram-first users (email = telegram_*@noreply.*).
@@ -126,6 +132,20 @@ export function SettingsClient({
       toast.error(error instanceof Error ? error.message : t('settings.failedUpdatePassword'));
     } finally {
       setIsSavingPassword(false);
+    }
+  };
+
+  const onDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      await profileApi.deleteAccount();
+      toast.success(t('settings.accountDeleted'));
+      await signOut({ callbackUrl: '/' });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('settings.accountDeleteFailed'));
+    } finally {
+      setIsDeletingAccount(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -262,6 +282,42 @@ export function SettingsClient({
           </CardContent>
         </Card>
       )}
+
+      {/* DANGER ZONE */}
+      <Card className="border-red-200 dark:border-red-900/50 mt-8">
+        <CardHeader>
+          <CardTitle className="text-red-600 dark:text-red-500">
+            {t('settings.dangerZone')}
+          </CardTitle>
+          <CardDescription>{t('settings.deleteAccountDescription')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between items-center">
+            <p className="text-sm font-medium text-muted-foreground">
+              {t('settings.deleteAccountWarning')}
+            </p>
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isDeletingAccount}
+            >
+              {t('settings.deleteAccountButton')}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <ConfirmationDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={() => void onDeleteAccount()}
+        title={t('settings.deleteConfirmTitle')}
+        description={t('settings.deleteConfirmDescription')}
+        confirmLabel={
+          isDeletingAccount ? t('settings.deleting') : t('settings.deleteConfirmAction')
+        }
+        cancelLabel={t('buttons.cancel')}
+      />
     </main>
   );
 }

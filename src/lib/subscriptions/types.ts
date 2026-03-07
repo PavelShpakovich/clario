@@ -5,7 +5,7 @@ export type UserSubscription = Database['public']['Tables']['user_subscriptions'
 export type UserUsage = Database['public']['Tables']['user_usage']['Row'];
 export type BillingHistory = Database['public']['Tables']['billing_history']['Row'];
 
-export type PlanId = 'free' | 'basic' | 'pro' | 'unlimited';
+export type PlanId = 'free' | 'basic' | 'pro' | 'max';
 
 export interface UserPlanInfo {
   planId: PlanId;

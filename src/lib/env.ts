@@ -41,6 +41,13 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().url().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
 
+  // Stripe
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PRICE_BASIC: z.string().optional(),
+  STRIPE_PRICE_PRO: z.string().optional(),
+  STRIPE_PRICE_MAX: z.string().optional(),
+
   // Node
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });

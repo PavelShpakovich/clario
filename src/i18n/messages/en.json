@@ -173,7 +173,7 @@
     "deleteAllThemes": "Delete All Themes",
     "deleteAllThemesDescription": "Are you sure you want to delete ALL your themes? This action cannot be undone and all associated flashcards will be lost.",
     "deleteSource": "Delete source",
-    "deleteSourceDescription": "Are you sure you want to delete \u201c{name}\u201d? This cannot be undone and may affect card generation.",
+    "deleteSourceDescription": "Are you sure you want to delete “{name}”? This cannot be undone and may affect card generation.",
     "delete": "Delete",
     "confirm": "Confirm",
     "cancel": "Cancel"
@@ -270,7 +270,18 @@
     "downgrade": "Downgrade",
     "lowerTier": "Lower tier",
     "upgradeRequestSent": "To upgrade, please contact {email}",
-    "downgradeRequestSent": "To downgrade, please contact {email}"
+    "downgradeRequestSent": "To downgrade, please contact {email}",
+    "paymentSelection": {
+      "title": "Select Payment Method",
+      "description": "How would you like to pay for the {planName} plan?",
+      "creditCard": "Credit Card / Global Web",
+      "creditCardDescTwa": "Standard Stripe checkout. Opens in a secure external browser.",
+      "creditCardDescWeb": "Standard Stripe checkout (Apple Pay / Google Pay / Cards).",
+      "telegramStars": "Telegram Stars",
+      "telegramStarsDescTwa": "Pay natively via Telegram without traditional banking restrictions (Best for CIS).",
+      "telegramStarsDescWeb": "Requires Telegram App setup. Click to see instructions.",
+      "cancel": "Cancel"
+    }
   },
   "usage": {
     "cardTitle": "Plan & Usage",
@@ -293,6 +304,16 @@
     "themeNearLimitBannerTitle": "Only {count} {count, plural, one {theme slot} other {theme slots}} left"
   },
   "settings": {
+    "dangerZone": "Danger Zone",
+    "deleteAccountDescription": "Permanently delete your account, themes, flashcards, and cancel any active subscription.",
+    "deleteAccountWarning": "This action cannot be undone.",
+    "deleteAccountButton": "Delete Account",
+    "deleteConfirmTitle": "Are you absolutely sure?",
+    "deleteConfirmDescription": "This will instantly cancel your subscription and permanently delete all your themes and generated flashcards. This action cannot be reversed.",
+    "deleteConfirmAction": "Delete forever",
+    "accountDeleted": "Your account has been deleted.",
+    "accountDeleteFailed": "Failed to delete account. Please try again.",
+    "deleting": "Deleting...",
     "profile": "Profile",
     "telegramBotTitle": "Telegram Bot",
     "telegramBotDescription": "Study your flashcards directly inside Telegram — no extra app required.",

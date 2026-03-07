@@ -295,7 +295,18 @@
     "downgrade": "Понизить",
     "lowerTier": "Более низкий тариф",
     "upgradeRequestSent": "Для повышения тарифа свяжитесь с нами: {email}",
-    "downgradeRequestSent": "Для понижения тарифа свяжитесь с нами: {email}"
+    "downgradeRequestSent": "Для понижения тарифа свяжитесь с нами: {email}",
+    "paymentSelection": {
+      "title": "Выберите способ оплаты",
+      "description": "Как вы хотите оплатить тариф {planName}?",
+      "creditCard": "Банковская карта / Веб-версия",
+      "creditCardDescTwa": "Стандартная оплата через Stripe. Откроется в безопасном внешнем браузере.",
+      "creditCardDescWeb": "Стандартная оплата через Stripe (Apple Pay / Google Pay / Карты).",
+      "telegramStars": "Telegram Stars (Звезды)",
+      "telegramStarsDescTwa": "Оплачивайте прямо в Telegram без ограничений традиционных банков (Лучший выбор для СНГ).",
+      "telegramStarsDescWeb": "Требуется установленное приложение Telegram. Нажмите, чтобы посмотреть инструкции.",
+      "cancel": "Отмена"
+    }
   },
   "usage": {
     "cardTitle": "Тариф и использование",
@@ -318,6 +329,16 @@
     "themeNearLimitBannerTitle": "Осталось {count} {count, plural, one {место} few {места} other {мест}} для тем"
   },
   "settings": {
+    "dangerZone": "Опасная зона",
+    "deleteAccountDescription": "Навсегда удалить ваш аккаунт, темы, карточки и отменить активную подписку.",
+    "deleteAccountWarning": "Это действие нельзя отменить.",
+    "deleteAccountButton": "Удалить аккаунт",
+    "deleteConfirmTitle": "Вы абсолютно уверены?",
+    "deleteConfirmDescription": "Это немедленно отменит вашу подписку и навсегда удалит все ваши темы и сгенерированные карточки. Это действие невозможно отменить.",
+    "deleteConfirmAction": "Удалить навсегда",
+    "accountDeleted": "Ваш аккаунт был удален.",
+    "accountDeleteFailed": "Не удалось удалить аккаунт. Пожалуйста, попробуйте еще раз.",
+    "deleting": "Удаление...",
     "profile": "Профиль",
     "telegramBotTitle": "Телеграм-бот",
     "telegramBotDescription": "Учите карточки прямо в Telegram — без установки приложений.",

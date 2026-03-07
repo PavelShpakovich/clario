@@ -7,7 +7,7 @@ import { ValidationError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 
 const changePlanSchema = z.object({
-  planId: z.enum(['free', 'basic', 'pro', 'unlimited']),
+  planId: z.enum(['free', 'basic', 'pro', 'max']),
 });
 
 /**
@@ -36,7 +36,7 @@ export const PUT = withApiHandler(async (req: Request, ctx?: unknown) => {
 
   try {
     // Change the plan
-    await SubscriptionService.changePlan(userId, planId as 'free' | 'basic' | 'pro' | 'unlimited');
+    await SubscriptionService.changePlan(userId, planId as 'free' | 'basic' | 'pro' | 'max');
 
     logger.info({ adminId: user.id, userId, newPlan: planId }, 'Admin changed user plan');
 

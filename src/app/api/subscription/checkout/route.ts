@@ -2,22 +2,28 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
-import { ValidationError } from '@/lib/errors';
-import { logger } from '@/lib/logger';
+import { ValidationError, AppError } from '@/lib/errors';
 import { env } from '@/lib/env';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { stripe } from '@/lib/stripe';
 
 const upgradePlanSchema = z.object({
-  planId: z.enum(['free', 'basic', 'pro', 'unlimited']),
+  planId: z.enum(['free', 'basic', 'pro', 'max']),
 });
 
-/**
- * POST /api/subscription/checkout
- * Request plan upgrade
- *
- * NOTE: This is a placeholder endpoint for testing/development.
- * When payment processor is integrated, will return checkout URL.
- */
+function getStripePriceId(planId: string): string | undefined {
+  switch (planId) {
+    case 'basic':
+      return env.STRIPE_PRICE_BASIC;
+    case 'pro':
+      return env.STRIPE_PRICE_PRO;
+    case 'max':
+      return env.STRIPE_PRICE_MAX;
+    default:
+      return undefined;
+  }
+}
+
 export const POST = withApiHandler(async (req) => {
   const { user } = await requireAuth();
 
@@ -30,7 +36,18 @@ export const POST = withApiHandler(async (req) => {
 
   const { planId } = body.data;
 
-  // Resolve user email — Supabase users carry it directly; NextAuth users only have id.
+  if (planId === 'free') {
+    throw new ValidationError({ message: 'Cannot checkout a free plan.' });
+  }
+
+  const priceId = getStripePriceId(planId);
+  if (!priceId) {
+    throw new AppError('INTERNAL_ERROR', {
+      message: 'Stripe price integration missing for this tier.',
+      context: { planId },
+    });
+  }
+
   const supabaseEmail = (user as { email?: string }).email;
   let userEmail = supabaseEmail;
   if (!userEmail) {
@@ -38,23 +55,50 @@ export const POST = withApiHandler(async (req) => {
     userEmail = adminUser?.user?.email;
   }
 
-  // TODO: In production:
-  // 1. Create payment intent with payment processor
-  // 2. Return checkout URL
-  // 3. Webhook would update subscription after payment
+  const { data: subscription } = await supabaseAdmin
+    .from('user_subscriptions')
+    .select('stripe_customer_id')
+    .eq('user_id', user.id)
+    .single();
 
-  logger.info(
-    { userId: user.id, planId, userEmail },
-    'Plan upgrade requested - awaiting payment integration',
-  );
+  let customerId = subscription?.stripe_customer_id;
 
-  return NextResponse.json(
-    {
-      status: 'pending',
-      message: `Payment processing is not yet available. Please contact ${env.SUPPORT_EMAIL} for upgrades.`,
-      planId,
-      supportEmail: env.SUPPORT_EMAIL,
+  if (!customerId && userEmail) {
+    // Create new customer
+    const customer = await stripe.customers.create({
+      email: userEmail,
+      metadata: { supabase_user_id: user.id },
+    });
+    customerId = customer.id;
+    // We will save this ID back when webhook returns the checkout,
+    // but saving it here directly prevents duplicates if user drops checkout
+    await supabaseAdmin
+      .from('user_subscriptions')
+      .update({ stripe_customer_id: customerId })
+      .eq('user_id', user.id);
+  }
+
+  const sessionParams: object = customerId
+    ? { customer: customerId }
+    : { customer_email: userEmail || undefined };
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    payment_method_types: ['card'],
+    ...sessionParams,
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    metadata: {
+      supabase_user_id: user.id,
+      plan_id: planId,
     },
-    { status: 202 },
-  );
+    success_url: `${env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=success`,
+    cancel_url: `${env.NEXT_PUBLIC_APP_URL}/settings?checkout=canceled`,
+  });
+
+  return NextResponse.json({ url: session.url });
 });

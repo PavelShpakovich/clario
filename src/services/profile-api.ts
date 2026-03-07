@@ -105,7 +105,7 @@ class ProfileApi {
       | { sessionToken: string; overLimit: boolean };
   }
 
-  async requestUpgrade(planId: string): Promise<{ supportEmail: string }> {
+  async requestUpgrade(planId: string): Promise<{ url: string }> {
     const response = await fetch('/api/subscription/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -115,7 +115,31 @@ class ProfileApi {
       const data = (await response.json()) as { error?: string; message?: string };
       throw new Error(data.error || data.message || 'Failed to request upgrade');
     }
-    return (await response.json()) as { supportEmail: string };
+    return (await response.json()) as { url: string };
+  }
+
+  async requestTelegramStarsUpgrade(planId: string): Promise<{ invoiceLink: string }> {
+    const response = await fetch('/api/telegram/invoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planId }),
+    });
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to generate Telegram invoice');
+    }
+    return (await response.json()) as { invoiceLink: string };
+  }
+
+  async deleteAccount(): Promise<void> {
+    const response = await fetch('/api/profile', {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string; message?: string };
+      throw new Error(data.error || data.message || 'Failed to delete account');
+    }
   }
 }
 

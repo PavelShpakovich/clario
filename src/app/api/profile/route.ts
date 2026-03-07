@@ -3,9 +3,11 @@ import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
 import { auth } from '@/auth';
-import { ValidationError } from '@/lib/errors';
+import { ValidationError, AppError } from '@/lib/errors';
 import { getCacheHeaders, CACHE_PRESETS } from '@/lib/cache-utils';
 import { deriveDisplayNameFromEmail } from '@/lib/auth/utils';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { stripe } from '@/lib/stripe';
 
 const updateProfileSchema = z.object({
   displayName: z.string().trim().min(1).max(100).optional(),
@@ -95,4 +97,45 @@ export const PATCH = withApiHandler(async (req) => {
   }
 
   return NextResponse.json(updatedProfile);
+});
+
+export const DELETE = withApiHandler(async () => {
+  const { user } = await requireAuth();
+
+  // 1. Fetch user's subscription info to get stripe_customer_id
+  const { data: subscription } = await supabaseAdmin
+    .from('user_subscriptions')
+    .select('stripe_customer_id, stripe_subscription_id')
+    .eq('user_id', user.id)
+    .single();
+
+  // 2. Cancel Stripe subscription if exists
+  if (subscription?.stripe_subscription_id) {
+    try {
+      await stripe.subscriptions.cancel(subscription.stripe_subscription_id);
+    } catch (stripeErr) {
+      console.error('Failed to cancel Stripe subscription during account deletion:', stripeErr);
+    }
+  }
+
+  // Optional: Delete customer from Stripe entirely
+  if (subscription?.stripe_customer_id) {
+    try {
+      await stripe.customers.del(subscription.stripe_customer_id);
+    } catch (stripeErr) {
+      console.error('Failed to delete Stripe customer:', stripeErr);
+    }
+  }
+
+  // 3. Delete user from Supabase Auth
+  // Because of ON DELETE CASCADE, this will wipe out their rows in
+  // profiles, themes, cards, user_usage, user_subscriptions, etc.
+  const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+
+  if (deleteError) {
+    console.error('Supabase admin deleteUser error:', deleteError);
+    throw new AppError('INTERNAL_ERROR', { message: 'Failed to delete account from database.' });
+  }
+
+  return NextResponse.json({ success: true });
 });
