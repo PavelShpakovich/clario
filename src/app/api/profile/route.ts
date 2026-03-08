@@ -20,7 +20,7 @@ export const GET = withApiHandler(async () => {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('display_name, telegram_id, ui_language, streak_count')
+    .select('display_name, telegram_id, ui_language')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -37,7 +37,7 @@ export const GET = withApiHandler(async () => {
         display_name: fallbackDisplayName,
         ui_language: 'en',
       })
-      .select('display_name, telegram_id, ui_language, streak_count')
+      .select('display_name, telegram_id, ui_language')
       .single();
 
     if (createError ?? !createdProfile) {
@@ -89,7 +89,7 @@ export const PATCH = withApiHandler(async (req) => {
   const { data: updatedProfile, error } = await supabase
     .from('profiles')
     .upsert(updateData, { onConflict: 'id' })
-    .select('display_name, telegram_id, ui_language, streak_count')
+    .select('display_name, telegram_id, ui_language')
     .single();
 
   if (error ?? !updatedProfile) {

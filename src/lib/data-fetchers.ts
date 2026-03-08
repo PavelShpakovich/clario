@@ -9,7 +9,7 @@ export async function fetchUserProfile() {
   if (!session?.user?.id) return null;
   const { data: profiles } = await supabaseAdmin
     .from('profiles')
-    .select('display_name, streak_count, telegram_id')
+    .select('display_name, telegram_id')
     .eq('id', session.user.id)
     .limit(1);
   return profiles?.[0] || null;

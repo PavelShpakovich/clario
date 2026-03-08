@@ -43,55 +43,6 @@ export const POST = withApiHandler(async (req) => {
     });
   }
 
-  // Update streak if this is the first session of the day
-  // Note: This requires the 0003_add_streak_tracking migration to be applied
-  try {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('last_study_date, streak_count')
-      .eq('id', user.id)
-      .single();
-
-    if (profile) {
-      const lastStudyDate = profile.last_study_date ? new Date(profile.last_study_date) : null;
-      const today_obj = new Date(today);
-      today_obj.setUTCHours(0, 0, 0, 0);
-
-      let newStreak = profile.streak_count || 0;
-
-      if (!lastStudyDate) {
-        // First time studying
-        newStreak = 1;
-      } else {
-        const lastDate = new Date(lastStudyDate);
-        lastDate.setUTCHours(0, 0, 0, 0);
-        const daysDiff = Math.floor(
-          (today_obj.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24),
-        );
-
-        if (daysDiff === 0) {
-          // Already studied today, keep streak
-          newStreak = profile.streak_count || 1;
-        } else if (daysDiff === 1) {
-          // Studied yesterday, increment streak
-          newStreak = (profile.streak_count || 0) + 1;
-        } else {
-          // Gap in streak, reset to 1
-          newStreak = 1;
-        }
-      }
-
-      // Update profile with new streak and today's date
-      await supabase
-        .from('profiles')
-        .update({ streak_count: newStreak, last_study_date: today })
-        .eq('id', user.id);
-    }
-  } catch {
-    // Silently ignore if streak columns don't exist yet (migration not applied)
-    // The feature will work once migration is applied
-  }
-
   const { data: session, error } = await supabase
     .from('sessions')
     .insert({ user_id: user.id, theme_id: themeId })

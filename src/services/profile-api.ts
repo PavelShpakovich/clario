@@ -1,10 +1,8 @@
 import type { SubscriptionResponse } from '@/lib/subscriptions/types';
 
 type ProfileResponse = {
-  streak_count: number;
   display_name: string | null;
   telegram_id: string | null;
-  last_study_date?: string | null;
 };
 
 class ProfileApi {

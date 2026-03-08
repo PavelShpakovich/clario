@@ -43,7 +43,6 @@ export function SettingsClient({
   const t = useTranslations();
   const searchParams = useSearchParams();
   const [displayName, setDisplayName] = useState(initialProfile?.display_name || userName || '');
-  const [streakCount, setStreakCount] = useState<number>(initialProfile?.streak_count || 0);
   const [isSaving, setIsSaving] = useState(false);
 
   const [newPassword, setNewPassword] = useState('');
@@ -101,7 +100,6 @@ export function SettingsClient({
       const updated = await profileApi.updateDisplayName(normalizedName);
       const savedName = updated.display_name || normalizedName;
       setDisplayName(savedName);
-      setStreakCount(updated.streak_count || 0);
 
       // Push new name to header instantly (no page reload needed)
       broadcastDisplayName(savedName);
@@ -225,20 +223,6 @@ export function SettingsClient({
                 onChange={(event) => setDisplayName(event.target.value)}
                 placeholder={t('settings.displayNamePlaceholder')}
                 disabled={isSaving}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="streak">{t('settings.currentStreak')}</Label>
-                <span className="text-xs text-muted-foreground">
-                  {t('settings.streakDescription')}
-                </span>
-              </div>
-              <Input
-                id="streak"
-                value={t('settings.streakDays', { count: streakCount })}
-                disabled
               />
             </div>
 
