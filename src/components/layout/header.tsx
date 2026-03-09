@@ -50,6 +50,10 @@ export function Header() {
     return <TgSettingsBar />;
   }
 
+  // Hide header on auth pages — they have their own full-page layout
+  const AUTH_PATHS = ['/login', '/register', '/auth/'];
+  if (AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p))) return null;
+
   // Skip rendering unauthenticated header while session is loading to avoid flash
   if (isLoading) {
     return (
