@@ -25,7 +25,7 @@ export interface SubscriptionStatus {
     cardsPerMonth: number;
     themesLimit: number | null;
     maxThemes: number | null;
-    communityThemes: number;
+    communityThemes: boolean;
   };
 
   // Usage tracking

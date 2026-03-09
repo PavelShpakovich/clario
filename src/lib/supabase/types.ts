@@ -309,9 +309,6 @@ export type Database = {
         Row: {
           cards_per_month: number;
           community_themes: boolean;
-          created_at: string | null;
-          description: string | null;
-          features: Json | null;
           id: string;
           max_themes: number | null;
           name: string;
@@ -320,9 +317,6 @@ export type Database = {
         Insert: {
           cards_per_month: number;
           community_themes?: boolean;
-          created_at?: string | null;
-          description?: string | null;
-          features?: Json | null;
           id: string;
           max_themes?: number | null;
           name: string;
@@ -331,9 +325,6 @@ export type Database = {
         Update: {
           cards_per_month?: number;
           community_themes?: boolean;
-          created_at?: string | null;
-          description?: string | null;
-          features?: Json | null;
           id?: string;
           max_themes?: number | null;
           name?: string;

@@ -8,7 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 export interface PlanLimits {
   cardsPerMonth: number;
   maxThemes: number | null; // null = unlimited
-  communityThemes: number;
+  communityThemes: boolean;
   starsPrice: number; // 0 for free plan
 }
 
@@ -16,12 +16,12 @@ export interface PlanLimits {
 let planCache: Map<string, { data: PlanLimits; timestamp: number }> | null = null;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// Fallback limits used only when DB is unreachable — must match migration seed and 0014_add_stars_price.sql
+// Fallback limits used only when DB is unreachable — must match migration seed + 0016/0018
 const DEFAULT_LIMITS: Record<string, PlanLimits> = {
-  free: { cardsPerMonth: 50, maxThemes: 5, communityThemes: 0, starsPrice: 0 },
-  basic: { cardsPerMonth: 300, maxThemes: 20, communityThemes: 5, starsPrice: 200 },
-  pro: { cardsPerMonth: 2000, maxThemes: null, communityThemes: 10, starsPrice: 500 },
-  max: { cardsPerMonth: 5000, maxThemes: null, communityThemes: 50, starsPrice: 1000 },
+  free: { cardsPerMonth: 50, maxThemes: 5, communityThemes: false, starsPrice: 0 },
+  basic: { cardsPerMonth: 300, maxThemes: 20, communityThemes: true, starsPrice: 200 },
+  pro: { cardsPerMonth: 2000, maxThemes: null, communityThemes: true, starsPrice: 500 },
+  max: { cardsPerMonth: 5000, maxThemes: null, communityThemes: true, starsPrice: 1000 },
 };
 
 export async function getPlanLimits(planId: string): Promise<PlanLimits> {
@@ -36,7 +36,7 @@ export async function getPlanLimits(planId: string): Promise<PlanLimits> {
   // Fetch from database
   const { data, error } = await supabaseAdmin
     .from('subscription_plans')
-    .select('cards_per_month, max_themes, stars_price')
+    .select('cards_per_month, max_themes, community_themes, stars_price')
     .eq('id', planId)
     .maybeSingle();
 
@@ -48,7 +48,7 @@ export async function getPlanLimits(planId: string): Promise<PlanLimits> {
   const limits: PlanLimits = {
     cardsPerMonth: data.cards_per_month ?? DEFAULT_LIMITS[planId]?.cardsPerMonth ?? 50,
     maxThemes: data.max_themes, // null means unlimited
-    communityThemes: DEFAULT_LIMITS[planId]?.communityThemes ?? 0,
+    communityThemes: data.community_themes ?? DEFAULT_LIMITS[planId]?.communityThemes ?? false,
     starsPrice: data.stars_price ?? DEFAULT_LIMITS[planId]?.starsPrice ?? 0,
   };
 

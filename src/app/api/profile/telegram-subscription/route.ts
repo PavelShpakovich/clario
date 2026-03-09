@@ -17,7 +17,7 @@ export interface SubscriptionStatus {
     cardsPerMonth: number;
     themesLimit: number | null;
     maxThemes: number | null;
-    communityThemes: number;
+    communityThemes: boolean;
   };
 
   // Usage tracking
@@ -190,7 +190,7 @@ function defaultFreeResponse(): NextResponse<SubscriptionStatus> {
       cardsPerMonth: 50,
       themesLimit: 3,
       maxThemes: 3,
-      communityThemes: 0,
+      communityThemes: false,
     },
 
     usage: {

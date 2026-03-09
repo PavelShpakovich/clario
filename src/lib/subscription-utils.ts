@@ -24,7 +24,7 @@ export interface SubscriptionStatus {
     cardsPerMonth: number;
     themesLimit: number | null;
     maxThemes: number | null;
-    communityThemes: number;
+    communityThemes: boolean;
   };
 }
 
@@ -88,7 +88,7 @@ export async function getUserPlan(userId: string): Promise<{
   planId: PlanId;
   cardsPerMonth: number;
   maxThemes: number | null;
-  communityThemes: number;
+  communityThemes: boolean;
 }> {
   const { data: subscription } = await supabaseAdmin
     .from('user_subscriptions')
