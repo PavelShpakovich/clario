@@ -10,11 +10,13 @@ declare module 'next-auth' {
   interface User {
     id: string;
     isAdmin?: boolean;
+    isStub?: boolean;
   }
   interface Session {
     user: User & {
       id: string;
       isAdmin?: boolean;
+      isStub?: boolean;
     };
   }
 }
@@ -24,6 +26,7 @@ declare module 'next-auth/jwt' {
     userId: string;
     displayName?: string;
     isAdmin?: boolean;
+    isStub?: boolean;
   }
 }
 
@@ -72,9 +75,9 @@ export const authOptions: NextAuthOptions = {
         if (sig !== expectedSig) throw new Error('Invalid session token signature');
 
         // Verify expiry
-        const { userId, displayName, exp } = JSON.parse(
+        const { userId, displayName, exp, isStub } = JSON.parse(
           Buffer.from(payload, 'base64url').toString(),
-        ) as { userId: string; displayName: string; exp: number };
+        ) as { userId: string; displayName: string; exp: number; isStub?: boolean };
         if (Date.now() > exp) throw new Error('Session token expired');
 
         // Fetch latest display name
@@ -87,6 +90,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: userId,
           name: profile?.display_name || displayName,
+          isStub: isStub ?? false,
         };
       },
     }),
@@ -143,6 +147,7 @@ export const authOptions: NextAuthOptions = {
         token.userId = user.id;
         token.displayName = user.name || undefined;
         token.isAdmin = user.isAdmin || false;
+        token.isStub = user.isStub ?? false;
       } else if (token.userId) {
         // On refresh, fetch the latest display_name and isAdmin from database
         try {

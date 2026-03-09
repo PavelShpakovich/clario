@@ -53,6 +53,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(tgUrl);
   }
 
+  // Email-gate: stub Telegram accounts must complete email setup before using the app.
+  // /tg and /tg/upgrade are already in PUBLIC_ROUTES so they bypass this block.
+  if ((token as Record<string, unknown>).isStub) {
+    if (pathname.startsWith('/api')) {
+      return NextResponse.json(
+        { error: 'Email setup required to continue' },
+        { status: 403 },
+      );
+    }
+    return NextResponse.redirect(new URL('/tg/upgrade?required=1', request.url));
+  }
+
   // Admin routes: check isAdmin flag
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     const isAdmin = (token as Record<string, unknown>).isAdmin === true;
