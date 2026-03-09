@@ -1,53 +1,328 @@
 import { NextResponse } from 'next/server';
-import TelegramBot from 'node-telegram-bot-api';
-import { env } from '@/lib/env';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
+import { env } from '@/lib/env';
 
-// We use a singleton-like pattern for the bot since we're in a serverless environment (Next.js)
-// but webhooks are transient.
-const token = env.TELEGRAM_BOT_TOKEN;
-const appUrl = env.NEXT_PUBLIC_APP_URL;
-
+/**
+ * POST /api/telegram/webhook
+ *
+ * Handles incoming updates from Telegram Bot API:
+ * - pre_checkout_query: User confirmed payment in invoice modal
+ * - successful_payment: Payment completed successfully
+ * - message: General messages (start command, etc.)
+ *
+ * Telegram sends updates to this endpoint based on webhook configuration.
+ */
 export async function POST(req: Request) {
-  if (!token) {
-    return NextResponse.json({ error: 'Telegram Bot Token not configured' }, { status: 500 });
-  }
-
   try {
-    const body = await req.json();
-    logger.info({ update_id: body.update_id }, 'Telegram webhook received');
+    const update = await req.json();
 
-    // Initialize bot in webhook mode (not polling)
-    const bot = new TelegramBot(token);
+    // Log all incoming updates for debugging
+    logger.info({ updateId: update.update_id }, 'Received Telegram webhook update');
 
-    // Handle messages
-    if (body.message) {
-      const { chat, text } = body.message;
+    // Extract user ID from various update types
+    let userId: string | null = null;
+    let updateType = 'unknown';
 
-      if (text === '/start') {
-        const entryUrl = `${appUrl}/tg`;
-        await bot.sendMessage(
-          chat.id,
-          'Welcome to Clario! 🚀\n\nTransform long content into bite-sized flashcards and study them right here in Telegram.',
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: '🚀 Launch App',
-                    web_app: { url: entryUrl },
-                  },
-                ],
-              ],
-            },
-          },
+    // Handle pre_checkout_query (user clicking "Pay")
+    if (update.pre_checkout_query) {
+      updateType = 'pre_checkout_query';
+      userId = update.pre_checkout_query.from.id.toString();
+      const preCheckoutQueryId = update.pre_checkout_query.id;
+      const payload = update.pre_checkout_query.invoice_payload;
+
+      logger.info(
+        {
+          preCheckoutQueryId,
+          telegramUserId: userId,
+        },
+        'Pre-checkout query received',
+      );
+
+      // Parse invoice payload to get planId and starsPrice
+      let planId: string;
+      let starsPrice: number;
+      try {
+        const decoded = JSON.parse(payload);
+        planId = decoded.planId;
+        starsPrice = decoded.starsPrice;
+      } catch (err) {
+        logger.error({ payload, err }, 'Failed to parse invoice payload');
+        // Answer query with error
+        await answerPreCheckoutQuery(preCheckoutQueryId, false, 'Invalid invoice data');
+        return NextResponse.json({ ok: true });
+      }
+
+      // Validate plan and price
+      const validPlans = ['basic', 'pro', 'max'];
+      if (!validPlans.includes(planId) || starsPrice <= 0) {
+        logger.warn({ planId, starsPrice }, 'Invalid plan or price in pre-checkout');
+        await answerPreCheckoutQuery(preCheckoutQueryId, false, 'Invalid plan or price');
+        return NextResponse.json({ ok: true });
+      }
+
+      // Answer pre_checkout_query (confirm we can process payment)
+      const answered = await answerPreCheckoutQuery(preCheckoutQueryId, true);
+      if (!answered) {
+        logger.error({ preCheckoutQueryId }, 'Failed to answer pre-checkout query');
+      }
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // Handle successful_payment (payment completed)
+    if (update.message?.successful_payment) {
+      updateType = 'successful_payment';
+      userId = update.message.from.id.toString();
+      const payment = update.message.successful_payment;
+      const payload = payment.invoice_payload;
+      const chatId = update.message.chat.id;
+
+      logger.info(
+        {
+          telegramUserId: userId,
+          telegramPaymentChargeId: payment.telegram_payment_charge_id,
+          totalAmount: payment.total_amount,
+          currency: payment.currency,
+        },
+        'Successful payment received',
+      );
+
+      // Parse invoice payload
+      let planId: string;
+      let planName: string;
+      try {
+        const decoded = JSON.parse(payload);
+        planId = decoded.planId;
+        planName = decoded.planName;
+      } catch (err) {
+        logger.error({ payload, err }, 'Failed to parse payment payload');
+        return NextResponse.json({ ok: true });
+      }
+
+      // Find user by telegram_id
+      if (!userId) {
+        logger.error('No userId available for profile lookup');
+        return NextResponse.json({ ok: true });
+      }
+
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('telegram_id', userId)
+        .maybeSingle();
+
+      if (profileError) {
+        logger.error({ err: profileError, telegramUserId: userId }, 'Failed to fetch profile');
+        return NextResponse.json({ ok: true });
+      }
+
+      if (!profile) {
+        logger.error(
+          { telegramUserId: userId },
+          'No profile found for telegram user (user may not have linked account yet)',
+        );
+        return NextResponse.json({ ok: true });
+      }
+
+      const dbUserId = profile.id;
+
+      // Update subscription
+      const now = new Date();
+      const periodEnd = new Date(now);
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+      const { error: updateError } = await supabaseAdmin.from('user_subscriptions').upsert(
+        {
+          user_id: dbUserId,
+          plan_id: planId,
+          status: 'active',
+          current_period_start: now.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+        },
+        { onConflict: 'user_id' },
+      );
+
+      if (updateError) {
+        logger.error(
+          { err: updateError, userId: dbUserId, planId },
+          'Failed to update subscription after payment',
+        );
+        return NextResponse.json({ ok: true });
+      }
+
+      // Reset usage for the new billing period
+      const { error: deleteUsageError } = await supabaseAdmin
+        .from('user_usage')
+        .delete()
+        .eq('user_id', dbUserId);
+
+      if (deleteUsageError) {
+        logger.warn(
+          { err: deleteUsageError, userId: dbUserId },
+          'Failed to reset usage (non-critical)',
         );
       }
+
+      logger.info(
+        {
+          userId: dbUserId,
+          planId,
+          currentPeriodEnd: periodEnd.toISOString(),
+        },
+        'Subscription updated successfully after payment',
+      );
+
+      // Send confirmation message to user in Telegram
+      try {
+        await sendTelegramMessage(
+          chatId,
+          `✅ Payment Successful!\n\n🎉 Your plan has been upgraded to **${planName}**!\n\nYou now have access to all premium features. Enjoy! 🚀`,
+        );
+      } catch (err) {
+        logger.warn({ err, chatId }, 'Failed to send confirmation message');
+      }
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // Handle /start command and general messages
+    if (update.message) {
+      const chatId = update.message.chat.id;
+      const text = update.message.text;
+
+      logger.debug({ chatId, text }, 'Telegram message received');
+
+      if (text === '/start') {
+        try {
+          const appUrl = env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com';
+          const entryUrl = `${appUrl}/tg`;
+
+          await sendTelegramMessage(
+            chatId,
+            'Welcome to Microlearning! 🚀\n\nTransform long content into bite-sized flashcards and study them right here in Telegram.',
+            {
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    {
+                      text: '🚀 Launch App',
+                      web_app: { url: entryUrl },
+                    },
+                  ],
+                ],
+              },
+            },
+          );
+        } catch (err) {
+          logger.error({ err, chatId }, 'Failed to send start message');
+        }
+      }
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // Log unhandled update types
+    if (update.update_id) {
+      logger.debug({ updateType, updateId: update.update_id }, 'Unhandled update type');
     }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    logger.error({ error }, 'Error in Telegram webhook');
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger.error({ error }, 'Webhook handler error');
+    // Always return 200 to Telegram to prevent retry spam
+    return NextResponse.json({ ok: true }, { status: 200 });
   }
+}
+
+/**
+ * Answer a pre_checkout_query (user clicking "Pay" in invoice modal)
+ * Either approve or decline the payment
+ */
+async function answerPreCheckoutQuery(
+  preCheckoutQueryId: string,
+  ok: boolean,
+  errorMessage?: string,
+): Promise<boolean> {
+  try {
+    const params = new URLSearchParams({
+      pre_checkout_query_id: preCheckoutQueryId,
+      ok: ok.toString(),
+    });
+
+    if (!ok && errorMessage) {
+      params.append('error_message', errorMessage);
+    }
+
+    const response = await fetch(
+      `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/answerPreCheckoutQuery`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      logger.error({ error, preCheckoutQueryId }, 'Failed to answer pre-checkout query');
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    logger.error({ error, preCheckoutQueryId }, 'Error answering pre-checkout query');
+    return false;
+  }
+}
+
+/**
+ * Send a message to a Telegram chat
+ */
+async function sendTelegramMessage(
+  chatId: number,
+  text: string,
+  options?: unknown,
+): Promise<boolean> {
+  try {
+    const params = new URLSearchParams({
+      chat_id: chatId.toString(),
+      text,
+      parse_mode: 'Markdown',
+    });
+
+    if (options) {
+      params.append('reply_markup', JSON.stringify(options));
+    }
+
+    const response = await fetch(
+      `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      logger.error({ error, chatId }, 'Failed to send Telegram message');
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    logger.error({ error, chatId }, 'Error sending Telegram message');
+    return false;
+  }
+}
+
+/**
+ * GET health check (for monitoring/debugging)
+ */
+export async function GET() {
+  return NextResponse.json({
+    status: 'ok',
+    message: 'Telegram webhook endpoint is active',
+  });
 }

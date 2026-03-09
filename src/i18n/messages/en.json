@@ -303,6 +303,13 @@
     "themeLimitReachedBannerTitle": "Theme limit reached",
     "themeNearLimitBannerTitle": "Only {count} {count, plural, one {theme slot} other {theme slots}} left"
   },
+  "subscriptions": {
+    "upgradeSuccess": "✅ Payment Successful!\n\n🎉 Your plan has been upgraded to **{planName}**!\n\nYou now have access to all premium features. Enjoy! 🚀",
+    "upgradeCancelled": "❌ Payment Cancelled\n\nYour plan upgrade has been cancelled. You're still on the **Free** plan.",
+    "downgradeSuccess": "📉 Plan Downgraded\n\nYou've been downgraded to the **Free** plan. Your usage has been reset.",
+    "telegramOnly": "💬 Upgrade via Telegram\n\nTo upgrade your plan, open the bot at https://t.me/clario_bot and select your desired plan.",
+    "webAppWarning": "⚠️ This feature is only available in the Telegram Mini App.\n\nOpen the Telegram bot to manage your subscription: https://t.me/clario_bot"
+  },
   "settings": {
     "dangerZone": "Danger Zone",
     "deleteAccountDescription": "Permanently delete your account, themes, flashcards, and cancel any active subscription.",

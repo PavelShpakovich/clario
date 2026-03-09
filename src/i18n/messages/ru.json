@@ -328,6 +328,13 @@
     "themeLimitReachedBannerTitle": "Лимит тем исчерпан",
     "themeNearLimitBannerTitle": "Осталось {count} {count, plural, one {место} few {места} other {мест}} для тем"
   },
+  "subscriptions": {
+    "upgradeSuccess": "✅ Платеж успешен!\n\n🎉 Ваш тариф обновлен на **{planName}**!\n\nТеперь у вас есть доступ ко всем премиум функциям. Спасибо! 🚀",
+    "upgradeCancelled": "❌ Платеж отменен\n\nОбновление тарифа отменено. Вы остаетесь на плане **Free** (Бесплатный).",
+    "downgradeSuccess": "📉 Тариф понижен\n\nВы перейдены на плен **Free** (Бесплатный). Счётчик использования был сброшен.",
+    "telegramOnly": "💬 Улучшение тарифа через Telegram\n\nДля смены тарифа откройте бота по ссылке https://t.me/clario_bot и выберите нужный план.",
+    "webAppWarning": "⚠️ Эта функция доступна только в мини-приложении Telegram.\n\nОткройте бота для управления подпиской: https://t.me/clario_bot"
+  },
   "settings": {
     "dangerZone": "Опасная зона",
     "deleteAccountDescription": "Навсегда удалить ваш аккаунт, темы, карточки и отменить активную подписку.",

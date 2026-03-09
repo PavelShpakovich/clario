@@ -1,6 +1,6 @@
 /**
  * Telegram Stars API integration service
- * 
+ *
  * Handles communication with Telegram Bot API for Stars payments.
  * Reference: https://core.telegram.org/bots/payments-stars
  */
@@ -28,7 +28,7 @@ interface TelegramInvoicePayload {
 
 /**
  * Create a Telegram Stars invoice link
- * 
+ *
  * API Reference: https://core.telegram.org/bots/api#createinvoicelink
  */
 export async function createTelegramInvoiceLink(
@@ -48,6 +48,8 @@ export async function createTelegramInvoiceLink(
     payload: JSON.stringify({
       userId,
       planId,
+      planName,
+      starsPrice,
       timestamp: Date.now(),
     }),
     currency: 'XTR',
@@ -74,9 +76,7 @@ export async function createTelegramInvoiceLink(
       ok: boolean;
       description?: string;
     };
-    throw new Error(
-      `Telegram API error: ${errorData.description || `HTTP ${response.status}`}`,
-    );
+    throw new Error(`Telegram API error: ${errorData.description || `HTTP ${response.status}`}`);
   }
 
   const data = (await response.json()) as TelegramInvoiceLink;
@@ -92,9 +92,7 @@ export async function createTelegramInvoiceLink(
  * Get the Stars price for a plan based on env vars.
  * Prices should be kept in sync with USD exchange rate (~$0.013 per Star).
  */
-export function getPlanStarsPrice(
-  planId: 'basic' | 'pro' | 'max',
-): number {
+export function getPlanStarsPrice(planId: 'basic' | 'pro' | 'max'): number {
   const priceMap: Record<'basic' | 'pro' | 'max', string> = {
     basic: env.TELEGRAM_STARS_PRICE_BASIC,
     pro: env.TELEGRAM_STARS_PRICE_PRO,
@@ -118,10 +116,7 @@ export function getPlanStarsPrice(
  * Get plan details for Telegram invoice.
  */
 export function getPlanDetails(planId: string) {
-  const planMap: Record<
-    string,
-    { name: string; description: string; cardsPerMonth: number }
-  > = {
+  const planMap: Record<string, { name: string; description: string; cardsPerMonth: number }> = {
     basic: {
       name: 'Starter',
       description: 'Create 300 cards per month · Start your learning journey',
