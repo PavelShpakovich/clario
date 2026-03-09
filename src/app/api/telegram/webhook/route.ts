@@ -39,13 +39,12 @@ export async function POST(req: Request) {
         'Pre-checkout query received',
       );
 
-      // Parse invoice payload to get planId and starsPrice
+      // Parse invoice payload — format: "<userId>|<planId>"
       let planId: string;
-      let starsPrice: number;
       try {
-        const decoded = JSON.parse(payload);
-        planId = decoded.planId;
-        starsPrice = decoded.starsPrice;
+        const parts = payload.split('|');
+        if (parts.length < 2) throw new Error('Invalid format');
+        planId = parts[1];
       } catch (err) {
         logger.error({ payload, err }, 'Failed to parse invoice payload');
         // Answer query with error
@@ -53,11 +52,11 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // Validate plan and price
+      // Validate plan
       const validPlans = ['basic', 'pro', 'max'];
-      if (!validPlans.includes(planId) || starsPrice <= 0) {
-        logger.warn({ planId, starsPrice }, 'Invalid plan or price in pre-checkout');
-        await answerPreCheckoutQuery(preCheckoutQueryId, false, 'Invalid plan or price');
+      if (!validPlans.includes(planId)) {
+        logger.warn({ planId }, 'Invalid plan in pre-checkout');
+        await answerPreCheckoutQuery(preCheckoutQueryId, false, 'Invalid plan');
         return NextResponse.json({ ok: true });
       }
 
@@ -88,17 +87,18 @@ export async function POST(req: Request) {
         'Successful payment received',
       );
 
-      // Parse invoice payload
+      // Parse invoice payload — format: "<userId>|<planId>"
       let planId: string;
-      let planName: string;
       try {
-        const decoded = JSON.parse(payload);
-        planId = decoded.planId;
-        planName = decoded.planName;
+        const parts = payload.split('|');
+        if (parts.length < 2) throw new Error('Invalid format');
+        planId = parts[1];
       } catch (err) {
         logger.error({ payload, err }, 'Failed to parse payment payload');
         return NextResponse.json({ ok: true });
       }
+
+      const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
 
       // Find user by telegram_id
       if (!userId) {

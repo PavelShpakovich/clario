@@ -45,13 +45,10 @@ export async function createTelegramInvoiceLink(
   const payload: TelegramInvoicePayload = {
     title: `Upgrade to ${planName}`,
     description: planDescription,
-    payload: JSON.stringify({
-      userId,
-      planId,
-      planName,
-      starsPrice,
-      timestamp: Date.now(),
-    }),
+    // Telegram payload must be 1-128 ASCII characters.
+    // Encode only the essential fields, separated by | to stay well under the limit.
+    // Format: "<userId>|<planId>" (UUID=36 + "|" + max 5 = 42 chars)
+    payload: `${userId}|${planId}`,
     currency: 'XTR',
     prices: [
       {
