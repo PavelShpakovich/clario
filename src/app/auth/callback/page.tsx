@@ -1,15 +1,38 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { createSupabaseClient } from '@/lib/supabase/client';
+import { CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+const BOT_URL = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ?? 'https://t.me/clario_bot';
 
 function Spinner() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4">
       <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       <p className="text-sm text-gray-500">Completing sign-in…</p>
+    </main>
+  );
+}
+
+function EmailVerifiedScreen() {
+  const t = useTranslations('telegramUpgrade');
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
+      <div className="flex flex-col items-center gap-4 max-w-sm text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+          <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight">{t('emailVerifiedTitle')}</h1>
+        <p className="text-muted-foreground text-sm leading-relaxed">{t('emailVerifiedDescription')}</p>
+        <Button asChild className="w-full mt-2">
+          <a href={BOT_URL}>{t('backToTelegram')}</a>
+        </Button>
+      </div>
     </main>
   );
 }
@@ -22,10 +45,11 @@ function Spinner() {
  *  1. Verify the OTP → Supabase sets its own session cookies.
  *  2. Call /api/auth/session-from-supabase → reads those cookies → issues NextAuth token.
  *  3. signIn('telegram', { sessionToken }) → NextAuth sets its session cookie.
- *  4. Redirect: recovery → /auth/set-password, email → callbackUrl or /dashboard.
+ *  4. Redirect: recovery → /auth/set-password, email → show "go back to Telegram" screen.
  */
 function CallbackHandler() {
   const params = useSearchParams();
+  const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
     async function exchange() {
@@ -49,6 +73,10 @@ function CallbackHandler() {
             window.location.href = '/auth/set-password';
             return;
           }
+
+          // Email magic link — show "go back to Telegram" confirmation screen
+          setEmailVerified(true);
+          return;
         }
       }
 
@@ -59,6 +87,7 @@ function CallbackHandler() {
     void exchange();
   }, [params]);
 
+  if (emailVerified) return <EmailVerifiedScreen />;
   return <Spinner />;
 }
 

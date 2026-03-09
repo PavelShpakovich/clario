@@ -122,7 +122,8 @@ export const POST = withApiHandler(async (req) => {
   if (!updateError) {
     // Email wasn't taken — generate a magic link and send it ourselves so we
     // can control the language and template.
-    const appUrl = env.NEXT_PUBLIC_APP_URL;
+    // Strip trailing slash to avoid double-slash in the redirect URL.
+    const appUrl = env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email,
