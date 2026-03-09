@@ -97,7 +97,9 @@ class ProfileApi {
     initData: string,
     email: string,
     password?: string,
-  ): Promise<{ success: true } | { conflict: true } | { sessionToken: string; overLimit: boolean }> {
+  ): Promise<
+    { success: true } | { conflict: true } | { sessionToken: string; overLimit: boolean }
+  > {
     const response = await fetch('/api/profile/upgrade-stub', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

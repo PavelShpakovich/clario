@@ -101,9 +101,7 @@ export default function TelegramEntryPage() {
         if (needsEmail) {
           const upgradeUrl =
             `/tg/upgrade?required=1` +
-            (callbackUrl !== '/dashboard'
-              ? `&callbackUrl=${encodeURIComponent(callbackUrl)}`
-              : '');
+            (callbackUrl !== '/dashboard' ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : '');
           // Sign in first so they have a valid session on the upgrade page too.
           await signIn('telegram', { sessionToken, redirect: false });
           window.location.href = upgradeUrl;

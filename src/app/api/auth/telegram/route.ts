@@ -110,8 +110,7 @@ export const POST = withApiHandler(async (req) => {
 
   // needsEmail = true when the account is still a stub (no real email set yet)
   const currentEmail = authLookup.user?.email ?? '';
-  const needsEmail =
-    currentEmail.startsWith('telegram_') && currentEmail.includes('@noreply');
+  const needsEmail = currentEmail.startsWith('telegram_') && currentEmail.includes('@noreply');
 
   // Issue a short-lived signed handoff token so the browser can open a
   // NextAuth session without ever touching the Supabase browser client.
