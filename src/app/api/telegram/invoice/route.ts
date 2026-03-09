@@ -53,6 +53,8 @@ export const POST = withApiHandler(async (req) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Invoice creation error:', message);
-    throw new AppError('INTERNAL_ERROR', { message: `Failed to create Telegram invoice: ${message}` });
+    throw new AppError('INTERNAL_ERROR', {
+      message: `Failed to create Telegram invoice: ${message}`,
+    });
   }
 });

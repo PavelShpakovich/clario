@@ -75,7 +75,9 @@ export async function createTelegramInvoiceLink(
   try {
     data = JSON.parse(rawText) as TelegramInvoiceLink;
   } catch {
-    throw new Error(`Telegram API returned non-JSON (HTTP ${response.status}): ${rawText.slice(0, 200)}`);
+    throw new Error(
+      `Telegram API returned non-JSON (HTTP ${response.status}): ${rawText.slice(0, 200)}`,
+    );
   }
 
   if (!response.ok || !data.ok) {

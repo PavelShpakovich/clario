@@ -16,10 +16,14 @@ import { env } from '@/lib/env';
  */
 export const POST = withApiHandler(async () => {
   const { user } = await requireAuth();
-  if (!(user as { isAdmin?: boolean }).isAdmin) throw new AuthError({ message: 'Admin access required' });
+  if (!(user as { isAdmin?: boolean }).isAdmin)
+    throw new AuthError({ message: 'Admin access required' });
 
   if (!env.TELEGRAM_BOT_TOKEN) {
-    return NextResponse.json({ ok: false, error: 'TELEGRAM_BOT_TOKEN not configured' }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: 'TELEGRAM_BOT_TOKEN not configured' },
+      { status: 400 },
+    );
   }
 
   const webhookUrl = `${env.NEXT_PUBLIC_APP_URL}/api/telegram/webhook`;
@@ -46,7 +50,10 @@ export const POST = withApiHandler(async () => {
 
   if (!setWebhookData.ok) {
     return NextResponse.json(
-      { ok: false, error: `Failed to set webhook: ${setWebhookData.description ?? 'Unknown error'}` },
+      {
+        ok: false,
+        error: `Failed to set webhook: ${setWebhookData.description ?? 'Unknown error'}`,
+      },
       { status: 500 },
     );
   }
@@ -68,9 +75,7 @@ export const POST = withApiHandler(async () => {
   };
 
   // Verify bot info
-  const getMeResponse = await fetch(
-    `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getMe`,
-  );
+  const getMeResponse = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getMe`);
   const getMeData = (await getMeResponse.json()) as {
     ok: boolean;
     result?: { id: number; first_name: string; username: string; can_join_groups: boolean };
@@ -98,10 +103,14 @@ export const POST = withApiHandler(async () => {
  */
 export const GET = withApiHandler(async () => {
   const { user } = await requireAuth();
-  if (!(user as { isAdmin?: boolean }).isAdmin) throw new AuthError({ message: 'Admin access required' });
+  if (!(user as { isAdmin?: boolean }).isAdmin)
+    throw new AuthError({ message: 'Admin access required' });
 
   if (!env.TELEGRAM_BOT_TOKEN) {
-    return NextResponse.json({ ok: false, error: 'TELEGRAM_BOT_TOKEN not configured' }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: 'TELEGRAM_BOT_TOKEN not configured' },
+      { status: 400 },
+    );
   }
 
   const [webhookInfoResponse, getMeResponse] = await Promise.all([
