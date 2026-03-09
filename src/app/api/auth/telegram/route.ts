@@ -6,7 +6,6 @@ import { AuthError, ValidationError } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
-import { FLAGS } from '@/lib/feature-flags';
 
 const bodySchema = z.object({
   initData: z.string().min(1),
@@ -153,38 +152,24 @@ export const POST = withApiHandler(async (req) => {
     }
   }
 
-  // Fetch display name + email verification state for the NextAuth session
-  const [{ data: profile }, { data: authLookup }] = await Promise.all([
-    supabaseAdmin
-      .from('profiles')
-      .select('display_name, email_unverified')
-      .eq('id', userId)
-      .single(),
-    supabaseAdmin.auth.admin.getUserById(userId),
-  ]);
+  // Fetch display name for the NextAuth session
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('display_name')
+    .eq('id', userId)
+    .single();
 
   const displayName =
     profile?.display_name ||
     [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ') ||
     'Telegram User';
 
-  // needsEmail = true when EMAIL_UPGRADE_ENABLED and:
-  //  a) account is still a stub (no real email set yet), OR
-  //  b) user submitted a real email via /tg/upgrade but hasn't verified it yet
-  //     (tracked via profiles.email_unverified — reliable regardless of Supabase internals)
-  const currentEmail = authLookup.user?.email ?? '';
-  const isStubEmail = currentEmail.startsWith('telegram_') && currentEmail.includes('@noreply');
-  const needsEmail = FLAGS.EMAIL_UPGRADE_ENABLED && (isStubEmail || !!profile?.email_unverified);
-
-  // Issue a short-lived signed handoff token so the browser can open a
-  // NextAuth session without ever touching the Supabase browser client.
-  // Valid for 2 minutes — enough to survive any network latency.
   const exp = Date.now() + 2 * 60 * 1000;
   const payload = Buffer.from(
-    JSON.stringify({ userId, displayName, exp, isStub: needsEmail }),
+    JSON.stringify({ userId, displayName, exp, isStub: false }),
   ).toString('base64url');
   const secret = env.NEXTAUTH_SECRET ?? env.SUPABASE_SERVICE_KEY;
   const sig = createHmac('sha256', secret).update(payload).digest('base64url');
 
-  return NextResponse.json({ sessionToken: `${payload}.${sig}`, needsEmail });
+  return NextResponse.json({ sessionToken: `${payload}.${sig}`, needsEmail: false });
 });

@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { useSearchParams } from 'next/navigation';
 import { profileApi } from '@/services/profile-api';
 import { revalidateProfileData } from '@/actions/profile';
 import { broadcastDisplayName } from '@/hooks/use-display-name';
@@ -12,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslations } from 'next-intl';
-import { ChevronRight, Send, Globe } from 'lucide-react';
+import { ChevronRight, Send } from 'lucide-react';
 import { BackLink } from '@/components/common/back-link';
 import { isTelegramWebApp } from '@/components/telegram-provider';
 
@@ -40,7 +39,6 @@ export function SettingsClient({
   isStub = false,
 }: SettingsClientProps) {
   const t = useTranslations();
-  const searchParams = useSearchParams();
   const [displayName, setDisplayName] = useState(initialProfile?.display_name || userName || '');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -57,16 +55,6 @@ export function SettingsClient({
   // the card is only useful for web (email) users who want to add bot access.
   const showTelegramCard = BOT_URL && !isStub && !isTelegramWebApp();
   const [isConnecting, setIsConnecting] = useState(false);
-
-  // Show over-limit warning after a web→Tg account merge redirected here with ?overLimit=1
-  useEffect(() => {
-    if (searchParams.get('overLimit') === '1') {
-      toast.warning(t('telegramUpgrade.mergedOverLimitWarning'), { duration: 8000 });
-      const url = new URL(window.location.href);
-      url.searchParams.delete('overLimit');
-      window.history.replaceState(null, '', url.toString());
-    }
-  }, [searchParams, t]);
 
   const onConnectTelegram = async () => {
     if (!BOT_URL) return;
@@ -168,22 +156,6 @@ export function SettingsClient({
           </CardHeader>
         </Card>
       </Link>
-      {isStub && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              {t('settings.webAccessCardTitle')}
-            </CardTitle>
-            <CardDescription>{t('settings.webAccessCardDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <a href="/tg/upgrade">{t('settings.webAccessCardCta')}</a>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
       {showTelegramCard && (
         <Card>
           <CardHeader>

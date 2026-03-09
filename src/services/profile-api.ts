@@ -87,52 +87,6 @@ class ProfileApi {
     return (await response.json()) as { token: string };
   }
 
-  /** Upgrades a Telegram stub account by setting a real email address.
-   * - If the email is new: stores pending_email + sends a verification email, returns { success: true }.
-   * - If the email belongs to an existing account and no password given: returns { conflict: true }.
-   * - If the email belongs to an existing account and password matches:
-   *   merges stub into that account and returns { sessionToken, overLimit } for immediate sign-in.
-   */
-  async upgradeStub(
-    initData: string,
-    email: string,
-    password?: string,
-    locale: 'en' | 'ru' = 'en',
-  ): Promise<
-    { success: true } | { conflict: true } | { sessionToken: string; overLimit: boolean }
-  > {
-    const response = await fetch('/api/profile/upgrade-stub', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData, email, locale, ...(password ? { password } : {}) }),
-    });
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string; message?: string };
-      throw new Error(data.error || data.message || `Server error ${response.status}`);
-    }
-    return (await response.json()) as
-      | { success: true }
-      | { conflict: true }
-      | { sessionToken: string; overLimit: boolean };
-  }
-
-  /** Resends the verification email for a pending email upgrade. */
-  async resendVerification(
-    initData: string,
-    locale: 'en' | 'ru' = 'en',
-  ): Promise<{ success: boolean }> {
-    const response = await fetch('/api/profile/resend-verification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData, locale }),
-    });
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string; message?: string };
-      throw new Error(data.error || data.message || `Server error ${response.status}`);
-    }
-    return (await response.json()) as { success: boolean };
-  }
-
   async requestUpgrade(planId: string): Promise<{ url: string }> {
     const response = await fetch('/api/subscription/checkout', {
       method: 'POST',
