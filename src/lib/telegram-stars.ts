@@ -6,6 +6,7 @@
  */
 
 import { env } from '@/lib/env';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 interface TelegramInvoiceLink {
   ok: boolean;
@@ -116,31 +117,33 @@ export function getPlanStarsPrice(planId: 'basic' | 'pro' | 'max'): number {
 }
 
 /**
- * Get plan details for Telegram invoice.
+ * Get plan details for Telegram invoice — name and description from DB, with hardcoded fallback.
  */
-export function getPlanDetails(planId: string) {
-  const planMap: Record<string, { name: string; description: string; cardsPerMonth: number }> = {
-    basic: {
-      name: 'Starter',
-      description: 'Create 300 cards per month · Start your learning journey',
-      cardsPerMonth: 300,
-    },
-    pro: {
-      name: 'Pro',
-      description: 'Create 2,000 cards per month · Power up your learning',
-      cardsPerMonth: 2000,
-    },
-    max: {
-      name: 'Max',
-      description: 'Create 5,000 cards per month · Unlimited learning',
-      cardsPerMonth: 5000,
-    },
+export async function getPlanDetails(
+  planId: string,
+): Promise<{ name: string; description: string; cardsPerMonth: number }> {
+  const { data } = await supabaseAdmin
+    .from('subscription_plans')
+    .select('name, cards_per_month')
+    .eq('id', planId)
+    .maybeSingle();
+
+  // Fallback descriptions if DB unreachable
+  const fallbackDescriptions: Record<string, string> = {
+    basic: 'Start your learning journey',
+    pro: 'Power up your learning',
+    max: 'Unlimited learning at full speed',
   };
 
-  const plan = planMap[planId];
-  if (!plan) {
+  if (!data) {
     throw new Error(`Unknown plan: ${planId}`);
   }
 
-  return plan;
+  const cardsPerMonth = data.cards_per_month;
+  const name = data.name;
+  const description = `Create ${cardsPerMonth.toLocaleString()} cards per month \u00b7 ${
+    fallbackDescriptions[planId] ?? 'Learn more'
+  }`;
+
+  return { name, description, cardsPerMonth };
 }

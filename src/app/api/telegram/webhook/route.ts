@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 import { env } from '@/lib/env';
+import { getValidPaidPlanIds } from '@/lib/plan-limits';
 
 /**
  * POST /api/telegram/webhook
@@ -52,8 +53,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // Validate plan
-      const validPlans = ['basic', 'pro', 'max'];
+      // Validate plan against DB
+      const validPlans = await getValidPaidPlanIds();
       if (!validPlans.includes(planId)) {
         logger.warn({ planId }, 'Invalid plan in pre-checkout');
         await answerPreCheckoutQuery(preCheckoutQueryId, false, 'Invalid plan');

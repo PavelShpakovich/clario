@@ -194,7 +194,7 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
               <SelectItem value="free">Free</SelectItem>
               <SelectItem value="basic">Starter</SelectItem>
               <SelectItem value="pro">Pro</SelectItem>
-              <SelectItem value="unlimited">Max</SelectItem>
+              <SelectItem value="max">Max</SelectItem>
             </SelectContent>
           </Select>
           <AdminToggle
@@ -266,7 +266,7 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
               <SelectItem value="free">Free</SelectItem>
               <SelectItem value="basic">Starter</SelectItem>
               <SelectItem value="pro">Pro</SelectItem>
-              <SelectItem value="unlimited">Max</SelectItem>
+              <SelectItem value="max">Max</SelectItem>
             </SelectContent>
           </Select>
         </td>

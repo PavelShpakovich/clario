@@ -16,8 +16,8 @@ export interface SubscriptionStatus {
   plan: {
     planId: 'free' | 'basic' | 'pro' | 'max';
     cardsPerMonth: number;
-    themesLimit: number;
-    maxThemes: number;
+    themesLimit: number | null;
+    maxThemes: number | null;
     communityThemes: number;
   };
 

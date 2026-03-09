@@ -7,7 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export interface PlanLimits {
   cardsPerMonth: number;
-  maxThemes: number;
+  maxThemes: number | null; // null = unlimited
   communityThemes: number;
 }
 
@@ -15,14 +15,12 @@ export interface PlanLimits {
 let planCache: Map<string, { data: PlanLimits; timestamp: number }> | null = null;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-/**
- * Default fallback limits when plan not found in database
- */
+// Fallback limits used only when DB is unreachable — must match migration seed in 0002_consolidation.sql
 const DEFAULT_LIMITS: Record<string, PlanLimits> = {
-  free: { cardsPerMonth: 50, maxThemes: 3, communityThemes: 0 },
-  basic: { cardsPerMonth: 300, maxThemes: 10, communityThemes: 5 },
-  pro: { cardsPerMonth: 2000, maxThemes: 50, communityThemes: 10 },
-  max: { cardsPerMonth: 5000, maxThemes: 999, communityThemes: 50 },
+  free:  { cardsPerMonth: 50,   maxThemes: 5,    communityThemes: 0  },
+  basic: { cardsPerMonth: 300,  maxThemes: 20,   communityThemes: 5  },
+  pro:   { cardsPerMonth: 2000, maxThemes: null,  communityThemes: 10 },
+  max:   { cardsPerMonth: 5000, maxThemes: null,  communityThemes: 50 },
 };
 
 export async function getPlanLimits(planId: string): Promise<PlanLimits> {
@@ -34,7 +32,7 @@ export async function getPlanLimits(planId: string): Promise<PlanLimits> {
     }
   }
 
-  // Fetch from database - try new column first, fall back if it doesn't exist
+  // Fetch from database
   const { data, error } = await supabaseAdmin
     .from('subscription_plans')
     .select('cards_per_month, max_themes')
@@ -42,14 +40,14 @@ export async function getPlanLimits(planId: string): Promise<PlanLimits> {
     .maybeSingle();
 
   if (error || !data) {
-    // Fallback to hardcoded defaults
+    // Fallback to hardcoded defaults (DB unreachable)
     return DEFAULT_LIMITS[planId] ?? DEFAULT_LIMITS['free'];
   }
 
   const limits: PlanLimits = {
-    cardsPerMonth: data.cards_per_month ?? 50,
-    maxThemes: data.max_themes ?? 999, // NULL in DB means unlimited
-    communityThemes: DEFAULT_LIMITS[planId]?.communityThemes ?? 0, // Fallback until migration runs
+    cardsPerMonth: data.cards_per_month ?? DEFAULT_LIMITS[planId]?.cardsPerMonth ?? 50,
+    maxThemes: data.max_themes, // null means unlimited
+    communityThemes: DEFAULT_LIMITS[planId]?.communityThemes ?? 0,
   };
 
   // Update cache
@@ -59,6 +57,24 @@ export async function getPlanLimits(planId: string): Promise<PlanLimits> {
   planCache.set(planId, { data: limits, timestamp: Date.now() });
 
   return limits;
+}
+
+/**
+ * Get all valid paid plan IDs from the database (excludes 'free').
+ * Used for validating payment webhooks.
+ */
+export async function getValidPaidPlanIds(): Promise<string[]> {
+  const { data } = await supabaseAdmin
+    .from('subscription_plans')
+    .select('id')
+    .neq('id', 'free');
+
+  if (!data || data.length === 0) {
+    // Fallback to known plans if DB unreachable
+    return ['basic', 'pro', 'max'];
+  }
+
+  return data.map((p) => p.id);
 }
 
 /**

@@ -37,7 +37,7 @@ export const POST = withApiHandler(async (req) => {
 
   try {
     // Get plan details and Stars price
-    const planDetails = getPlanDetails(planId);
+    const planDetails = await getPlanDetails(planId);
     const starsPrice = getPlanStarsPrice(planId);
 
     // Create invoice link via Telegram Bot API
