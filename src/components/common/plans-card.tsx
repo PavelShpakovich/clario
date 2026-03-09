@@ -10,13 +10,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { isTelegramWebApp, getTelegramWebApp } from '@/components/telegram-provider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-// Stars prices for each plan (roughly aligned to current USD rates)
+// Stars prices for each plan (roughly aligned to current USD rates ~$0.024/Star)
 // These should be kept in sync with env vars: TELEGRAM_STARS_PRICE_*
 const PLANS = [
   { id: 'free', name: 'Free', cards: 50, starsPrice: 0 },
-  { id: 'basic', name: 'Starter', cards: 300, starsPrice: 400 }, // ~$5.20
-  { id: 'pro', name: 'Pro', cards: 2000, starsPrice: 1000 }, // ~$13
-  { id: 'max', name: 'Max', cards: 5000, starsPrice: 2000 }, // ~$26
+  { id: 'basic', name: 'Starter', cards: 300, starsPrice: 200 }, // ~$4.80
+  { id: 'pro', name: 'Pro', cards: 2000, starsPrice: 500 }, // ~$12
+  { id: 'max', name: 'Max', cards: 5000, starsPrice: 1000 }, // ~$24
 ] as const;
 
 type Plan = (typeof PLANS)[number];

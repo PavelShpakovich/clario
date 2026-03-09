@@ -93,7 +93,7 @@ export async function createTelegramInvoiceLink(
 
 /**
  * Get the Stars price for a plan based on env vars.
- * Prices should be kept in sync with USD exchange rate (~$0.013 per Star).
+ * Prices should be kept in sync with USD exchange rate (~$0.024 per Star).
  */
 export function getPlanStarsPrice(planId: 'basic' | 'pro' | 'max'): number {
   const priceMap: Record<'basic' | 'pro' | 'max', string> = {
