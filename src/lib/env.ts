@@ -51,6 +51,9 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().email().optional(),
 
+  // Cron security
+  CRON_SECRET: z.string().optional(),
+
   // Node
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });

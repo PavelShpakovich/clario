@@ -11,6 +11,15 @@
     },
     "src/app/api/session/**": {
       "maxDuration": 60
+    },
+    "src/app/api/cron/**": {
+      "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/subscription-renewal",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }

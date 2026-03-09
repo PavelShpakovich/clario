@@ -55,12 +55,22 @@ export const GET = withApiHandler(async () => {
     return defaultFreeResponse();
   }
 
-  const planId = subscription?.plan_id ?? 'free';
-  const isPaid = subscription && planId !== 'free' && subscription.status === 'active';
+  const now = new Date();
+  const isExpired =
+    !subscription ||
+    subscription.status !== 'active' ||
+    (subscription.current_period_end != null &&
+      new Date(subscription.current_period_end) < now);
+
+  const planId = (isExpired ? 'free' : (subscription?.plan_id ?? 'free')) as
+    | 'free'
+    | 'basic'
+    | 'pro'
+    | 'max';
+  const isPaid = !isExpired && planId !== 'free';
   const limits = await getPlanLimits(planId);
 
   // Fetch current usage period
-  const now = new Date();
   const { data: usage, error: usageError } = await supabaseAdmin
     .from('user_usage')
     .select('cards_generated, cards_limit, period_start, period_end')

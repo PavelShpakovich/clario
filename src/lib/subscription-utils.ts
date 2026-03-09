@@ -34,15 +34,21 @@ export interface SubscriptionStatus {
 export async function getSubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
   const { data: subscription } = await supabaseAdmin
     .from('user_subscriptions')
-    .select('plan_id, status')
+    .select('plan_id, status, current_period_end')
     .eq('user_id', userId)
     .maybeSingle();
 
-  const planId = (subscription?.plan_id ?? 'free') as PlanId;
+  const now = new Date();
+  const isExpired =
+    !subscription ||
+    subscription.status !== 'active' ||
+    (subscription.current_period_end != null &&
+      new Date(subscription.current_period_end) < now);
+
+  const planId = (isExpired ? 'free' : (subscription?.plan_id ?? 'free')) as PlanId;
   const limits = await getPlanLimits(planId);
 
   // Get current usage
-  const now = new Date();
   const { data: usage } = await supabaseAdmin
     .from('user_usage')
     .select('cards_generated')
@@ -59,7 +65,7 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
     cardsLimit: limits.cardsPerMonth,
     cardsGenerated,
     cardsRemaining,
-    isPaid: !!(subscription && planId !== 'free' && subscription.status === 'active'),
+    isPaid: !isExpired && planId !== 'free',
     canGenerate: cardsRemaining > 0,
     usage: {
       cardsGenerated,
@@ -87,11 +93,17 @@ export async function getUserPlan(userId: string): Promise<{
 }> {
   const { data: subscription } = await supabaseAdmin
     .from('user_subscriptions')
-    .select('plan_id')
+    .select('plan_id, status, current_period_end')
     .eq('user_id', userId)
     .maybeSingle();
 
-  const planId = (subscription?.plan_id ?? 'free') as PlanId;
+  const isExpired =
+    !subscription ||
+    subscription.status !== 'active' ||
+    (subscription.current_period_end != null &&
+      new Date(subscription.current_period_end) < new Date());
+
+  const planId = (isExpired ? 'free' : (subscription?.plan_id ?? 'free')) as PlanId;
   const limits = await getPlanLimits(planId);
 
   return {
