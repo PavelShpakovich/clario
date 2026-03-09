@@ -6,7 +6,10 @@ import { FLAGS } from '@/lib/feature-flags';
 
 export async function POST(request: NextRequest) {
   if (!FLAGS.WEB_AUTH_ENABLED) {
-    return NextResponse.json({ message: 'Web registration is currently disabled.' }, { status: 410 });
+    return NextResponse.json(
+      { message: 'Web registration is currently disabled.' },
+      { status: 410 },
+    );
   }
 
   try {

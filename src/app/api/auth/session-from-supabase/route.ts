@@ -57,14 +57,13 @@ export const POST = withApiHandler(async () => {
     .select('display_name')
     .maybeSingle();
 
-  const displayName =
-    profile?.display_name || user.email?.split('@')[0] || 'User';
+  const displayName = profile?.display_name || user.email?.split('@')[0] || 'User';
 
   // Issue a 2-minute NextAuth handoff token (same format as /api/auth/telegram)
   const exp = Date.now() + 2 * 60 * 1000;
-  const payload = Buffer.from(
-    JSON.stringify({ userId: user.id, displayName, exp }),
-  ).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ userId: user.id, displayName, exp })).toString(
+    'base64url',
+  );
   const secret = env.NEXTAUTH_SECRET ?? env.SUPABASE_SERVICE_KEY;
   const sig = createHmac('sha256', secret).update(payload).digest('base64url');
 

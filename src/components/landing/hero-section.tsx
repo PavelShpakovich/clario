@@ -40,7 +40,9 @@ export function HeroSection({
           </>
         ) : (
           <Button size="lg" asChild>
-            <a href={BOT_URL} target="_blank" rel="noopener noreferrer">{ctaGetStarted}</a>
+            <a href={BOT_URL} target="_blank" rel="noopener noreferrer">
+              {ctaGetStarted}
+            </a>
           </Button>
         )}
       </div>

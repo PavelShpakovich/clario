@@ -126,10 +126,7 @@ export const POST = withApiHandler(async (req) => {
     });
     // Mark the profile so the Telegram auth gate can detect unverified state
     // independently of Supabase's internal email_confirmed_at field.
-    await supabaseAdmin
-      .from('profiles')
-      .update({ email_unverified: true })
-      .eq('id', stubUserId);
+    await supabaseAdmin.from('profiles').update({ email_unverified: true }).eq('id', stubUserId);
     logger.info({ userId: stubUserId, newEmail: email }, 'Stub email set, magic link sent');
     return NextResponse.json({ success: true });
   }

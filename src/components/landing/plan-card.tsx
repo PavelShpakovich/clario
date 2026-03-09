@@ -53,7 +53,9 @@ export function PlanCard({
         {FLAGS.WEB_AUTH_ENABLED ? (
           <Link href="/register">{cta}</Link>
         ) : (
-          <a href={BOT_URL} target="_blank" rel="noopener noreferrer">{cta}</a>
+          <a href={BOT_URL} target="_blank" rel="noopener noreferrer">
+            {cta}
+          </a>
         )}
       </Button>
     </div>

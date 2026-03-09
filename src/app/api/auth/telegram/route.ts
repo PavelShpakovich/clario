@@ -154,7 +154,11 @@ export const POST = withApiHandler(async (req) => {
 
   // Fetch display name + email verification state for the NextAuth session
   const [{ data: profile }, { data: authLookup }] = await Promise.all([
-    supabaseAdmin.from('profiles').select('display_name, email_unverified').eq('id', userId).single(),
+    supabaseAdmin
+      .from('profiles')
+      .select('display_name, email_unverified')
+      .eq('id', userId)
+      .single(),
     supabaseAdmin.auth.admin.getUserById(userId),
   ]);
 
