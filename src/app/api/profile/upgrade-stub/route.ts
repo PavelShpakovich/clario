@@ -158,7 +158,10 @@ export const POST = withApiHandler(async (req) => {
     }
 
     await sendVerificationEmail(email, verifyUrl, locale);
-    logger.info({ userId: stubUserId, email, locale }, 'Pending email stored, verification email sent');
+    logger.info(
+      { userId: stubUserId, email, locale },
+      'Pending email stored, verification email sent',
+    );
     return NextResponse.json({ success: true });
   }
 

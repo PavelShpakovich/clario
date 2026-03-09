@@ -174,8 +174,7 @@ export const POST = withApiHandler(async (req) => {
   //     (tracked via profiles.email_unverified — reliable regardless of Supabase internals)
   const currentEmail = authLookup.user?.email ?? '';
   const isStubEmail = currentEmail.startsWith('telegram_') && currentEmail.includes('@noreply');
-  const needsEmail =
-    FLAGS.EMAIL_UPGRADE_ENABLED && (isStubEmail || !!profile?.email_unverified);
+  const needsEmail = FLAGS.EMAIL_UPGRADE_ENABLED && (isStubEmail || !!profile?.email_unverified);
 
   // Issue a short-lived signed handoff token so the browser can open a
   // NextAuth session without ever touching the Supabase browser client.

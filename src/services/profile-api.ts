@@ -117,7 +117,10 @@ class ProfileApi {
   }
 
   /** Resends the verification email for a pending email upgrade. */
-  async resendVerification(initData: string, locale: 'en' | 'ru' = 'en'): Promise<{ success: boolean }> {
+  async resendVerification(
+    initData: string,
+    locale: 'en' | 'ru' = 'en',
+  ): Promise<{ success: boolean }> {
     const response = await fetch('/api/profile/resend-verification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
