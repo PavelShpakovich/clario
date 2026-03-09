@@ -5,6 +5,7 @@ import { withApiHandler } from '@/lib/api/handler';
 import { AuthError, ValidationError } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
 const bodySchema = z.object({
   initData: z.string().min(1),
@@ -76,56 +77,67 @@ export const POST = withApiHandler(async (req) => {
   if (existingProfile) {
     userId = existingProfile.id;
   } else {
-    // Create a new Supabase Auth user for this Telegram account
+    // No profile row yet — the user might still exist in auth.users if the
+    // profiles table was reset while auth.users was preserved.
     const email = `telegram_${telegramId}@noreply.clario.app`;
-    const { data: newUser, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      user_metadata: { telegram_id: telegramId, source: 'telegram' },
-    });
 
-    if (error || !newUser?.user) {
-      // The user might already exist in auth.users (e.g. after the profiles table
-      // was reset while auth.users was preserved).  Try to recover their account.
-      const isAlreadyExists =
-        error?.status === 422 ||
-        error?.message?.toLowerCase().includes('already') ||
-        error?.message?.toLowerCase().includes('registered');
+    // ── Step 1: probe auth.users by email ──────────────────────────────────
+    // We scan in pages of 1 000 (well within Supabase's max) until we either
+    // find the email or exhaust the list.  This avoids relying on createUser's
+    // error message / status code for "already exists" detection.
+    let existingAuthUserId: string | null = null;
 
-      if (!isAlreadyExists) {
-        throw new AuthError({ message: 'Failed to create user account', cause: error });
+    let page = 1;
+    paginate: for (;;) {
+      const { data: listPage, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage: 1000,
+      });
+
+      if (listErr) {
+        logger.warn({ listErr, telegramId }, 'telegram-auth: listUsers error during email probe');
+        break;
       }
 
-      // Paginate through auth users to find the one with this email.
-      let recovered: string | null = null;
-      let page = 1;
-      outer: while (page <= 20) {
-        const { data: listData } = await supabaseAdmin.auth.admin.listUsers({
-          page,
-          perPage: 50,
-        });
-        if (!listData?.users?.length) break;
-        for (const u of listData.users) {
-          if (u.email === email) {
-            recovered = u.id;
-            break outer;
-          }
+      const users = listPage?.users ?? [];
+      for (const u of users) {
+        if (u.email === email) {
+          existingAuthUserId = u.id;
+          break paginate;
         }
-        if (listData.users.length < 50) break;
-        page++;
       }
 
-      if (!recovered) {
-        throw new AuthError({ message: 'Failed to create user account', cause: error });
-      }
-
-      userId = recovered;
-    } else {
-      userId = newUser.user.id;
+      // Supabase returns the total count in nextPage/lastPage helpers; if the
+      // page we just received is smaller than perPage we've seen everything.
+      if (users.length < 1000) break;
+      page++;
     }
 
-    // Upsert profile — covers both fresh creation and recovery after a table reset.
-    await supabaseAdmin.from('profiles').upsert(
+    // ── Step 2: create or reuse the auth user ──────────────────────────────
+    if (existingAuthUserId) {
+      logger.info(
+        { telegramId, existingAuthUserId },
+        'telegram-auth: recovered existing auth user — restoring profile',
+      );
+      userId = existingAuthUserId;
+    } else {
+      const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { telegram_id: telegramId, source: 'telegram' },
+      });
+
+      if (createErr || !newUser?.user) {
+        logger.error({ createErr, telegramId }, 'telegram-auth: failed to create auth user');
+        throw new AuthError({ message: 'Failed to create user account', cause: createErr });
+      }
+
+      userId = newUser.user.id;
+      logger.info({ telegramId, userId }, 'telegram-auth: created new auth user');
+    }
+
+    // ── Step 3: ensure the profile row exists ──────────────────────────────
+    const { error: upsertErr } = await supabaseAdmin.from('profiles').upsert(
       {
         id: userId,
         telegram_id: telegramId,
@@ -133,6 +145,11 @@ export const POST = withApiHandler(async (req) => {
       },
       { onConflict: 'id' },
     );
+
+    if (upsertErr) {
+      logger.error({ upsertErr, userId, telegramId }, 'telegram-auth: profile upsert failed');
+      throw new AuthError({ message: 'Failed to initialise user profile', cause: upsertErr });
+    }
   }
 
   // Fetch display name + auth email for the NextAuth session
