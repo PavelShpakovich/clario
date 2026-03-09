@@ -163,9 +163,13 @@ export const POST = withApiHandler(async (req) => {
     [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ') ||
     'Telegram User';
 
-  // needsEmail = true when the account is still a stub (no real email set yet)
+  // needsEmail = true when:
+  //  a) account is still a stub (no real email set yet), OR
+  //  b) user submitted a real email via /tg/upgrade but hasn't clicked the verification link yet
   const currentEmail = authLookup.user?.email ?? '';
-  const needsEmail = currentEmail.startsWith('telegram_') && currentEmail.includes('@noreply');
+  const emailConfirmedAt = authLookup.user?.email_confirmed_at;
+  const isStubEmail = currentEmail.startsWith('telegram_') && currentEmail.includes('@noreply');
+  const needsEmail = isStubEmail || !emailConfirmedAt;
 
   // Issue a short-lived signed handoff token so the browser can open a
   // NextAuth session without ever touching the Supabase browser client.

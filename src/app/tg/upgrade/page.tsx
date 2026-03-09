@@ -54,6 +54,7 @@ export default function TelegramUpgradePage() {
   });
 
   const STORAGE_KEY = 'tg_upgrade_verifying';
+  const store = typeof window !== 'undefined' ? localStorage : null;
 
   useEffect(() => {
     async function init() {
@@ -71,7 +72,7 @@ export default function TelegramUpgradePage() {
       setInitData(data);
 
       // Restore verifying state if the user was redirected back mid-flow
-      const saved = sessionStorage.getItem(STORAGE_KEY);
+      const saved = store?.getItem(STORAGE_KEY);
       if (saved) {
         try {
           const { email } = JSON.parse(saved) as { email: string };
@@ -79,7 +80,7 @@ export default function TelegramUpgradePage() {
           setScreen('verifying');
           return;
         } catch {
-          sessionStorage.removeItem(STORAGE_KEY);
+          store?.removeItem(STORAGE_KEY);
         }
       }
 
@@ -101,6 +102,7 @@ export default function TelegramUpgradePage() {
           redirect: false,
         });
         if (!signInResult?.ok) throw new Error(signInResult?.error ?? 'Sign-in failed');
+        store?.removeItem(STORAGE_KEY);
         setScreen('merged');
       } else if ('conflict' in result && result.conflict) {
         // Email taken — reveal password field so user can prove ownership.
@@ -112,7 +114,7 @@ export default function TelegramUpgradePage() {
       } else {
         // Magic link sent — persist state so remounts don't reset to form.
         const email = values.email;
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ email }));
+        store?.setItem(STORAGE_KEY, JSON.stringify({ email }));
         setVerifyingEmail(email);
         setScreen('verifying');
       }
@@ -166,7 +168,7 @@ export default function TelegramUpgradePage() {
           type="button"
           className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
           onClick={() => {
-            sessionStorage.removeItem(STORAGE_KEY);
+            store?.removeItem(STORAGE_KEY);
             setVerifyingEmail('');
             setShowPassword(false);
             form.reset();
