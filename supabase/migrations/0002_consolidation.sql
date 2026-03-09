@@ -1,7 +1,30 @@
 -- ============================================================
--- Microlearning — consolidated schema
--- Replaces migrations 0001–0015 for a clean-slate deployment.
--- Apply with: supabase db reset
+-- 0002: Drop old schema and rebuild from consolidated baseline.
+-- This supersedes the old 0001–0013 incremental migrations.
+-- ============================================================
+
+-- ─── Drop functions ───────────────────────────────────────────
+drop function if exists public.increment_card_usage(uuid, int)  cascade;
+drop function if exists public.get_user_plan(uuid)              cascade;
+drop function if exists public.get_user_usage(uuid)             cascade;
+drop function if exists public.reset_monthly_usage()            cascade;
+drop function if exists public.initialize_user_usage()          cascade;
+
+-- ─── Drop tables (reverse dependency order) ───────────────────
+drop table if exists public.billing_history    cascade;
+drop table if exists public.user_usage         cascade;
+drop table if exists public.user_subscriptions cascade;
+drop table if exists public.subscription_plans cascade;
+drop table if exists public.bookmarked_cards   cascade;
+drop table if exists public.session_cards      cascade;
+drop table if exists public.sessions           cascade;
+drop table if exists public.cards              cascade;
+drop table if exists public.data_sources       cascade;
+drop table if exists public.themes             cascade;
+drop table if exists public.profiles           cascade;
+
+-- ============================================================
+-- Rebuild — consolidated final schema
 -- ============================================================
 
 -- ─── Extensions ───────────────────────────────────────────────
@@ -30,8 +53,8 @@ create policy "profiles: owner update"
   on public.profiles for update
   using (auth.uid() = id);
 
-create index idx_profiles_is_admin     on public.profiles(is_admin);
-create index idx_profiles_ui_language  on public.profiles(ui_language);
+create index idx_profiles_is_admin    on public.profiles(is_admin);
+create index idx_profiles_ui_language on public.profiles(ui_language);
 
 -- ─── Themes ───────────────────────────────────────────────────
 create table public.themes (
@@ -271,8 +294,6 @@ create index idx_user_usage_period_range on public.user_usage(user_id, period_st
 
 -- ─── Functions ────────────────────────────────────────────────
 
--- Atomically increments a user's card usage for the current period,
--- creating the period record if it doesn't exist yet.
 create or replace function public.increment_card_usage(p_user_id uuid, p_count int)
 returns void
 language plpgsql
@@ -317,7 +338,6 @@ begin
 end;
 $$;
 
--- Returns the active plan for a user.
 create or replace function public.get_user_plan(p_user_id uuid)
 returns table (plan_id text, cards_per_month integer)
 language plpgsql
@@ -332,7 +352,6 @@ begin
 end;
 $$;
 
--- Returns the current usage totals for a user.
 create or replace function public.get_user_usage(p_user_id uuid)
 returns table (cards_generated integer, cards_limit integer, cards_remaining integer)
 language plpgsql
