@@ -152,9 +152,9 @@ export const POST = withApiHandler(async (req) => {
     }
   }
 
-  // Fetch display name + auth email for the NextAuth session
+  // Fetch display name + email verification state for the NextAuth session
   const [{ data: profile }, { data: authLookup }] = await Promise.all([
-    supabaseAdmin.from('profiles').select('display_name').eq('id', userId).single(),
+    supabaseAdmin.from('profiles').select('display_name, email_unverified').eq('id', userId).single(),
     supabaseAdmin.auth.admin.getUserById(userId),
   ]);
 
@@ -165,11 +165,11 @@ export const POST = withApiHandler(async (req) => {
 
   // needsEmail = true when:
   //  a) account is still a stub (no real email set yet), OR
-  //  b) user submitted a real email via /tg/upgrade but hasn't clicked the verification link yet
+  //  b) user submitted a real email via /tg/upgrade but hasn't verified it yet
+  //     (tracked via profiles.email_unverified — reliable regardless of Supabase internals)
   const currentEmail = authLookup.user?.email ?? '';
-  const emailConfirmedAt = authLookup.user?.email_confirmed_at;
   const isStubEmail = currentEmail.startsWith('telegram_') && currentEmail.includes('@noreply');
-  const needsEmail = isStubEmail || !emailConfirmedAt;
+  const needsEmail = isStubEmail || !!profile?.email_unverified;
 
   // Issue a short-lived signed handoff token so the browser can open a
   // NextAuth session without ever touching the Supabase browser client.

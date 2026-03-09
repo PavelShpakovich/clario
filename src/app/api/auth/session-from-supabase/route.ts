@@ -48,11 +48,13 @@ export const POST = withApiHandler(async () => {
     throw new AuthError({ message: 'No active Supabase session found' });
   }
 
-  // Fetch display name from our profiles table
+  // Fetch display name from our profiles table and clear the email_unverified flag —
+  // the user clicked the magic link, so their email is now verified.
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('display_name')
+    .update({ email_unverified: false })
     .eq('id', user.id)
+    .select('display_name')
     .maybeSingle();
 
   const displayName =
