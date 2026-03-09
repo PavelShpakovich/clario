@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 import { deriveDisplayNameFromEmail } from '@/lib/auth/utils';
+import { FLAGS } from '@/lib/feature-flags';
 
 export async function POST(request: NextRequest) {
+  if (!FLAGS.WEB_AUTH_ENABLED) {
+    return NextResponse.json({ message: 'Web registration is currently disabled.' }, { status: 410 });
+  }
+
   try {
     const body = await request.json();
     const { email, password } = body;

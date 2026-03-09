@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { FLAGS } from '@/lib/feature-flags';
+
+const BOT_URL = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ?? 'https://t.me/clario_bot';
 
 interface PlanCardProps {
   name: string;
@@ -47,7 +50,11 @@ export function PlanCard({
         ))}
       </ul>
       <Button asChild variant={popular ? 'default' : 'outline'} className="w-full">
-        <Link href="/register">{cta}</Link>
+        {FLAGS.WEB_AUTH_ENABLED ? (
+          <Link href="/register">{cta}</Link>
+        ) : (
+          <a href={BOT_URL} target="_blank" rel="noopener noreferrer">{cta}</a>
+        )}
       </Button>
     </div>
   );

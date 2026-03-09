@@ -1,5 +1,8 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { FLAGS } from '@/lib/feature-flags';
+
+const BOT_URL = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ?? 'https://t.me/clario_bot';
 
 interface HeroSectionProps {
   tagline: string;
@@ -26,12 +29,20 @@ export function HeroSection({
       </h1>
       <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mb-10">{subheadline}</p>
       <div className="flex flex-col sm:flex-row gap-4">
-        <Button size="lg" asChild>
-          <Link href="/register">{ctaGetStarted}</Link>
-        </Button>
-        <Button size="lg" variant="outline" asChild>
-          <Link href="/login">{ctaLogin}</Link>
-        </Button>
+        {FLAGS.WEB_AUTH_ENABLED ? (
+          <>
+            <Button size="lg" asChild>
+              <Link href="/register">{ctaGetStarted}</Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/login">{ctaLogin}</Link>
+            </Button>
+          </>
+        ) : (
+          <Button size="lg" asChild>
+            <a href={BOT_URL} target="_blank" rel="noopener noreferrer">{ctaGetStarted}</a>
+          </Button>
+        )}
       </div>
     </section>
   );
