@@ -7,11 +7,13 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { getUserPlan } from '@/lib/subscription-utils';
+import { sendVerificationEmail } from '@/lib/email';
 
 const bodySchema = z.object({
   initData: z.string().min(1),
   email: z.string().email(),
-  password: z.string().min(6).optional(), // only provided when merging a conflicting account
+  password: z.string().min(6).optional(),
+  locale: z.enum(['en', 'ru']).default('en'),
 });
 
 interface TelegramUser {
@@ -80,7 +82,7 @@ export const POST = withApiHandler(async (req) => {
     });
   }
 
-  const { initData, email, password } = body.data;
+  const { initData, email, password, locale } = body.data;
 
   const telegramUser = validateTelegramInitData(initData, env.TELEGRAM_BOT_TOKEN);
   const telegramId = String(telegramUser.id);
@@ -118,18 +120,26 @@ export const POST = withApiHandler(async (req) => {
   });
 
   if (!updateError) {
-    // Email wasn't taken — send a magic link so the user can verify their address.
-    // Use NEXT_PUBLIC_APP_URL (always set, always the correct production URL).
-    // NEXTAUTH_URL is optional and may be localhost in some envs.
+    // Email wasn't taken — generate a magic link and send it ourselves so we
+    // can control the language and template.
     const appUrl = env.NEXT_PUBLIC_APP_URL;
-    await supabaseAdmin.auth.signInWithOtp({
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
       email,
-      options: { emailRedirectTo: `${appUrl}/auth/callback` },
+      options: { redirectTo: `${appUrl}/auth/callback` },
     });
+
+    if (linkError || !linkData.properties?.action_link) {
+      logger.error({ linkError, stubUserId }, 'Failed to generate magic link');
+      throw new AuthError({ message: 'Failed to generate verification link' });
+    }
+
+    await sendVerificationEmail(email, linkData.properties.action_link, locale);
+
     // Mark the profile so the Telegram auth gate can detect unverified state
     // independently of Supabase's internal email_confirmed_at field.
     await supabaseAdmin.from('profiles').update({ email_unverified: true }).eq('id', stubUserId);
-    logger.info({ userId: stubUserId, newEmail: email }, 'Stub email set, magic link sent');
+    logger.info({ userId: stubUserId, newEmail: email, locale }, 'Stub email set, magic link sent');
     return NextResponse.json({ success: true });
   }
 

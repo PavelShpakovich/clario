@@ -92,7 +92,7 @@ export default function TelegramUpgradePage() {
   async function onSubmit(values: UpgradeFormValues) {
     try {
       setIsSubmitting(true);
-      const result = await profileApi.upgradeStub(initData, values.email, values.password);
+      const result = await profileApi.upgradeStub(initData, values.email, values.password, locale);
 
       if ('sessionToken' in result) {
         // Merge complete — sign in immediately.

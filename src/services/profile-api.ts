@@ -97,13 +97,14 @@ class ProfileApi {
     initData: string,
     email: string,
     password?: string,
+    locale: 'en' | 'ru' = 'en',
   ): Promise<
     { success: true } | { conflict: true } | { sessionToken: string; overLimit: boolean }
   > {
     const response = await fetch('/api/profile/upgrade-stub', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData, email, ...(password ? { password } : {}) }),
+      body: JSON.stringify({ initData, email, locale, ...(password ? { password } : {}) }),
     });
     if (!response.ok) {
       const data = (await response.json()) as { error?: string; message?: string };

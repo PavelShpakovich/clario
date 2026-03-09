@@ -47,6 +47,10 @@ const envSchema = z.object({
   TELEGRAM_STARS_PRICE_PRO: z.string().regex(/^\d+$/).default('1000'), // ~$13
   TELEGRAM_STARS_PRICE_MAX: z.string().regex(/^\d+$/).default('2000'), // ~$26
 
+  // Resend (transactional email)
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().email().optional(),
+
   // Node
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
