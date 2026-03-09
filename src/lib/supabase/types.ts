@@ -211,6 +211,7 @@ export type Database = {
         Row: {
           created_at: string;
           display_name: string | null;
+          email_unverified: boolean;
           id: string;
           is_admin: boolean | null;
           last_study_date: string | null;
@@ -221,6 +222,7 @@ export type Database = {
         Insert: {
           created_at?: string;
           display_name?: string | null;
+          email_unverified?: boolean;
           id: string;
           is_admin?: boolean | null;
           last_study_date?: string | null;
@@ -231,6 +233,7 @@ export type Database = {
         Update: {
           created_at?: string;
           display_name?: string | null;
+          email_unverified?: boolean;
           id?: string;
           is_admin?: boolean | null;
           last_study_date?: string | null;
