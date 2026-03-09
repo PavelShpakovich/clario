@@ -9,9 +9,7 @@ import { env } from '@/lib/env';
 
 interface TelegramInvoiceLink {
   ok: boolean;
-  result?: {
-    invoice_link: string;
-  };
+  result?: string; // createInvoiceLink returns the URL directly as a string
   description?: string;
 }
 
@@ -86,11 +84,11 @@ export async function createTelegramInvoiceLink(
     );
   }
 
-  if (!data.result?.invoice_link) {
+  if (!data.result || typeof data.result !== 'string') {
     throw new Error(`Telegram invoice link missing in response: ${JSON.stringify(data)}`);
   }
 
-  return data.result.invoice_link;
+  return data.result;
 }
 
 /**
