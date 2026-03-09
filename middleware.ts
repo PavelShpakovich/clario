@@ -57,10 +57,7 @@ export async function middleware(request: NextRequest) {
   // /tg and /tg/upgrade are already in PUBLIC_ROUTES so they bypass this block.
   if ((token as Record<string, unknown>).isStub) {
     if (pathname.startsWith('/api')) {
-      return NextResponse.json(
-        { error: 'Email setup required to continue' },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: 'Email setup required to continue' }, { status: 403 });
     }
     return NextResponse.redirect(new URL('/tg/upgrade?required=1', request.url));
   }

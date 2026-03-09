@@ -137,7 +137,13 @@ export function SettingsClient({
     try {
       await profileApi.deleteAccount();
       toast.success(t('settings.accountDeleted'));
-      await signOut({ callbackUrl: '/' });
+      if (isTelegramWebApp()) {
+        // Close the Mini App — the cleanest exit after intentional deletion.
+        // Redirecting to /tg would immediately auto-create a new account.
+        window.Telegram!.WebApp.close();
+      } else {
+        await signOut({ callbackUrl: '/' });
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : t('settings.accountDeleteFailed'));
     } finally {

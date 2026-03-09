@@ -171,7 +171,9 @@ export const POST = withApiHandler(async (req) => {
   // NextAuth session without ever touching the Supabase browser client.
   // Valid for 2 minutes — enough to survive any network latency.
   const exp = Date.now() + 2 * 60 * 1000;
-  const payload = Buffer.from(JSON.stringify({ userId, displayName, exp, isStub: needsEmail })).toString('base64url');
+  const payload = Buffer.from(
+    JSON.stringify({ userId, displayName, exp, isStub: needsEmail }),
+  ).toString('base64url');
   const secret = env.NEXTAUTH_SECRET ?? env.SUPABASE_SERVICE_KEY;
   const sig = createHmac('sha256', secret).update(payload).digest('base64url');
 
