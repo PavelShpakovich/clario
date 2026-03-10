@@ -91,7 +91,10 @@ export const GET = withApiHandler(async () => {
     | 'pro'
     | 'max';
   const isPaid = isActive && planId !== 'free';
-  const autoRenew = subscription?.auto_renew ?? false;
+  // If the paid period already ended, auto-renew is no longer effectively active
+  // from the user's perspective, even if Telegram may still be retrying in the
+  // background during the grace period.
+  const autoRenew = isPeriodActive ? (subscription?.auto_renew ?? false) : false;
   // subscriptionStatus reflects renewal intent: 'active' = will renew, 'cancelled' = won't renew
   // but still in paid period, 'expired' = period ended, 'none' = no subscription.
   const subscriptionStatus: 'active' | 'cancelled' | 'expired' | 'none' = !subscription
