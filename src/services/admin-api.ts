@@ -6,6 +6,7 @@ export type { AdminAnalytics };
 export interface AdminUser {
   id: string;
   email: string;
+  telegramId: number | null;
   displayName: string;
   isAdmin: boolean;
   plan: string;

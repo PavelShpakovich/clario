@@ -212,14 +212,26 @@ function BotSetupCard() {
   );
 }
 
+const PLAN_LABELS: Record<string, string> = {
+  free: 'Free',
+  basic: 'Starter',
+  pro: 'Pro',
+  max: 'Max',
+};
+
 function PlanBadge({ plan }: { plan: string }) {
   const colors: Record<string, string> = {
     free: 'bg-gray-100 text-gray-800',
     basic: 'bg-blue-100 text-blue-800',
     pro: 'bg-purple-100 text-purple-800',
-    unlimited: 'bg-amber-100 text-amber-800',
+    max: 'bg-amber-100 text-amber-800',
   };
-  return <Badge className={colors[plan] || colors.free}>{plan.toUpperCase()}</Badge>;
+  return <Badge className={colors[plan] || colors.free}>{PLAN_LABELS[plan] ?? plan}</Badge>;
+}
+
+function formatUserIdentifier(user: AdminUser): string {
+  if (user.telegramId) return `TG: ${user.telegramId}`;
+  return user.email;
 }
 
 interface UserRowProps {
@@ -360,7 +372,7 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
       <div className="border rounded-lg p-4 space-y-3 bg-card">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="font-medium text-sm truncate">{user.email}</p>
+            <p className="font-medium text-sm truncate">{formatUserIdentifier(user)}</p>
             <p className="text-xs text-muted-foreground truncate">{user.displayName}</p>
           </div>
           <div className="flex flex-col items-center gap-2 shrink-0">
@@ -439,7 +451,7 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
         cancelLabel={t('cancel')}
       />
       <tr className="border-b hover:bg-muted/40">
-        <td className="px-4 py-3 text-sm">{user.email}</td>
+        <td className="px-4 py-3 text-sm">{formatUserIdentifier(user)}</td>
         <td className="px-4 py-3 text-sm">{user.displayName}</td>
         <td className="px-4 py-3">
           <PlanBadge plan={selectedPlan} />

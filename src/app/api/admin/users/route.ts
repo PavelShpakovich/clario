@@ -42,7 +42,7 @@ export const GET = withApiHandler(async (req: Request) => {
           const [profileRes, planRes, usageRes] = await Promise.all([
             supabaseAdmin
               .from('profiles')
-              .select('display_name, is_admin')
+              .select('display_name, is_admin, telegram_id')
               .eq('id', authUser.id)
               .single(),
             getUserPlan(authUser.id),
@@ -52,6 +52,7 @@ export const GET = withApiHandler(async (req: Request) => {
           return {
             id: authUser.id,
             email: authUser.email,
+            telegramId: profileRes.data?.telegram_id ?? null,
             displayName: profileRes.data?.display_name || 'Unknown',
             isAdmin: profileRes.data?.is_admin || false,
             plan: planRes.planId,
