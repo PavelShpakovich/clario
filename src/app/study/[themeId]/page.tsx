@@ -16,7 +16,7 @@ export default async function StudyPage({ params }: StudyPageProps) {
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/tg');
   }
 
   const { themeId } = await params;

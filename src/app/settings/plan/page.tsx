@@ -13,7 +13,7 @@ export default async function PlanPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/tg');
   }
 
   return (

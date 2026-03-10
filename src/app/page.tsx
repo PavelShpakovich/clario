@@ -81,7 +81,6 @@ export default async function HomePage() {
         headline={t('heroHeadline')}
         subheadline={t('heroSubheadline')}
         ctaGetStarted={t('ctaGetStarted')}
-        ctaLogin={t('ctaLogin')}
       />
 
       {/* ── Features ── */}

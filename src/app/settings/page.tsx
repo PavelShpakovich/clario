@@ -15,7 +15,7 @@ export default async function SettingsPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/tg');
   }
 
   // Fetch the actual auth email (not stored in JWT) to detect stub accounts.

@@ -6,7 +6,6 @@ import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { TelegramLoader } from '@/components/telegram-loader';
-import { TelegramConnectPrompt } from '@/components/providers/telegram-connect-prompt';
 import { SubscriptionProvider } from '@/hooks/use-subscription';
 import { WelcomeModal } from '@/components/common/welcome-modal';
 
@@ -24,7 +23,6 @@ export function RootProviders({ children, locale, messages }: RootProvidersProps
           <SubscriptionProvider>
             <TelegramLoader>{children}</TelegramLoader>
           </SubscriptionProvider>
-          <TelegramConnectPrompt />
           <WelcomeModal />
           <Toaster position="bottom-right" />
         </ThemeProvider>

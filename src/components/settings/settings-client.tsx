@@ -11,11 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslations } from 'next-intl';
-import { Check, ChevronRight, Send } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { BackLink } from '@/components/common/back-link';
 import { isTelegramWebApp } from '@/components/telegram-provider';
-
-const BOT_URL = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL;
 
 interface SettingsClientProps {
   initialProfile: {
@@ -43,31 +41,7 @@ export function SettingsClient({ initialProfile, userName, isStub = false }: Set
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const telegramId = initialProfile?.telegram_id ?? null;
-  // Stub accounts were created by Telegram-first users (email = telegram_*@noreply.*).
-  // They need to set up web credentials before they can log in via browser.
-  // Hide the Connect card when the user is already inside the Telegram WebApp —
-  // the card is only useful for web (email) users who want to add bot access.
-  const showTelegramCard = BOT_URL && !isStub && !isTelegramWebApp();
-  const [isConnecting, setIsConnecting] = useState(false);
-
-  const onConnectTelegram = async () => {
-    if (!BOT_URL) return;
-    try {
-      setIsConnecting(true);
-      const { token } = await profileApi.generateTelegramLinkToken();
-      // Deep-link opens the Mini App with start_param=link_<token>
-      const deepLink = `${BOT_URL}?startapp=link_${token}`;
-      window.open(deepLink, '_blank', 'noopener,noreferrer');
-      toast.success(t('settings.telegramConnectOpened'));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('settings.telegramConnectFailed'));
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  // Reflect connection after user returns from the bot (storage event or poll not needed —
-  // a page refresh is the natural UX after linking inside Telegram).
+  void telegramId;
 
   const onSave = async () => {
     const normalizedName = displayName.trim();
@@ -150,30 +124,6 @@ export function SettingsClient({ initialProfile, userName, isStub = false }: Set
           </CardHeader>
         </Card>
       </Link>
-      {showTelegramCard && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Send className="h-4 w-4" />
-              {t('settings.telegramCardTitle')}
-            </CardTitle>
-            <CardDescription>{t('settings.telegramCardDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between gap-4">
-            {telegramId ? (
-              <span className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
-                <Check className="h-4 w-4" />
-                {t('settings.telegramConnected')}
-              </span>
-            ) : (
-              <Button onClick={() => void onConnectTelegram()} disabled={isConnecting}>
-                <Send className="h-4 w-4 mr-2" />
-                {isConnecting ? t('settings.telegramConnecting') : t('settings.telegramConnectCta')}
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
       <Card>
         <CardHeader>
           <CardTitle>{t('settings.profileTitle')}</CardTitle>

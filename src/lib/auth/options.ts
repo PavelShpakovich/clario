@@ -4,7 +4,6 @@ import { decode as nextAuthJwtDecode, encode as nextAuthJwtEncode } from 'next-a
 import { createHmac } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { env } from '@/lib/env';
-import { deriveDisplayNameFromEmail } from '@/lib/auth/utils';
 
 declare module 'next-auth' {
   interface User {
@@ -94,52 +93,10 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-    Credentials({
-      id: 'credentials',
-      name: 'Email/Password',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Email and password required');
-        }
-
-        const { data, error } = await supabaseAdmin.auth.signInWithPassword({
-          email: credentials.email,
-          password: credentials.password,
-        });
-
-        if (error || !data.user) {
-          throw new Error('Invalid email or password');
-        }
-
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (!profile) {
-          await supabaseAdmin.from('profiles').insert({
-            id: data.user.id,
-            telegram_id: null,
-            display_name: deriveDisplayNameFromEmail(data.user.email),
-          });
-        }
-
-        return {
-          id: data.user.id,
-          email: data.user.email,
-          name: profile?.display_name || deriveDisplayNameFromEmail(data.user.email),
-        };
-      },
-    }),
   ],
   pages: {
-    signIn: '/login',
-    error: '/login',
+    signIn: '/tg',
+    error: '/tg',
   },
   callbacks: {
     async jwt({ token, user }) {

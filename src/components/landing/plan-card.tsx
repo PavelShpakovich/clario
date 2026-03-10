@@ -1,8 +1,6 @@
-import Link from 'next/link';
 import { Check, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FLAGS } from '@/lib/feature-flags';
 
 const BOT_URL = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ?? 'https://t.me/clario_bot';
 
@@ -58,13 +56,9 @@ export function PlanCard({
         ))}
       </ul>
       <Button asChild variant={popular ? 'default' : 'outline'} className="w-full">
-        {FLAGS.WEB_AUTH_ENABLED ? (
-          <Link href="/register">{cta}</Link>
-        ) : (
-          <a href={BOT_URL} target="_blank" rel="noopener noreferrer">
-            {cta}
-          </a>
-        )}
+        <a href={BOT_URL} target="_blank" rel="noopener noreferrer">
+          {cta}
+        </a>
       </Button>
     </div>
   );
