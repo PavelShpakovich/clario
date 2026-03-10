@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Check } from 'lucide-react';
+import { Check, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FLAGS } from '@/lib/feature-flags';
@@ -29,7 +29,7 @@ export function PlanCard({
 }: PlanCardProps) {
   const isFree = starsPrice === 0;
   const priceDisplay = isFree ? freeLabel : starsPrice.toLocaleString();
-  const priceSuffix = isFree ? null : '⭐';
+  const priceSuffix = isFree ? null : <Star className="w-6 h-6 fill-current pb-0.5" />;
   return (
     <div
       className={`relative flex flex-col rounded-2xl border p-6 shadow-sm ${
@@ -43,7 +43,9 @@ export function PlanCard({
         <p className="text-sm font-medium text-muted-foreground mb-1">{name}</p>
         <div className="flex items-end gap-1">
           <span className="text-4xl font-bold">{priceDisplay}</span>
-          {priceSuffix && <span className="text-2xl font-bold pb-0.5">{priceSuffix}</span>}
+          {priceSuffix && (
+            <span className="text-2xl font-bold pb-0.5 flex items-end">{priceSuffix}</span>
+          )}
           {!isFree && <span className="text-muted-foreground pb-1">{perMonth}</span>}
         </div>
       </div>

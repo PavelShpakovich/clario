@@ -8,6 +8,7 @@ import {
   Loader2,
   AlertCircle,
   ExternalLink,
+  Star,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -62,7 +63,14 @@ function PlanTile({
           </p>
         </div>
         <p className="text-sm font-semibold shrink-0">
-          {plan.starsPrice === 0 ? t('plans.free') : `${plan.starsPrice}⭐`}
+          {plan.starsPrice === 0 ? (
+            t('plans.free')
+          ) : (
+            <span className="inline-flex items-center gap-0.5">
+              {plan.starsPrice}
+              <Star className="w-3.5 h-3.5 fill-current" />
+            </span>
+          )}
         </p>
       </div>
 
