@@ -12,6 +12,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/use-subscription';
+import { subscriptionApi } from '@/services/subscription-api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { isTelegramWebApp, getTelegramWebApp } from '@/components/telegram-provider';
@@ -27,7 +28,6 @@ interface PlanTileProps {
   features: string[];
   isCurrent: boolean;
   isUpgrade: boolean;
-  isDowngrade: boolean;
   isRequesting: boolean;
   canUpgrade: boolean;
   isCancelled: boolean;
@@ -40,7 +40,6 @@ function PlanTile({
   features,
   isCurrent,
   isUpgrade,
-  isDowngrade,
   isRequesting,
   canUpgrade,
   isCancelled,
@@ -77,7 +76,7 @@ function PlanTile({
       </ul>
 
       {isCurrent ? (
-        <div className="space-y-1">
+        <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-xs text-primary font-medium">
             <Check className="w-3.5 h-3.5" />
             {t('plans.currentPlan')}
@@ -88,6 +87,30 @@ function PlanTile({
                 date: new Date(expiresAt).toLocaleDateString(),
               })}
             </p>
+          )}
+          {/* Cancel renewal button on the current paid plan tile */}
+          {plan.starsPrice > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onSelect}
+              disabled={isRequesting || isCancelled}
+              className="w-full text-xs"
+            >
+              {isRequesting ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : isCancelled ? (
+                <>
+                  <Check className="w-3 h-3 mr-1" />
+                  {t('subscriptions.cancellationPending')}
+                </>
+              ) : (
+                <>
+                  <ArrowDownLeft className="w-3 h-3 mr-1" />
+                  {t('plans.cancelRenewal')}
+                </>
+              )}
+            </Button>
           )}
         </div>
       ) : isUpgrade ? (
@@ -105,28 +128,6 @@ function PlanTile({
             <>
               <ArrowUpRight className="w-3 h-3 mr-1" />
               {t('plans.upgrade')}
-            </>
-          )}
-        </Button>
-      ) : isDowngrade ? (
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onSelect}
-          disabled={isRequesting || isCancelled}
-          className="w-full text-xs"
-        >
-          {isRequesting ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : isCancelled ? (
-            <>
-              <Check className="w-3 h-3 mr-1" />
-              {t('subscriptions.cancellationPending')}
-            </>
-          ) : (
-            <>
-              <ArrowDownLeft className="w-3 h-3 mr-1" />
-              {t('plans.cancelRenewal')}
             </>
           )}
         </Button>
@@ -158,88 +159,60 @@ export function PlansCard() {
     max: [tl('plan4Feature1'), tl('plan4Feature2'), tl('plan4Feature3')],
   };
 
-  const handleDowngrade = async (planId: string) => {
-    if (planId !== 'free') return; // Only allow downgrade to free
-
-    setRequesting(planId);
+  const handleCancelRenewal = async () => {
+    setRequesting(currentPlanId);
     try {
-      // Call API to cancel the subscription renewal
-      const response = await fetch('/api/profile/telegram-subscription', {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to cancel subscription');
-      }
-
+      await subscriptionApi.cancelRenewal();
       toast.success(t('subscriptions.cancelSuccess'));
-      // Trigger subscription refresh
-      if (refetch) await refetch();
+      await refetch();
     } catch {
-      toast.error(t('errors.generic') || 'Failed to cancel subscription');
+      toast.error(t('errors.generic'));
     } finally {
       setRequesting(null);
     }
   };
 
-  const handlePlanSelect = async (plan: Plan) => {
-    if (plan.id === 'free' && plan.id !== currentPlanId) {
-      // Downgrade to free
-      await handleDowngrade(plan.id);
-    } else if (plan.id !== 'free' && plan.id !== currentPlanId) {
-      // Upgrade: Check if in Telegram or show web warning
-      if (!isTelegramWebApp()) {
-        toast.error(
-          t('subscriptions.telegramOnly') ||
-            'Please open this app in Telegram to upgrade your plan',
-        );
-        return;
-      }
+  const handleUpgrade = async (plan: Plan) => {
+    if (!isTelegramWebApp()) {
+      toast.error(t('subscriptions.telegramOnly'));
+      return;
+    }
 
-      // In Telegram, create and open invoice
-      setRequesting(plan.id);
-      try {
-        const starsPrice = plan.starsPrice;
-        if (!starsPrice) throw new Error('Invalid plan');
+    setRequesting(plan.id);
+    try {
+      const invoiceLink = await subscriptionApi.createInvoiceLink(plan.id, plan.starsPrice);
 
-        const response = await fetch('/api/telegram/invoice', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ planId: plan.id, starsPrice }),
+      const tg = getTelegramWebApp();
+      if (tg?.openInvoice) {
+        // Clear spinner before openInvoice — the call is non-blocking and
+        // the sheet stays open, so we must not leave the button spinning.
+        setRequesting(null);
+        tg.openInvoice(invoiceLink, (invoiceStatus: string) => {
+          if (invoiceStatus === 'paid') {
+            toast.success(t('subscriptions.upgradeSuccess', { planName: plan.name }));
+            // Give the webhook ~1.5 s to write to DB before refreshing
+            setTimeout(() => void refetch(), 1500);
+          } else if (invoiceStatus === 'cancelled') {
+            toast.info(t('subscriptions.upgradeCancelled'));
+          } else {
+            toast.error(t('subscriptions.upgradeFailed'));
+          }
         });
-
-        if (!response.ok) throw new Error('Failed to create invoice');
-
-        const { invoiceLink } = await response.json();
-
-        // Use Telegram Bot API to open invoice in Mini App
-        const tg = getTelegramWebApp();
-        if (tg?.openInvoice) {
-          // Clear spinner before openInvoice — the call is non-blocking and
-          // the sheet stays open, so we must not leave the button spinning.
-          setRequesting(null);
-          tg.openInvoice(invoiceLink, (status: string) => {
-            if (status === 'paid') {
-              toast.success(t('subscriptions.upgradeSuccess', { planName: plan.name }));
-              // Give the webhook ~1.5 s to write to DB before refreshing
-              setTimeout(() => {
-                if (refetch) void refetch();
-              }, 1500);
-            } else if (status === 'cancelled') {
-              toast.info(t('subscriptions.upgradeCancelled'));
-            } else {
-              // 'failed' or any other terminal status
-              toast.error(t('subscriptions.upgradeFailed'));
-            }
-          });
-        } else {
-          window.open(invoiceLink, '_blank');
-          setRequesting(null);
-        }
-      } catch {
-        toast.error(t('errors.generic') || 'Failed to initiate payment');
+      } else {
+        window.open(invoiceLink, '_blank');
         setRequesting(null);
       }
+    } catch {
+      toast.error(t('errors.generic'));
+      setRequesting(null);
+    }
+  };
+
+  const handlePlanAction = (plan: Plan) => {
+    if (plan.id === currentPlanId && plan.starsPrice > 0) {
+      void handleCancelRenewal();
+    } else if (plan.id !== currentPlanId && plan.starsPrice > 0) {
+      void handleUpgrade(plan);
     }
   };
 
@@ -279,12 +252,11 @@ export function PlansCard() {
                 features={planFeatures[plan.id] ?? []}
                 isCurrent={plan.id === currentPlanId}
                 isUpgrade={idx > currentPlanIndex}
-                isDowngrade={idx < currentPlanIndex}
                 isRequesting={requesting === plan.id}
                 canUpgrade={isTelegramWebApp() || plan.id === 'free'}
                 isCancelled={status?.subscriptionStatus === 'cancelled'}
                 expiresAt={status?.expiresAt ?? null}
-                onSelect={() => handlePlanSelect(plan)}
+                onSelect={() => handlePlanAction(plan)}
               />
             ))}
           </div>
