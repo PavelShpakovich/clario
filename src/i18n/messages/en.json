@@ -278,10 +278,10 @@
     "lowCardsBannerTitle": "Only {count} card {count, plural, one {generation} other {generations}} left this month",
     "periodUsage": "{generated} of {limit} cards generated this month",
     "upgradeCta": "Upgrade",
+    "themesLabel": "Themes",
     "themesCounter": "{used} / {limit} themes used",
     "themesLeft": "{count} {count, plural, one {theme slot} other {theme slots}} remaining",
     "noThemesLeft": "No theme slots remaining",
-    "themeUsage": "{used} of {limit} themes used",
     "themeLimitReachedBannerTitle": "Theme limit reached",
     "themeNearLimitBannerTitle": "Only {count} {count, plural, one {theme slot} other {theme slots}} left"
   },

@@ -75,29 +75,30 @@ export function UsageCard() {
           <div className="h-4 bg-muted animate-pulse rounded" />
         ) : (
           <>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {t('usage.planLabel', { plan: planName ?? '' })}
-              </span>
-              <span
-                className={`font-medium tabular-nums ${
-                  pct >= 100
-                    ? 'text-destructive'
-                    : pct >= 85
-                      ? 'text-warning'
-                      : pct >= 60
-                        ? 'text-orange-500'
-                        : 'text-foreground'
-                }`}
-              >
-                {t('usage.cardsCounter', {
-                  generated: status.usage.cardsGenerated,
-                  limit: status.usage.cardsLimit,
-                })}
-              </span>
+            <div className="flex flex-col gap-1 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">
+                  {t('usage.planLabel', { plan: planName ?? '' })}
+                </span>
+                <span
+                  className={`font-medium tabular-nums ${
+                    pct >= 100
+                      ? 'text-destructive'
+                      : pct >= 85
+                        ? 'text-warning'
+                        : pct >= 60
+                          ? 'text-orange-500'
+                          : 'text-foreground'
+                  }`}
+                >
+                  {t('usage.cardsCounter', {
+                    generated: status.usage.cardsGenerated,
+                    limit: status.usage.cardsLimit,
+                  })}
+                </span>
+              </div>
+              <UsageProgressBar pct={pct} />
             </div>
-
-            <UsageProgressBar pct={pct} />
 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
@@ -125,27 +126,27 @@ export function UsageCard() {
                 return (
                   <>
                     <div className="border-t border-border" />
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        {t('usage.themeUsage', { used: themesUsed, limit: maxThemes })}
-                      </span>
-                      <span
-                        className={`font-medium tabular-nums ${
-                          themesPct >= 100
-                            ? 'text-destructive'
-                            : themesPct >= 80
-                              ? 'text-warning'
-                              : 'text-foreground'
-                        }`}
-                      >
-                        {t('usage.themesCounter', { used: themesUsed, limit: maxThemes })}
-                      </span>
-                    </div>
-                    <UsageProgressBar pct={themesPct} />
-                    <div className="text-xs text-muted-foreground">
-                      {isThemesExhausted
-                        ? t('usage.noThemesLeft')
-                        : t('usage.themesLeft', { count: themesRemaining })}
+                    <div className="flex flex-col gap-1 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">{t('usage.themesLabel')}</span>
+                        <span
+                          className={`font-medium tabular-nums ${
+                            themesPct >= 100
+                              ? 'text-destructive'
+                              : themesPct >= 80
+                                ? 'text-warning'
+                                : 'text-foreground'
+                          }`}
+                        >
+                          {t('usage.themesCounter', { used: themesUsed, limit: maxThemes })}
+                        </span>
+                      </div>
+                      <UsageProgressBar pct={themesPct} />
+                      <div className="text-xs text-muted-foreground">
+                        {isThemesExhausted
+                          ? t('usage.noThemesLeft')
+                          : t('usage.themesLeft', { count: themesRemaining })}
+                      </div>
                     </div>
                   </>
                 );

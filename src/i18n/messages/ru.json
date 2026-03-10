@@ -318,9 +318,9 @@
     "periodUsage": "{generated} из {limit} карточек сгенерировано в этом месяце",
     "upgradeCta": "Улучшить",
     "themesCounter": "{used} / {limit} тем использовано",
+    "themesLabel": "Темы",
     "themesLeft": "Осталось {count} {count, plural, one {место} few {места} other {мест}} для тем",
     "noThemesLeft": "Места для тем закончились",
-    "themeUsage": "{used} из {limit} тем использовано",
     "themeLimitReachedBannerTitle": "Лимит тем исчерпан",
     "themeNearLimitBannerTitle": "Осталось {count} {count, plural, one {место} few {места} other {мест}} для тем"
   },
