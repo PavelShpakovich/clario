@@ -44,8 +44,16 @@ export function UsageCard() {
 
   const isExhausted = status?.usage.cardsRemaining === 0;
 
+  const planNames: Record<string, string> = {
+    free: t('plan1Name'),
+    basic: t('plan2Name'),
+    pro: t('plan3Name'),
+    max: t('plan4Name'),
+  };
+
   const planName = status
-    ? status.plan.planId.charAt(0).toUpperCase() + status.plan.planId.slice(1)
+    ? (planNames[status.plan.planId] ??
+      status.plan.planId.charAt(0).toUpperCase() + status.plan.planId.slice(1))
     : null;
 
   const periodEnd = status
