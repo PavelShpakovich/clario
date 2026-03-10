@@ -7,6 +7,7 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { TelegramLoader } from '@/components/telegram-loader';
 import { TelegramConnectPrompt } from '@/components/providers/telegram-connect-prompt';
+import { SubscriptionProvider } from '@/hooks/use-subscription';
 
 interface RootProvidersProps {
   children: React.ReactNode;
@@ -19,7 +20,9 @@ export function RootProviders({ children, locale, messages }: RootProvidersProps
     <SessionProvider>
       <NextIntlClientProvider locale={locale} messages={messages}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <TelegramLoader>{children}</TelegramLoader>
+          <SubscriptionProvider>
+            <TelegramLoader>{children}</TelegramLoader>
+          </SubscriptionProvider>
           <TelegramConnectPrompt />
           <Toaster position="bottom-right" />
         </ThemeProvider>

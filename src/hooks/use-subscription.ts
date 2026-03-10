@@ -1,15 +1,23 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import {
+  createElement,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import type { ReactNode } from 'react';
 import type { AvailablePlan } from '@/app/api/profile/telegram-subscription/route';
 
 /**
  * Telegram Stars subscription status hook.
  *
- * Since we now use Telegram Stars for payments only:
- * - Users must be inside Telegram to see paid features
- * - Subscription status is managed via Telegram in-app purchases
- * - This hook returns the user's tier based on database subscription record
+ * All consumers share a single SubscriptionProvider context.
+ * A refetch() from any component (e.g. after a successful payment)
+ * instantly updates UsageCard, UsageBanner, PlansCard, etc.
  */
 
 export interface SubscriptionStatus {
@@ -51,10 +59,20 @@ interface SubscriptionResponse {
   refetch: () => Promise<void>;
 }
 
-export function useSubscription(): SubscriptionResponse {
+const SubscriptionContext = createContext<SubscriptionResponse | null>(null);
+
+function useFetchSubscription(): SubscriptionResponse {
   const [status, setStatus] = useState<SubscriptionStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const fetchSubscription = useCallback(async () => {
     setIsLoading(true);
@@ -64,19 +82,42 @@ export function useSubscription(): SubscriptionResponse {
         throw new Error(`Failed to fetch subscription: ${response.statusText}`);
       }
       const data = (await response.json()) as SubscriptionStatus;
-      setStatus(data);
-      setError(null);
+      if (mountedRef.current) {
+        setStatus(data);
+        setError(null);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      setStatus(null);
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+        setStatus(null);
+      }
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchSubscription();
+    void fetchSubscription();
   }, [fetchSubscription]);
 
   return { status, isLoading, error, refetch: fetchSubscription };
+}
+
+/**
+ * Wrap the authenticated layout with this provider.
+ * All useSubscription() calls inside will share the same state and refetch().
+ */
+export function SubscriptionProvider({ children }: { children: ReactNode }) {
+  const value = useFetchSubscription();
+  return createElement(SubscriptionContext.Provider, { value }, children);
+}
+
+/**
+ * Returns shared subscription state from the nearest SubscriptionProvider.
+ * Must be used inside <SubscriptionProvider> for shared state.
+ */
+export function useSubscription(): SubscriptionResponse {
+  const ctx = useContext(SubscriptionContext);
+  if (!ctx) throw new Error('useSubscription must be used within a SubscriptionProvider');
+  return ctx;
 }
