@@ -291,6 +291,8 @@
     "upgradeFailed": "Payment failed. Please try again.",
     "cancelSuccess": "Subscription renewal cancelled. Your plan stays active until the end of the current billing period.",
     "cancellationPending": "Cancellation pending",
+    "reEnableRenewal": "Re-enable renewal",
+    "reEnableSuccess": "Auto-renewal has been re-enabled.",
     "activeUntil": "Active until {date}",
     "downgradeSuccess": "Plan Downgraded. You've been moved to the Free plan and your usage has been reset.",
     "telegramOnly": "Upgrades are available only inside the Telegram Mini App. Open the bot to manage your subscription.",

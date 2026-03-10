@@ -96,21 +96,21 @@ function PlanTile({
               })}
             </p>
           )}
-          {/* Cancel renewal button on the current paid plan tile */}
+          {/* Cancel / re-enable renewal button on the current paid plan tile */}
           {plan.starsPrice > 0 && (
             <Button
               size="sm"
               variant="ghost"
               onClick={onSelect}
-              disabled={isRequesting || isCancelled}
+              disabled={isRequesting}
               className="w-full text-xs"
             >
               {isRequesting ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : isCancelled ? (
                 <>
-                  <Check className="w-3 h-3 mr-1" />
-                  {t('subscriptions.cancellationPending')}
+                  <ArrowUpRight className="w-3 h-3 mr-1" />
+                  {t('subscriptions.reEnableRenewal')}
                 </>
               ) : (
                 <>
@@ -180,6 +180,19 @@ export function PlansCard() {
     }
   };
 
+  const handleReEnableRenewal = async () => {
+    setRequesting(currentPlanId);
+    try {
+      await subscriptionApi.reEnableRenewal();
+      toast.success(t('subscriptions.reEnableSuccess'));
+      await refetch();
+    } catch {
+      toast.error(t('errors.generic'));
+    } finally {
+      setRequesting(null);
+    }
+  };
+
   const handleUpgrade = async (plan: Plan) => {
     if (!isTelegramWebApp()) {
       toast.error(t('subscriptions.telegramOnly'));
@@ -216,9 +229,15 @@ export function PlansCard() {
     }
   };
 
+  const isCancelled = (status?.isPaid && !status?.autoRenew) ?? false;
+
   const handlePlanAction = (plan: Plan) => {
     if (plan.id === currentPlanId && plan.starsPrice > 0) {
-      void handleCancelRenewal();
+      if (isCancelled) {
+        void handleReEnableRenewal();
+      } else {
+        void handleCancelRenewal();
+      }
     } else if (plan.id !== currentPlanId && plan.starsPrice > 0) {
       void handleUpgrade(plan);
     }
@@ -262,7 +281,7 @@ export function PlansCard() {
                 isUpgrade={idx > currentPlanIndex}
                 isRequesting={requesting === plan.id}
                 canUpgrade={isTelegramWebApp() || plan.id === 'free'}
-                isCancelled={status?.subscriptionStatus === 'cancelled'}
+                isCancelled={isCancelled}
                 expiresAt={status?.expiresAt ?? null}
                 onSelect={() => handlePlanAction(plan)}
               />

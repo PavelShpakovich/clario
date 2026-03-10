@@ -74,8 +74,8 @@ export const GET = withApiHandler(async () => {
 
   const now = new Date();
 
-  // Determine effective plan: a subscription counts if it's active OR
-  // cancelled-but-not-yet-expired (user keeps access until period end).
+  // A subscription is considered active if status is 'active' (or legacy 'cancelled')
+  // AND the paid period hasn't ended yet.
   const subscriptionPeriodEnd = subscription?.current_period_end
     ? new Date(subscription.current_period_end)
     : null;
@@ -92,9 +92,15 @@ export const GET = withApiHandler(async () => {
     | 'max';
   const isPaid = isActive && planId !== 'free';
   const autoRenew = subscription?.auto_renew ?? false;
+  // subscriptionStatus reflects renewal intent: 'active' = will renew, 'cancelled' = won't renew
+  // but still in paid period, 'expired' = period ended, 'none' = no subscription.
   const subscriptionStatus: 'active' | 'cancelled' | 'expired' | 'none' = !subscription
     ? 'none'
-    : (subscription.status as 'active' | 'cancelled' | 'expired');
+    : !isActive
+      ? 'expired'
+      : autoRenew
+        ? 'active'
+        : 'cancelled';
   const limits = await getPlanLimits(planId);
 
   // Fetch current usage period
@@ -243,6 +249,69 @@ export const DELETE = withApiHandler(async () => {
   if (updateError) {
     console.error('Failed to cancel subscription:', updateError);
     return NextResponse.json({ error: 'Failed to cancel subscription' }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+});
+
+/**
+ * PATCH /api/profile/telegram-subscription
+ *
+ * Re-enables auto-renewal for a subscription that had it disabled.
+ * Calls Telegram's editUserStarSubscription with is_canceled=false.
+ */
+export const PATCH = withApiHandler(async () => {
+  const { user } = await requireAuth();
+
+  const { data: subscription, error: subError } = await supabaseAdmin
+    .from('user_subscriptions')
+    .select('telegram_payment_charge_id, status, auto_renew, current_period_end')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (subError) {
+    return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 });
+  }
+
+  if (!subscription || subscription.auto_renew) {
+    return NextResponse.json({ error: 'No cancelled renewal to re-enable' }, { status: 400 });
+  }
+
+  if (subscription.current_period_end && new Date(subscription.current_period_end) < new Date()) {
+    return NextResponse.json({ error: 'Subscription has already expired' }, { status: 400 });
+  }
+
+  if (subscription.telegram_payment_charge_id) {
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('telegram_id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const telegramId = profile?.telegram_id ? Number(profile.telegram_id) : null;
+
+    if (telegramId && !isNaN(telegramId)) {
+      try {
+        await editTelegramSubscription(
+          telegramId,
+          subscription.telegram_payment_charge_id,
+          false, // is_canceled = false → re-enable
+        );
+        logger.info({ userId: user.id, telegramId }, 'Telegram subscription re-enabled');
+      } catch (err) {
+        logger.error({ err, userId: user.id }, 'Failed to re-enable Telegram subscription');
+        return NextResponse.json({ error: 'Failed to re-enable with Telegram' }, { status: 502 });
+      }
+    }
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from('user_subscriptions')
+    .update({ status: 'active', auto_renew: true, updated_at: new Date().toISOString() })
+    .eq('user_id', user.id);
+
+  if (updateError) {
+    return NextResponse.json({ error: 'Failed to re-enable renewal' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

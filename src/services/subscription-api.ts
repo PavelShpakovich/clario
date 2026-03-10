@@ -41,6 +41,20 @@ class SubscriptionApi {
       throw new Error(data.error ?? 'Failed to cancel renewal');
     }
   }
+
+  /**
+   * Re-enables auto-renewal for a subscription where it was previously disabled.
+   */
+  async reEnableRenewal(): Promise<void> {
+    const response = await fetch('/api/profile/telegram-subscription', {
+      method: 'PATCH',
+    });
+
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string };
+      throw new Error(data.error ?? 'Failed to re-enable renewal');
+    }
+  }
 }
 
 export const subscriptionApi = new SubscriptionApi();

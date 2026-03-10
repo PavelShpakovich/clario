@@ -29,17 +29,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // current_period_end — Telegram may still be processing the recurring charge.
   // For auto_renew=false (cancelled), expire as soon as the period ends.
 
-  // A1: Expire cancelled subscriptions (no grace period)
+  // A1: Expire subscriptions where auto-renewal was disabled (no grace period)
   const { data: expiredCancelled, error: cancelledError } = await supabaseAdmin
     .from('user_subscriptions')
     .update({ status: 'expired' })
-    .eq('status', 'cancelled')
+    .in('status', ['active', 'cancelled'])
     .eq('auto_renew', false)
     .lt('current_period_end', now.toISOString())
     .select('user_id');
 
   if (cancelledError) {
-    logger.error({ error: cancelledError }, 'Cron: failed to expire cancelled subscriptions');
+    logger.error({ error: cancelledError }, 'Cron: failed to expire non-renewing subscriptions');
   }
 
   // A2: Expire auto-renew subscriptions that are 3+ days overdue (payment failed)
