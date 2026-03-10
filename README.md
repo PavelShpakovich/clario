@@ -1,6 +1,6 @@
-# Clario — Flashcard App
+# Clario — AI Flashcard App
 
-A production-ready flashcard app built with **Next.js 15**, **Supabase**, and a unified **LLM adapter** (Groq / OpenAI / Anthropic / Ollama). Users create themes, upload learning materials, and study AI-generated flashcards. Supports Telegram Mini App integration.
+An AI-powered flashcard app built with **Next.js 15**, **Supabase**, and a unified **LLM adapter**. Users access the app through the **Telegram Mini App** — they create themes, upload learning materials, and study AI-generated flashcards.
 
 ---
 
@@ -10,12 +10,14 @@ A production-ready flashcard app built with **Next.js 15**, **Supabase**, and a 
 | --------------- | ------------------------------------------------------- |
 | Framework       | Next.js 15, App Router, TypeScript strict               |
 | Database + Auth | Supabase (PostgreSQL, RLS, Auth)                        |
+| Session         | NextAuth.js (JWT cookie)                                |
 | LLM             | Groq / OpenAI / Anthropic / Ollama (unified adapter)    |
 | Validation      | Zod                                                     |
 | Ingestion       | PDF, DOCX, URL scraping, YouTube transcript, plain text |
+| Payments        | Telegram Stars                                          |
+| i18n            | next-intl (English + Russian)                           |
 | Logging         | pino                                                    |
 | Tests           | Jest + Testing Library                                  |
-| CI              | GitHub Actions                                          |
 | Deploy          | Vercel                                                  |
 
 ---
@@ -26,6 +28,7 @@ A production-ready flashcard app built with **Next.js 15**, **Supabase**, and a 
 
 - Node.js 20+
 - A [Supabase](https://supabase.com) project
+- A Telegram bot (create via [@BotFather](https://t.me/BotFather))
 - An API key for at least one LLM provider (or run Ollama locally)
 
 ### 2. Install dependencies
@@ -36,45 +39,40 @@ npm install
 
 ### 3. Configure environment variables
 
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` and fill in:
+Copy `.env.example` to `.env.local` and fill in:
 
 ```env
-# Supabase — find these in your project's Settings > API
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_KEY=your-service-role-key     # server-only, never expose to client
+SUPABASE_SERVICE_KEY=your-service-role-key
 
-# LLM provider — choose one: groq | openai | anthropic | ollama | mock
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=replace-with-strong-random-secret
+
+# Telegram
+TELEGRAM_BOT_TOKEN=your-bot-token
+NEXT_PUBLIC_TELEGRAM_BOT_URL=https://t.me/your_bot
+
+# LLM — choose one: groq | openai | anthropic | ollama | mock
 LLM_PROVIDER=groq
 GROQ_API_KEY=gsk_...
-
-# Optional: Telegram bot token (only needed for Telegram Mini App)
-TELEGRAM_BOT_TOKEN=
-
-# App base URL
-NEXTAUTH_URL=http://localhost:3000
-
-# NextAuth JWT encryption secret (recommended; keeps sessions stable across restarts)
-NEXTAUTH_SECRET=replace-with-strong-random-secret
 ```
 
 > **`mock` provider** requires no API key — returns deterministic fake cards. Useful for local development and tests.
 
-### 4. Apply the database migration
+### 4. Apply database migrations
 
 ```bash
 # Install Supabase CLI if needed
 brew install supabase/tap/supabase
 
-# Push migration to your remote project
+# Push all migrations to your remote project
 supabase db push --db-url "postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres"
 ```
 
-Or paste the contents of [supabase/migrations/0001_initial_schema.sql](supabase/migrations/0001_initial_schema.sql) directly into the Supabase SQL editor.
+Migrations are in `supabase/migrations/` and must be applied in order.
 
 ### 5. Run the development server
 
@@ -82,43 +80,59 @@ Or paste the contents of [supabase/migrations/0001_initial_schema.sql](supabase/
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) or open the mini app inside Telegram.
 
 ---
 
-## Application Flow
+## How It Works
 
-1. **Register / Log in** — email + password via Supabase Auth.
-2. **Create a theme** — e.g. "TypeScript", "Spanish Vocabulary", "History of Rome".
-3. **Add data sources** — upload a PDF, paste a URL, enter text, upload a DOCX, or provide a YouTube URL. The server extracts the text automatically.
-4. **Generate cards** — cards are generated automatically when you start a study session (or you can trigger generation from the theme page).
-5. **Study** — flip through flashcards; the app tracks which cards you've seen today and generates more when your queue runs low (< 5 remaining).
+### Authentication
+
+The app is **Telegram-first**. Web login/registration is disabled by default (`WEB_AUTH_ENABLED: false` in `src/lib/feature-flags.ts`).
+
+- Users open the app via the Telegram Mini App
+- `initData` from `window.Telegram.WebApp` is HMAC-verified on the server (`/api/auth/telegram`)
+- A stub Supabase account is created on first visit (`telegram_{id}@noreply.*`)
+- NextAuth issues a 30-day JWT cookie scoped to that user
+
+Web users (legacy) can still log in with email + password and link their Telegram account from Settings.
+
+### Core Flow
+
+1. **Open the Mini App** in Telegram — auto-authenticated via HMAC.
+2. **Create a theme** — e.g. "TypeScript", "Spanish Vocabulary".
+3. **Add sources** — upload a PDF/DOCX, paste a URL, enter text, or paste a YouTube URL.
+4. **Study** — flashcards are AI-generated and served in sessions; more are generated on-demand when your queue runs low.
+
+### Subscriptions & Payments
+
+Plans are enforced via Supabase and checked server-side. Payments are processed through **Telegram Stars** (`/api/telegram/` webhook). Plans: Free → Starter → Pro → Max.
 
 ---
 
 ## Available Scripts
 
 ```bash
-npm run dev           # Start development server (http://localhost:3000)
+npm run dev           # Start development server
 npm run build         # Production build
-npm run start         # Start production server (run build first)
+npm run start         # Start production server
 
-npm run type-check    # TypeScript type check (no emit)
+npm run type-check    # TypeScript type check
 npm run lint          # ESLint (zero warnings enforced)
 npm run lint:fix      # ESLint with auto-fix
 npm run format        # Prettier write
-npm run format:check  # Prettier check (used in CI)
+npm run format:check  # Prettier check
 
 npm test              # Run Jest test suite
 npm run test:watch    # Jest in watch mode
-npm run test:coverage # Jest with coverage report (70% line threshold)
+npm run test:coverage # Jest with coverage report
 ```
 
 ---
 
 ## LLM Providers
 
-Set `LLM_PROVIDER` in `.env.local` to switch providers. Only the relevant API key is required.
+Set `LLM_PROVIDER` in `.env.local`. Only the relevant API key is required.
 
 | `LLM_PROVIDER` | Required env var    | Notes                                                   |
 | -------------- | ------------------- | ------------------------------------------------------- |
@@ -132,57 +146,25 @@ Set `LLM_PROVIDER` in `.env.local` to switch providers. Only the relevant API ke
 
 ## Data Source Types
 
-When adding a source, choose the type that matches your content:
-
-| Type      | Input               | Notes                                 |
-| --------- | ------------------- | ------------------------------------- |
-| `text`    | Paste raw text      | Simplest option                       |
-| `pdf`     | Upload `.pdf` file  | Max 4.5 MB                            |
-| `docx`    | Upload `.docx` file | Max 4.5 MB                            |
-| `url`     | Enter a URL         | SSRF-protected; strips navigation/ads |
-| `youtube` | YouTube video URL   | Fetches auto-generated transcript     |
-
----
-
-## Admin Card Generator Script
-
-Generate flashcards from the command line without going through the web UI:
-
-```bash
-cd generator
-cp .env.example .env
-# Fill in SUPABASE_URL, SUPABASE_SERVICE_KEY, LLM_PROVIDER, etc.
-
-node generate_flashcards.js --theme "TypeScript" --count 20
-node generate_flashcards.js --theme "TypeScript" --count 20 --dry-run   # preview only
-node generate_flashcards.js --theme "TypeScript" --count 20 --confirm   # skip prompt
-```
-
-Cards generated by this script have `user_id = null` (global/shared cards).
-
----
-
-## Telegram Mini App
-
-1. Create a bot with [@BotFather](https://t.me/BotFather) and set `TELEGRAM_BOT_TOKEN`.
-2. Set the Mini App URL to your deployed Vercel URL (or use [ngrok](https://ngrok.com) for local dev).
-3. Open the mini app inside Telegram — HMAC validation happens automatically on the `/api/auth/telegram` route.
+| Type   | Input               | Notes                                 |
+| ------ | ------------------- | ------------------------------------- |
+| `text` | Paste raw text      | Simplest option                       |
+| `pdf`  | Upload `.pdf` file  | Max 4.5 MB                            |
+| `docx` | Upload `.docx` file | Max 4.5 MB                            |
+| `url`  | Enter a URL         | SSRF-protected; strips navigation/ads |
 
 ---
 
 ## Deployment (Vercel)
 
 ```bash
-# Install Vercel CLI
 npm i -g vercel
-
-# Deploy
 vercel --prod
 ```
 
-Set all environment variables from `.env.example` in the Vercel dashboard under **Settings > Environment Variables**.
+Set all environment variables in the Vercel dashboard under **Settings > Environment Variables**.
 
-The [vercel.json](vercel.json) already configures:
+`vercel.json` configures:
 
 - 60s function timeout for `/api/generate/**`
 - 30s function timeout for `/api/sources/**`
@@ -194,28 +176,34 @@ The [vercel.json](vercel.json) already configures:
 ```
 src/
 ├── app/
-│   ├── api/                  # Route handlers
-│   │   ├── auth/telegram/    # Telegram HMAC auth
+│   ├── api/
+│   │   ├── admin/            # Admin user management
+│   │   ├── auth/             # NextAuth + Telegram HMAC auth
 │   │   ├── cards/            # Fetch unseen cards
-│   │   ├── generate/cards/   # LLM card generation (rate-limited)
+│   │   ├── cron/             # Scheduled jobs
+│   │   ├── generate/         # LLM card generation
+│   │   ├── profile/          # Profile updates
 │   │   ├── session/          # Study session management
-│   │   ├── sources/          # Data source upload & processing
+│   │   ├── sources/          # Source upload & ingestion
+│   │   ├── telegram/         # Telegram Stars payment webhook
 │   │   └── themes/           # Theme CRUD
-│   ├── dashboard/            # Theme list (SSR)
-│   ├── login/ register/      # Auth pages
+│   ├── admin/                # Admin panel
+│   ├── dashboard/            # Theme list
+│   ├── settings/             # User settings & plan
 │   ├── study/[themeId]/      # Flashcard study loop
-│   └── themes/new/           # Create theme
-├── components/               # flashcard.tsx, telegram-provider.tsx
-└── lib/
-    ├── supabase/             # client / server / admin clients + types
-    ├── llm/                  # Unified LLM adapter (5 providers)
-    ├── ingestion/            # Extractors: text, pdf, docx, url, youtube
-    ├── api/                  # withApiHandler wrapper, requireAuth
-    ├── env.ts                # Zod env validation
-    ├── errors.ts             # Typed error hierarchy
-    ├── constants.ts          # Magic values
-    └── logger.ts             # pino structured logger
+│   ├── tg/                   # Telegram Mini App entry point
+│   └── themes/               # Theme creation & management
+├── components/
+├── hooks/
+├── i18n/                     # next-intl messages (en, ru)
+├── lib/
+│   ├── supabase/             # Supabase clients + generated types
+│   ├── llm/                  # Unified LLM adapter
+│   ├── ingestion/            # Source text extractors
+│   ├── feature-flags.ts      # Code-based feature toggles
+│   ├── plan-limits.ts        # Subscription plan definitions
+│   └── env.ts                # Zod environment validation
+└── services/                 # Client-side API wrappers
 
-supabase/migrations/          # SQL schema with RLS policies
-generator/                    # CLI script for admin card generation
+supabase/migrations/          # SQL migrations (apply in order)
 ```

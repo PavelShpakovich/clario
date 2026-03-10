@@ -30,10 +30,6 @@ export async function extractContent(
       const { UrlExtractor } = await import('@/lib/ingestion/extractors/url');
       return new UrlExtractor().extract(input);
     }
-    case 'youtube': {
-      const { YoutubeExtractor } = await import('@/lib/ingestion/extractors/youtube');
-      return new YoutubeExtractor().extract(input);
-    }
     default: {
       throw new ValidationError({
         message: `Unsupported data source type: ${String(type)}`,

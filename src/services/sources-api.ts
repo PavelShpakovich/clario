@@ -4,7 +4,7 @@ type DataSource = Database['public']['Tables']['data_sources']['Row'];
 
 interface CreateSourceInput {
   themeId: string;
-  type: 'text' | 'url' | 'youtube';
+  type: 'text' | 'url';
   name: string;
   content?: string;
   url?: string;

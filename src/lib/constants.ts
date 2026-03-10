@@ -28,7 +28,7 @@ export const ALLOWED_MIME_TYPES = [
 ] as const;
 
 // ─── Data source types ────────────────────────────────────────────────────────
-export const DATA_SOURCE_TYPES = ['text', 'pdf', 'docx', 'url', 'youtube'] as const;
+export const DATA_SOURCE_TYPES = ['text', 'pdf', 'docx', 'url'] as const;
 export type DataSourceType = (typeof DATA_SOURCE_TYPES)[number];
 
 // ─── Data source status ───────────────────────────────────────────────────────

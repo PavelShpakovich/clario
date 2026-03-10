@@ -45,16 +45,19 @@ export class GenerationService {
         return;
       }
 
-      // Fetch source text if any source is ready
+      // Fetch all ready sources and merge their text (same logic as manual generation)
       const { data: sources } = await supabaseAdmin
         .from('data_sources')
         .select('id, extracted_text')
         .eq('theme_id', themeId)
-        .eq('status', 'ready')
-        .limit(1);
+        .eq('status', 'ready');
 
-      const sourceText = sources?.[0]?.extracted_text ?? undefined;
       const sourceId = sources?.[0]?.id ?? null;
+      const mergedText = sources
+        ?.map((s) => s.extracted_text ?? '')
+        .filter((t) => t.length > 0)
+        .join('\n\n---\n\n');
+      const sourceText = mergedText?.length ? mergedText : undefined;
 
       // Fetch existing card titles to avoid duplication
       const { data: existingCards } = await supabaseAdmin

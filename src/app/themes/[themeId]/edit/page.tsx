@@ -73,7 +73,6 @@ export default function EditThemePage({ params }: EditThemePageProps) {
   const [textContent, setTextContent] = useState('');
   const [textName, setTextName] = useState('');
   const [urlInput, setUrlInput] = useState('');
-  const [urlType, setUrlType] = useState<'url' | 'youtube'>('url');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [cardCount, setCardCount] = useState(10);
@@ -177,7 +176,7 @@ export default function EditThemePage({ params }: EditThemePageProps) {
     }
     try {
       setLocalError(null);
-      const name = `${urlType === 'youtube' ? 'YouTube' : 'Web'} Source`;
+      const name = 'Web Source';
       await uploadUrl(urlInput, name);
       toast.success(t('sources.urlAddedSuccess'));
       setUrlInput('');
@@ -378,46 +377,15 @@ export default function EditThemePage({ params }: EditThemePageProps) {
 
                     <TabsContent value="url" className="space-y-4">
                       <div>
-                        <Label>{t('sources.sourceType')}</Label>
-                        <div className="flex gap-4 mt-2">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              checked={urlType === 'url'}
-                              onChange={() => setUrlType('url')}
-                              disabled={isUploading}
-                            />
-                            <span className="text-sm">{t('sources.webPage')}</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              checked={urlType === 'youtube'}
-                              onChange={() => setUrlType('youtube')}
-                              disabled={isUploading}
-                            />
-                            <span className="text-sm">{t('sources.youtubeVideo')}</span>
-                          </label>
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="urlInput">
-                          {urlType === 'youtube' ? t('sources.youtubeUrl') : t('sources.webUrl')}
-                        </Label>
+                        <Label htmlFor="urlInput">{t('sources.webUrl')}</Label>
                         <Input
                           id="urlInput"
-                          placeholder={
-                            urlType === 'youtube'
-                              ? t('sources.youtubeUrlPlaceholder')
-                              : t('sources.webUrlPlaceholder')
-                          }
+                          placeholder={t('sources.webUrlPlaceholder')}
                           value={urlInput}
                           onChange={(e) => setUrlInput(e.target.value)}
                           disabled={isUploading}
                         />
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          {urlType === 'youtube' ? t('sources.youtubeHelp') : t('sources.webHelp')}
-                        </p>
+                        <p className="mt-2 text-xs text-muted-foreground">{t('sources.webHelp')}</p>
                       </div>
                       <Button
                         onClick={handleUrlSubmit}

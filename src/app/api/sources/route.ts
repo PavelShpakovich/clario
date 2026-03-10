@@ -13,7 +13,7 @@ const createSourceSchema = z.object({
   type: z.enum(DATA_SOURCE_TYPES),
   name: z.string().min(1).max(200),
   content: z.string().optional(), // for type=text
-  url: z.string().url().optional(), // for type=url | youtube
+  url: z.string().url().optional(), // for type=url
 });
 
 export const GET = withApiHandler(async (req) => {
@@ -53,8 +53,8 @@ export const POST = withApiHandler(async (req) => {
 
   const { themeId, type, name, content, url } = body.data;
 
-  if ((type === 'url' || type === 'youtube') && !url) {
-    throw new ValidationError({ message: `url is required for type=${type}` });
+  if (type === 'url' && !url) {
+    throw new ValidationError({ message: 'url is required for type=url' });
   }
   if (type === 'text' && !content) {
     throw new ValidationError({ message: 'content is required for type=text' });

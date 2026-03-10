@@ -12,7 +12,7 @@ export interface Extractor {
 export interface ExtractorInput {
   /** Raw text (for type=text) or base64-encoded buffer (for files). */
   content?: string;
-  /** Public URL (for type=url | youtube). */
+  /** Public URL (for type=url). */
   url?: string;
   /** Raw buffer (for type=pdf | docx). */
   buffer?: Buffer;
