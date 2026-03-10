@@ -231,11 +231,10 @@ export const DELETE = withApiHandler(async () => {
     }
   }
 
-  // Mark subscription as cancelled (keeps access until current_period_end)
+  // Disable auto-renewal (keeps access until current_period_end, status stays 'active')
   const { error: updateError } = await supabaseAdmin
     .from('user_subscriptions')
     .update({
-      status: 'cancelled',
       auto_renew: false,
       updated_at: new Date().toISOString(),
     })
