@@ -1,0 +1,137 @@
+import { NextResponse } from 'next/server';
+import { withApiHandler } from '@/lib/api/handler';
+import { requireAuth } from '@/lib/api/auth';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
+
+export interface AdminAnalytics {
+  totalUsers: number;
+  newUsersThisMonth: number;
+  activeSubscribers: number;
+  cancelledInPeriod: number;
+  planDistribution: Record<string, number>;
+  totalRevenueStars: number;
+  revenueThisMonthStars: number;
+  cardsGeneratedThisMonth: number;
+}
+
+/**
+ * GET /api/admin/analytics
+ *
+ * Returns aggregated platform metrics from existing Supabase tables.
+ * Admin-only.
+ */
+export const GET = withApiHandler(async () => {
+  const { user } = await requireAuth();
+
+  // Verify admin access
+  const isCallerAdmin =
+    ('isAdmin' in user && user.isAdmin) ||
+    (() => {
+      if (!env.ADMIN_EMAILS) return false;
+      const email = ('email' in user && user.email) || '';
+      return env.ADMIN_EMAILS.split(',')
+        .map((e) => e.trim())
+        .includes(email);
+    })();
+
+  if (!isCallerAdmin) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  // Run all aggregation queries in parallel
+  const [
+    totalUsersRes,
+    newUsersRes,
+    activeSubsRes,
+    cancelledSubsRes,
+    planDistRes,
+    totalRevenueRes,
+    monthRevenueRes,
+    cardsRes,
+  ] = await Promise.all([
+    // Total users
+    supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
+
+    // New signups this month
+    supabaseAdmin
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', monthStart),
+
+    // Active paid subscribers
+    supabaseAdmin
+      .from('user_subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active'),
+
+    // Cancelled but still in paid period
+    supabaseAdmin
+      .from('user_subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'cancelled')
+      .gt('current_period_end', now.toISOString()),
+
+    // Plan distribution (active + cancelled-in-period)
+    supabaseAdmin
+      .from('user_subscriptions')
+      .select('plan_id')
+      .in('status', ['active', 'cancelled'])
+      .gt('current_period_end', now.toISOString()),
+
+    // Total revenue (Stars) all time
+    supabaseAdmin.from('payment_history').select('amount'),
+
+    // Revenue this month
+    supabaseAdmin.from('payment_history').select('amount').gte('created_at', monthStart),
+
+    // Cards generated this month (all users)
+    supabaseAdmin.from('user_usage').select('cards_generated').gte('period_start', monthStart),
+  ]);
+
+  // Log any errors but don't fail the whole response
+  const errors = [
+    totalUsersRes.error,
+    newUsersRes.error,
+    activeSubsRes.error,
+    cancelledSubsRes.error,
+    planDistRes.error,
+    totalRevenueRes.error,
+    monthRevenueRes.error,
+    cardsRes.error,
+  ].filter(Boolean);
+
+  if (errors.length > 0) {
+    logger.warn({ errors }, 'Some analytics queries returned errors');
+  }
+
+  // Aggregate plan distribution
+  const planDistribution: Record<string, number> = {};
+  for (const row of planDistRes.data ?? []) {
+    const plan = row.plan_id as string;
+    planDistribution[plan] = (planDistribution[plan] ?? 0) + 1;
+  }
+
+  const analytics: AdminAnalytics = {
+    totalUsers: totalUsersRes.count ?? 0,
+    newUsersThisMonth: newUsersRes.count ?? 0,
+    activeSubscribers: activeSubsRes.count ?? 0,
+    cancelledInPeriod: cancelledSubsRes.count ?? 0,
+    planDistribution,
+    totalRevenueStars: (totalRevenueRes.data ?? []).reduce((sum, r) => sum + (r.amount ?? 0), 0),
+    revenueThisMonthStars: (monthRevenueRes.data ?? []).reduce(
+      (sum, r) => sum + (r.amount ?? 0),
+      0,
+    ),
+    cardsGeneratedThisMonth: (cardsRes.data ?? []).reduce(
+      (sum, r) => sum + (r.cards_generated ?? 0),
+      0,
+    ),
+  };
+
+  return NextResponse.json(analytics);
+});

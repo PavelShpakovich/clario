@@ -538,6 +538,17 @@
     "botSetupRunning": "Running…",
     "botSetupSuccess": "Bot setup complete",
     "botSetupFailed": "Setup failed — see details below",
-    "botSetupRequestFailed": "Request failed"
+    "botSetupRequestFailed": "Request failed",
+    "analyticsTitle": "Analytics",
+    "analyticsLoadFailed": "Failed to load analytics",
+    "analyticsTotalUsers": "Total Users",
+    "analyticsNewThisMonth": "+{count} this month",
+    "analyticsPaidSubscribers": "Paid Subscribers",
+    "analyticsCancelling": "{count} cancelling",
+    "analyticsRevenueMonth": "Revenue This Month",
+    "analyticsAllTime": "{amount} XTR all time",
+    "analyticsCardsGenerated": "Cards Generated",
+    "analyticsThisMonth": "this month",
+    "analyticsPlanDistribution": "Plan distribution (paid)"
   }
 }

@@ -14,13 +14,151 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Loader2, RotateCcw, Bot } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  RotateCcw,
+  Bot,
+  Users,
+  CreditCard,
+  Star,
+  LayoutGrid,
+} from 'lucide-react';
 import { BackLink } from '@/components/common/back-link';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '@/components/skeletons';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
-import { adminApi, type AdminUser } from '@/services/admin-api';
+import { adminApi, type AdminUser, type AdminAnalytics } from '@/services/admin-api';
+
+// ---------------------------------------------------------------------------
+// Analytics Card
+// ---------------------------------------------------------------------------
+function StatTile({
+  label,
+  value,
+  icon: Icon,
+  sub,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ElementType;
+  sub?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1 p-4 rounded-lg border bg-card">
+      <div className="flex items-center gap-2 text-muted-foreground text-xs">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </div>
+      <p className="text-2xl font-bold">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
+function AnalyticsCard() {
+  const t = useTranslations('admin');
+  const [data, setData] = useState<AdminAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setData(await adminApi.getAnalytics());
+    } catch {
+      toast.error(t('analyticsLoadFailed'));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const planOrder = ['free', 'basic', 'pro', 'max'] as const;
+  const planColors: Record<string, string> = {
+    free: 'bg-gray-200',
+    basic: 'bg-blue-400',
+    pro: 'bg-purple-400',
+    max: 'bg-amber-400',
+  };
+
+  return (
+    <Card className="p-6 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold">{t('analyticsTitle')}</h2>
+        <Button variant="ghost" size="sm" onClick={() => void load()} disabled={loading}>
+          <RotateCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
+
+      {loading && !data ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />
+          ))}
+        </div>
+      ) : data ? (
+        <div className="space-y-4">
+          {/* Primary stat tiles */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatTile
+              label={t('analyticsTotalUsers')}
+              value={data.totalUsers.toLocaleString()}
+              icon={Users}
+              sub={t('analyticsNewThisMonth', { count: data.newUsersThisMonth })}
+            />
+            <StatTile
+              label={t('analyticsPaidSubscribers')}
+              value={data.activeSubscribers.toLocaleString()}
+              icon={CreditCard}
+              sub={
+                data.cancelledInPeriod > 0
+                  ? t('analyticsCancelling', { count: data.cancelledInPeriod })
+                  : undefined
+              }
+            />
+            <StatTile
+              label={t('analyticsRevenueMonth')}
+              value={`${data.revenueThisMonthStars.toLocaleString()} XTR`}
+              icon={Star}
+              sub={t('analyticsAllTime', { amount: data.totalRevenueStars.toLocaleString() })}
+            />
+            <StatTile
+              label={t('analyticsCardsGenerated')}
+              value={data.cardsGeneratedThisMonth.toLocaleString()}
+              icon={LayoutGrid}
+              sub={t('analyticsThisMonth')}
+            />
+          </div>
+
+          {/* Plan distribution */}
+          {Object.keys(data.planDistribution).length > 0 && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">{t('analyticsPlanDistribution')}</p>
+              <div className="flex flex-wrap gap-3">
+                {planOrder
+                  .filter((p) => data.planDistribution[p] != null)
+                  .map((plan) => (
+                    <div key={plan} className="flex items-center gap-1.5 text-sm">
+                      <span
+                        className={`inline-block w-2.5 h-2.5 rounded-full ${planColors[plan] ?? 'bg-gray-400'}`}
+                      />
+                      <span className="capitalize">{plan}</span>
+                      <span className="font-semibold">{data.planDistribution[plan]}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
+    </Card>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Bot Setup Card
@@ -474,6 +612,8 @@ export default function AdminPage() {
           <h1 className="text-3xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground mt-2">{t('description')}</p>
         </div>
+
+        <AnalyticsCard />
 
         <BotSetupCard />
 

@@ -538,6 +538,17 @@
     "botSetupRunning": "Выполняется…",
     "botSetupSuccess": "Настройка бота завершена",
     "botSetupFailed": "Ошибка настройки — см. детали ниже",
-    "botSetupRequestFailed": "Запрос не выполнен"
+    "botSetupRequestFailed": "Запрос не выполнен",
+    "analyticsTitle": "Аналитика",
+    "analyticsLoadFailed": "Не удалось загрузить аналитику",
+    "analyticsTotalUsers": "Пользователи",
+    "analyticsNewThisMonth": "+{count} в этом месяце",
+    "analyticsPaidSubscribers": "Платных подписчиков",
+    "analyticsCancelling": "{count} отменяют",
+    "analyticsRevenueMonth": "Доход за месяц",
+    "analyticsAllTime": "{amount} XTR за всё время",
+    "analyticsCardsGenerated": "Карточек создано",
+    "analyticsThisMonth": "в этом месяце",
+    "analyticsPlanDistribution": "Распределение тарифов (платных)"
   }
 }

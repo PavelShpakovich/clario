@@ -1,4 +1,7 @@
 import { PlanId } from '@/lib/subscription-utils';
+import type { AdminAnalytics } from '@/app/api/admin/analytics/route';
+
+export type { AdminAnalytics };
 
 export interface AdminUser {
   id: string;
@@ -93,6 +96,20 @@ class AdminApi {
     const res = await fetch('/api/telegram/setup', { method: 'POST' });
     const data = (await res.json()) as Record<string, unknown>;
     return data;
+  }
+
+  /**
+   * Fetch aggregated platform analytics
+   */
+  async getAnalytics(): Promise<AdminAnalytics> {
+    const res = await fetch('/api/admin/analytics');
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to fetch analytics');
+    }
+
+    return data as AdminAnalytics;
   }
 
   /**
