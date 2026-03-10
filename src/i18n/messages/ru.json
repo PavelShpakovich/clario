@@ -527,6 +527,13 @@
     "resetUsage": "Сбросить использование",
     "confirmResetUsage": "Сбросить счётчик карточек до нуля для этого пользователя?",
     "failedResetUsage": "Не удалось сбросить использование",
-    "resetUsageSuccess": "Использование успешно сброшено"
+    "resetUsageSuccess": "Использование успешно сброшено",
+    "botSetupTitle": "Настройка Telegram-бота",
+    "botSetupDescription": "Зарегистрировать вебхук и команды бота в Telegram. Запускать после каждого деплоя.",
+    "botSetupRun": "Запустить настройку",
+    "botSetupRunning": "Выполняется…",
+    "botSetupSuccess": "Настройка бота завершена",
+    "botSetupFailed": "Ошибка настройки — см. детали ниже",
+    "botSetupRequestFailed": "Запрос не выполнен"
   }
 }

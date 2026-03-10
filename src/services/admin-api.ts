@@ -87,6 +87,15 @@ class AdminApi {
   }
 
   /**
+   * Run Telegram bot setup (register webhook + commands)
+   */
+  async runBotSetup(): Promise<Record<string, unknown>> {
+    const res = await fetch('/api/telegram/setup', { method: 'POST' });
+    const data = (await res.json()) as Record<string, unknown>;
+    return data;
+  }
+
+  /**
    * Toggle admin status for a user
    */
   async toggleAdmin(userId: string, isAdmin: boolean): Promise<ToggleAdminResponse> {

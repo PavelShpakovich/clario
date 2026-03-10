@@ -14,13 +14,63 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Loader2, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, RotateCcw, Bot } from 'lucide-react';
 import { BackLink } from '@/components/common/back-link';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '@/components/skeletons';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { adminApi, type AdminUser } from '@/services/admin-api';
+
+// ---------------------------------------------------------------------------
+// Bot Setup Card
+// ---------------------------------------------------------------------------
+function BotSetupCard() {
+  const t = useTranslations('admin');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+
+  const runSetup = async () => {
+    setLoading(true);
+    setResult(null);
+    try {
+      const data = await adminApi.runBotSetup();
+      setResult(data);
+      if (data.ok) {
+        toast.success(t('botSetupSuccess'));
+      } else {
+        toast.error(t('botSetupFailed'));
+      }
+    } catch {
+      toast.error(t('botSetupRequestFailed'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="p-6 mb-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Bot className="h-5 w-5" />
+            {t('botSetupTitle')}
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">{t('botSetupDescription')}</p>
+        </div>
+        <Button onClick={runSetup} disabled={loading} className="shrink-0">
+          {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          {loading ? t('botSetupRunning') : t('botSetupRun')}
+        </Button>
+      </div>
+      {result && (
+        <pre className="mt-4 text-xs bg-muted rounded p-3 overflow-x-auto max-h-48">
+          {JSON.stringify(result, null, 2)}
+        </pre>
+      )}
+    </Card>
+  );
+}
 
 function PlanBadge({ plan }: { plan: string }) {
   const colors: Record<string, string> = {
@@ -424,6 +474,8 @@ export default function AdminPage() {
           <h1 className="text-3xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground mt-2">{t('description')}</p>
         </div>
+
+        <BotSetupCard />
 
         <Card className="p-6">
           <Suspense

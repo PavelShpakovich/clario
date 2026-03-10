@@ -527,6 +527,13 @@
     "resetUsage": "Reset Usage",
     "confirmResetUsage": "Reset card usage to zero for this user?",
     "failedResetUsage": "Failed to reset usage",
-    "resetUsageSuccess": "Usage reset successfully"
+    "resetUsageSuccess": "Usage reset successfully",
+    "botSetupTitle": "Telegram Bot Setup",
+    "botSetupDescription": "Register webhook + bot commands with Telegram. Run once after each deploy.",
+    "botSetupRun": "Run Setup",
+    "botSetupRunning": "Running…",
+    "botSetupSuccess": "Bot setup complete",
+    "botSetupFailed": "Setup failed — see details below",
+    "botSetupRequestFailed": "Request failed"
   }
 }
