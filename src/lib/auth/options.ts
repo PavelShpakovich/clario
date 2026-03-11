@@ -31,8 +31,25 @@ declare module 'next-auth/jwt' {
 
 const nextAuthSecret = env.NEXTAUTH_SECRET;
 
+// In Telegram Web (web.telegram.org) the Mini App runs inside an iframe.
+// SameSite=Lax cookies are not sent on cross-site iframe navigations, so
+// getToken() in middleware never finds the session → infinite spinner loop.
+// SameSite=None; Secure allows the cookie in iframe contexts (cross-site).
+const isProduction = process.env.NODE_ENV === 'production';
+
 export const authOptions: NextAuthOptions = {
   secret: nextAuthSecret,
+  cookies: {
+    sessionToken: {
+      name: `${isProduction ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: isProduction ? ('none' as const) : ('lax' as const),
+        path: '/',
+        secure: isProduction,
+      },
+    },
+  },
   jwt: {
     async encode(params) {
       return nextAuthJwtEncode(params);
