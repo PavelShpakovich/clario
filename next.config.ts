@@ -19,7 +19,6 @@ const nextConfig: NextConfig = {
   async headers() {
     // Security headers applied to every response
     const securityHeaders = [
-      { key: 'X-Frame-Options', value: 'DENY' },
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'X-XSS-Protection', value: '1; mode=block' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -37,7 +36,7 @@ const nextConfig: NextConfig = {
           "img-src 'self' data: https:",
           "font-src 'self' data:",
           "connect-src 'self' https://*.supabase.co https://api.telegram.org",
-          "frame-ancestors 'none'",
+          "frame-ancestors 'none'", // overridden for /tg below
           "base-uri 'self'",
           "form-action 'self'",
         ].join('; '),
@@ -49,6 +48,27 @@ const nextConfig: NextConfig = {
         // Apply security headers to all routes
         source: '/(.*)',
         headers: securityHeaders,
+      },
+      {
+        // Telegram Mini App entry — must be embeddable in the web.telegram.org iframe.
+        // Override the frame-ancestors restriction set above.
+        source: '/tg',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://*.supabase.co https://api.telegram.org",
+              'frame-ancestors https://web.telegram.org',
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; '),
+          },
+        ],
       },
       {
         // API routes must NEVER be cached — they return per-user,
