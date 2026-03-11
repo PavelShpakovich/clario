@@ -38,7 +38,8 @@ const BOT_URL = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL;
 export function Header() {
   const t = useTranslations();
   const { user, isAuthenticated } = useAuth();
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme: rawTheme, setTheme, resolvedTheme } = useTheme();
+  const theme = rawTheme ?? 'system';
   const displayName = useDisplayName();
   const { locale, setLanguage } = useUiLanguage();
   const [isOpen, setIsOpen] = useState(false);

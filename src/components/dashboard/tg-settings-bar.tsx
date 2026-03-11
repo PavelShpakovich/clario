@@ -12,7 +12,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function TgSettingsBar() {
   const t = useTranslations();
-  const { theme: colorTheme, setTheme: setColorTheme, resolvedTheme } = useTheme();
+  const { theme: rawTheme, setTheme: setColorTheme, resolvedTheme } = useTheme();
+  const colorTheme = rawTheme ?? 'system';
   const { locale, setLanguage } = useUiLanguage();
   const { user, isLoading } = useAuth();
   const { status: subscription, isLoading: subLoading } = useSubscription();
@@ -93,7 +94,7 @@ export function TgSettingsBar() {
             colorTheme === 'system' ? 'System' : colorTheme === 'dark' ? 'Dark Mode' : 'Light Mode'
           }
         >
-          {colorTheme === 'system' ? (
+          {colorTheme === 'system' || !colorTheme ? (
             <Monitor className="h-3.5 w-3.5" />
           ) : resolvedTheme === 'dark' ? (
             <Moon className="h-3.5 w-3.5" />
