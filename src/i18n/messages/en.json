@@ -275,6 +275,7 @@
     "cardsLeft": "{count} {count, plural, one {card} other {cards}} remaining",
     "noCardsLeft": "No cards remaining",
     "periodRenews": "Renews {date}",
+    "periodExpires": "Expires {date}",
     "exhaustedHint": "You've reached your monthly limit. Upgrade your plan or wait for the next billing cycle.",
     "limitReachedBannerTitle": "Monthly generation limit reached",
     "lowCardsBannerTitle": "Only {count} card {count, plural, one {generation} other {generations}} left this month",

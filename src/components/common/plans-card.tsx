@@ -10,7 +10,7 @@ import {
   ExternalLink,
   Star,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/use-subscription';
 import { subscriptionApi } from '@/services/subscription-api';
@@ -48,6 +48,7 @@ function PlanTile({
   onSelect,
 }: PlanTileProps) {
   const t = useTranslations();
+  const locale = useLocale();
 
   return (
     <div
@@ -92,7 +93,11 @@ function PlanTile({
           {isCancelled && expiresAt && (
             <p className="text-xs text-muted-foreground">
               {t('subscriptions.activeUntil', {
-                date: new Date(expiresAt).toLocaleDateString(),
+                date: new Date(expiresAt).toLocaleDateString(locale, {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                }),
               })}
             </p>
           )}

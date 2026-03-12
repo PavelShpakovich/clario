@@ -314,6 +314,7 @@
     "cardsLeft": "Осталось {count} {count, plural, one {карточка} few {карточки} other {карточек}}",
     "noCardsLeft": "Карточки закончились",
     "periodRenews": "Обновляется {date}",
+    "periodExpires": "Истекает {date}",
     "exhaustedHint": "Вы достигли месячного лимита. Улучшите тариф или подождите следующего периода.",
     "limitReachedBannerTitle": "Месячный лимит генерации исчерпан",
     "lowCardsBannerTitle": "Осталось всего {count} {count, plural, one {генерация} few {генерации} other {генераций}} в этом месяце",

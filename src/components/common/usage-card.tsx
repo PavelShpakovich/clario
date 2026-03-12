@@ -64,6 +64,16 @@ export function UsageCard() {
       })
     : null;
 
+  const isCancelled = status?.subscriptionStatus === 'cancelled';
+  const expiresAtFormatted =
+    isCancelled && status?.expiresAt
+      ? new Date(status.expiresAt).toLocaleDateString(locale, {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : null;
+
   return (
     <Card id="plan">
       <CardHeader>
@@ -104,7 +114,11 @@ export function UsageCard() {
                     ? t('usage.noCardsLeft')
                     : t('usage.cardsLeft', { count: status.usage.cardsRemaining })}
                 </span>
-                {periodEnd && <span>{t('usage.periodRenews', { date: periodEnd })}</span>}
+                {expiresAtFormatted ? (
+                  <span>{t('usage.periodExpires', { date: expiresAtFormatted })}</span>
+                ) : periodEnd ? (
+                  <span>{t('usage.periodRenews', { date: periodEnd })}</span>
+                ) : null}
               </div>
             </div>
 
