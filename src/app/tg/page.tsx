@@ -32,13 +32,18 @@ export default function TelegramEntryPage() {
     const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
     async function authenticate() {
-      // Wait one tick so the Telegram SDK (loaded beforeInteractive) is ready.
-      await new Promise((r) => setTimeout(r, 50));
-
-      const initData = window.Telegram?.WebApp?.initData;
+      // Poll for the Telegram SDK to populate initData (up to 3 s).
+      // On a cold start (first ever open, no script cache) the SDK can take
+      // longer than a single tick to initialise even with beforeInteractive loading.
+      let initData = '';
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        initData = window.Telegram?.WebApp?.initData ?? '';
+        if (initData) break;
+      }
 
       if (!initData) {
-        // Not inside Telegram (or SDK not ready) — send to landing page.
+        // Not inside Telegram after 3 s — send to landing page.
         router.replace('/');
         return;
       }
