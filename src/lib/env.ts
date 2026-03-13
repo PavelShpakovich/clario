@@ -35,6 +35,20 @@ const envSchema = z.object({
   // Secret token for Telegram webhook verification (set in BotFather/setWebhook)
   TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
 
+  // Billing feature flags
+  NEXT_PUBLIC_ENABLE_SUBSCRIPTIONS: z.string().optional(),
+  NEXT_PUBLIC_ENABLE_WEBPAY: z.string().optional(),
+  NEXT_PUBLIC_SHOW_PAID_INFO: z.string().optional(),
+
+  // WEBPAY
+  WEBPAY_API_BASE_URL: z.string().url().optional(),
+  WEBPAY_MERCHANT_ID: z.string().optional(),
+  WEBPAY_SECRET_KEY: z.string().optional(),
+  WEBPAY_WEBHOOK_SECRET: z.string().optional(),
+  WEBPAY_SUCCESS_PATH: z.string().optional().default('/settings/plan?billing=success'),
+  WEBPAY_CANCEL_PATH: z.string().optional().default('/settings/plan?billing=cancelled'),
+  WEBPAY_FAIL_PATH: z.string().optional().default('/settings/plan?billing=failed'),
+
   // Support
   SUPPORT_EMAIL: z.string().email().optional().default('support@example.com'),
   ADMIN_EMAILS: z.string().optional(), // Comma-separated email list
@@ -42,9 +56,6 @@ const envSchema = z.object({
   // Sentry
   SENTRY_DSN: z.string().url().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
-
-  // Telegram Stars pricing (in Stars, aligned to USD exchange rate ~0.024 per Star)
-  // Update these values if USD/Star exchange rate changes
 
   // Resend (transactional email)
   RESEND_API_KEY: z.string().optional(),

@@ -35,6 +35,13 @@ import {
 
 const BOT_URL = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL;
 
+function getLocaleHref(locale: string, path: string) {
+  if (locale === 'ru') {
+    return path === '/' ? '/ru' : `/ru${path}`;
+  }
+  return path;
+}
+
 export function Header() {
   const t = useTranslations();
   const { user, isAuthenticated } = useAuth();
@@ -125,7 +132,15 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={getLocaleHref(locale, '/login')}>{t('navigation.login')}</Link>
+            </Button>
+
             <Button size="sm" asChild>
+              <Link href={getLocaleHref(locale, '/register')}>{t('navigation.register')}</Link>
+            </Button>
+
+            <Button variant="outline" size="sm" asChild>
               <a href={BOT_URL} target="_blank" rel="noopener noreferrer">
                 {t('navigation.openInTelegram')}
               </a>

@@ -14,6 +14,8 @@ interface RootProvidersProps {
   children: React.ReactNode;
   locale: string;
   messages: AbstractIntlMessages;
+  timeZone: string;
+  now: Date;
 }
 
 interface LocaleSwitchContextType {
@@ -32,6 +34,8 @@ export function RootProviders({
   children,
   locale: initialLocale,
   messages: initialMessages,
+  timeZone,
+  now,
 }: RootProvidersProps) {
   const [locale, setLocale] = useState(initialLocale);
   const [messages, setMessages] = useState(initialMessages);
@@ -47,7 +51,7 @@ export function RootProviders({
   return (
     <SessionProvider>
       <LocaleSwitchContext.Provider value={{ switchLocale }}>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages} timeZone={timeZone} now={now}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <SubscriptionProvider>
               <TelegramLoader>{children}</TelegramLoader>

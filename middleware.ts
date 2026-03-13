@@ -7,7 +7,15 @@ import { routing } from './src/i18n/routing';
 const intlMiddleware = createIntlMiddleware(routing);
 
 // Base public page paths (without locale prefix)
-const PUBLIC_PAGE_BASES = ['/', '/privacy', '/terms'];
+const PUBLIC_PAGE_BASES = [
+  '/',
+  '/privacy',
+  '/terms',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/set-password',
+];
 
 /** Returns true for any public page path, with or without /ru prefix */
 function isPublicPage(pathname: string): boolean {
@@ -18,10 +26,13 @@ function isPublicPage(pathname: string): boolean {
 // API routes that don't require authentication
 const PUBLIC_API_ROUTES = [
   '/api/auth', // NextAuth + Telegram auth endpoints
-  '/api/profile/link-web', // Telegram stub self-authenticates via HMAC
   '/api/telegram/webhook', // Telegram Bot API webhook — authenticated via secret token header
   '/api/cron', // Vercel Cron jobs — authenticated via CRON_SECRET header
 ];
+
+function buildLocaleAwarePath(pathname: string, target: string): string {
+  return pathname === '/ru' || pathname.startsWith('/ru/') ? `/ru${target}` : target;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -52,10 +63,9 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Redirect unauthenticated users to /tg which auto-authenticates inside Telegram.
-    const tgUrl = new URL('/tg', request.url);
-    tgUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(tgUrl);
+    const loginUrl = new URL(buildLocaleAwarePath(pathname, '/login'), request.url);
+    loginUrl.searchParams.set('callbackUrl', `${pathname}${request.nextUrl.search}`);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Admin routes: check isAdmin flag
