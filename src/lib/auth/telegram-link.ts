@@ -12,7 +12,9 @@ export function buildTelegramStartParam(token: string, locale?: string | null): 
 export function parseTelegramStartParam(startParam: string | null | undefined): string | null {
   if (!startParam) return null;
   if (!startParam.startsWith(TELEGRAM_LINK_PREFIX)) return null;
-  return startParam.slice(TELEGRAM_LINK_PREFIX.length) || null;
+  const rest = startParam.slice(TELEGRAM_LINK_PREFIX.length);
+  // Strip optional locale suffix appended by buildTelegramStartParam (e.g. _ru, _en).
+  return rest.replace(/_[a-z]{2}$/, '') || null;
 }
 
 export async function createTelegramLinkToken(userId: string): Promise<string> {
