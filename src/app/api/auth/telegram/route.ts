@@ -12,6 +12,7 @@ import {
   resolveUserIdByTelegramId,
 } from '@/lib/auth/account-identities';
 import { consumeTelegramLinkToken, parseTelegramStartParam } from '@/lib/auth/telegram-link';
+import { mergeAccounts } from '@/lib/auth/merge-accounts';
 
 const bodySchema = z.object({
   initData: z.string().min(1),
@@ -87,22 +88,13 @@ export const POST = withApiHandler(async (req) => {
     userId = linkedUserId;
 
     // If this telegram_id was previously linked to a different (stub) account,
-    // clean it up so ensureTelegramIdentityLink won't conflict.
+    // merge all its data into the target web account before re-linking.
     if (existingUserId && existingUserId !== linkedUserId) {
       logger.info(
         { existingUserId, linkedUserId, telegramId },
-        'telegram-auth: re-linking telegram from stub to web account',
+        'telegram-auth: merging stub account into web account',
       );
-      await supabaseAdmin
-        .from('account_identities')
-        .delete()
-        .eq('provider', 'telegram')
-        .eq('provider_user_id', telegramId);
-      await supabaseAdmin
-        .from('profiles')
-        .update({ telegram_id: null })
-        .eq('id', existingUserId)
-        .eq('telegram_id', telegramId);
+      await mergeAccounts(existingUserId, linkedUserId);
     }
 
     const { error: upsertErr } = await supabaseAdmin
