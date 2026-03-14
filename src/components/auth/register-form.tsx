@@ -51,7 +51,13 @@ export function RegisterForm() {
 
       if (!response.ok) {
         const data = (await response.json()) as { error?: string; message?: string };
-        throw new Error(data.error || data.message || t('error'));
+        const msg = data.error || data.message || '';
+        if (msg.toLowerCase().includes('already exists')) {
+          toast.error(t('emailAlreadyExists'));
+        } else {
+          toast.error(t('error'));
+        }
+        return;
       }
 
       const result = await signIn('password', {
@@ -62,13 +68,14 @@ export function RegisterForm() {
       });
 
       if (!result?.ok) {
-        throw new Error(result?.error || t('invalidCredentials'));
+        toast.error(t('invalidCredentials'));
+        return;
       }
 
       toast.success(t('registerSuccess'));
       window.location.href = result.url || callbackUrl;
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('error'));
+    } catch {
+      toast.error(t('error'));
     } finally {
       setIsSubmitting(false);
     }

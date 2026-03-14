@@ -79,7 +79,12 @@ export function SettingsClient({
       toast.success(t('auth.passwordUpdated'));
       window.location.reload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('auth.error'));
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.toLowerCase().includes('already exists')) {
+        toast.error(t('settings.webAccessEmailTaken'));
+      } else {
+        toast.error(t('auth.error'));
+      }
     } finally {
       setIsSettingUpWebAccess(false);
     }
@@ -248,28 +253,30 @@ export function SettingsClient({
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('settings.telegramCardTitle')}</CardTitle>
-          <CardDescription>{t('settings.telegramCardDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between gap-4">
-          <div className="text-sm text-muted-foreground">
-            {telegramId ? t('settings.telegramConnected') : t('settings.telegramBotDescription')}
-          </div>
-          <Button
-            variant={telegramId ? 'secondary' : 'default'}
-            onClick={() => void onConnectTelegram()}
-            disabled={Boolean(telegramId) || isStartingTelegramLink}
-          >
-            {telegramId
-              ? t('settings.telegramConnected')
-              : isStartingTelegramLink
-                ? t('settings.telegramConnecting')
-                : t('settings.telegramConnectCta')}
-          </Button>
-        </CardContent>
-      </Card>
+      {!isTelegramWebApp() && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settings.telegramCardTitle')}</CardTitle>
+            <CardDescription>{t('settings.telegramCardDescription')}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between gap-4">
+            <div className="text-sm text-muted-foreground">
+              {telegramId ? t('settings.telegramConnected') : t('settings.telegramBotDescription')}
+            </div>
+            <Button
+              variant={telegramId ? 'secondary' : 'default'}
+              onClick={() => void onConnectTelegram()}
+              disabled={Boolean(telegramId) || isStartingTelegramLink}
+            >
+              {telegramId
+                ? t('settings.telegramConnected')
+                : isStartingTelegramLink
+                  ? t('settings.telegramConnecting')
+                  : t('settings.telegramConnectCta')}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
