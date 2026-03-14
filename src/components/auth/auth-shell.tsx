@@ -10,7 +10,7 @@ interface AuthShellProps {
 
 export function AuthShell({ title, description, children, footer }: AuthShellProps) {
   return (
-    <main className="flex min-h-[calc(100vh-5rem)] items-center justify-center px-4 py-12">
+    <main className="flex flex-1 items-center justify-center px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-2 text-center">
           <CardTitle className="text-2xl">{title}</CardTitle>

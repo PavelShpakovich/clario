@@ -39,13 +39,14 @@ export function LoginForm() {
       });
 
       if (!result?.ok) {
-        throw new Error(result?.error || t('invalidCredentials'));
+        toast.error(t('invalidCredentials'));
+        return;
       }
 
       toast.success(t('loginSuccess'));
       window.location.href = result.url || callbackUrl;
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('error'));
+    } catch {
+      toast.error(t('error'));
     } finally {
       setIsSubmitting(false);
     }

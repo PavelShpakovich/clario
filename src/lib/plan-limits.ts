@@ -4,7 +4,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { areSubscriptionsEnabled, isPaidInformationVisible } from '@/lib/feature-flags';
+import { areSubscriptionsEnabled } from '@/lib/feature-flags';
 
 export interface PlanLimits {
   cardsPerMonth: number;
@@ -68,10 +68,9 @@ export async function getPlanLimits(planId: string): Promise<PlanLimits> {
   const limits: PlanLimits = {
     cardsPerMonth: data.cards_per_month ?? DEFAULT_LIMITS[planId]?.cardsPerMonth ?? 50,
     maxThemes: data.max_themes, // null means unlimited
-    communityThemes:
-      areSubscriptionsEnabled() && isPaidInformationVisible()
-        ? (data.community_themes ?? DEFAULT_LIMITS[planId]?.communityThemes ?? false)
-        : false,
+    communityThemes: areSubscriptionsEnabled()
+      ? (data.community_themes ?? DEFAULT_LIMITS[planId]?.communityThemes ?? false)
+      : false,
     priceMinor: data.price_minor ?? DEFAULT_LIMITS[planId]?.priceMinor ?? null,
     currency: data.currency ?? DEFAULT_LIMITS[planId]?.currency ?? 'BYN',
   };

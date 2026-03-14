@@ -14,7 +14,7 @@ import { useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 import { BackLink } from '@/components/common/back-link';
 import { isTelegramWebApp } from '@/components/telegram-provider';
-import { areSubscriptionsEnabled, isPaidInformationVisible } from '@/lib/feature-flags';
+import { areSubscriptionsEnabled } from '@/lib/feature-flags';
 
 interface SettingsClientProps {
   initialProfile: {
@@ -55,7 +55,7 @@ export function SettingsClient({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const telegramId = initialProfile?.telegram_id ?? null;
-  const canShowBilling = areSubscriptionsEnabled() && isPaidInformationVisible();
+  const canShowBilling = areSubscriptionsEnabled();
 
   const onSetupWebAccess = async () => {
     if (!webAccessEmail.includes('@')) {

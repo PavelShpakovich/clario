@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { setRequestLocale, getTranslations } from 'next-intl/server';
+import { getTranslations } from 'next-intl/server';
 import { auth } from '@/auth';
 import { LandingFooter } from '@/components/layout/landing-footer';
 import { Accordion } from '@/components/ui/accordion';
@@ -10,56 +10,25 @@ import { SectionHeader } from '@/components/landing/section-header';
 import { FeatureCard } from '@/components/landing/feature-card';
 import { StepItem } from '@/components/landing/step-item';
 import { FaqItem } from '@/components/landing/faq-item';
-import { routing } from '@/i18n/routing';
 import { isPaidInformationVisible } from '@/lib/feature-flags';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tryclario.by';
 
-export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
-}
+export const metadata: Metadata = {
+  title: 'Clario — ИИ-генератор карточек для обучения',
+  description:
+    'Превратите любую тему, документ или URL в карточки для обучения за секунды. Учитесь умнее в Telegram.',
+  alternates: { canonical: APP_URL },
+  openGraph: {
+    title: 'Clario — ИИ-генератор карточек для обучения',
+    description: 'Превратите любую тему, документ или URL в карточки для обучения за секунды.',
+    url: APP_URL,
+    locale: 'ru_RU',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Clario' }],
+  },
+};
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  const isRu = locale === 'ru';
-  const canonical = isRu ? `${APP_URL}/ru` : APP_URL;
-
-  const titleEn = 'Clario — AI Flashcard Generator';
-  const descEn =
-    'Turn any topic, document, or URL into AI-generated study cards in seconds. Learn smarter inside Telegram.';
-  const titleRu = 'Clario — ИИ-генератор карточек для обучения';
-  const descRu =
-    'Превратите любую тему, документ или URL в карточки для обучения за секунды. Учитесь умнее в Telegram.';
-
-  return {
-    title: isRu ? titleRu : titleEn,
-    description: isRu ? descRu : descEn,
-    alternates: {
-      canonical,
-      languages: {
-        en: APP_URL,
-        ru: `${APP_URL}/ru`,
-        'x-default': APP_URL,
-      },
-    },
-    openGraph: {
-      title: isRu ? titleRu : titleEn,
-      description: isRu ? descRu : descEn,
-      url: canonical,
-      locale: isRu ? 'ru_RU' : 'en_US',
-      images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Clario' }],
-    },
-  };
-}
-
-export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-
+export default async function LandingPage() {
   const session = await auth();
   if (session) redirect('/dashboard');
 
@@ -108,7 +77,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         { title: t('comingSoonCard3Title'), items: [t('comingSoonCard3Body')] },
       ];
 
-  // JSON-LD structured data
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -119,38 +87,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     })),
   };
 
-  const appSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: 'Clario',
-    applicationCategory: 'EducationApplication',
-    operatingSystem: 'Telegram',
-    description: t('heroSubheadline'),
-    url: APP_URL,
-    ...(showPaidInformation
-      ? {
-          offers: {
-            '@type': 'Offer',
-            priceCurrency: 'BYN',
-          },
-        }
-      : {}),
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
-      />
 
-      {/* ── Hero ── */}
       <HeroSection
-        locale={locale}
         tagline={t('heroTagline')}
         headline={t('heroHeadline')}
         subheadline={t('heroSubheadline')}
@@ -158,7 +102,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         ctaLogin={t('ctaLogin')}
       />
 
-      {/* ── Features ── */}
       <section className="py-20 px-4 bg-background">
         <div className="max-w-7xl mx-auto">
           <SectionHeader title={t('featuresTitle')} subtitle={t('featuresSubtitle')} />
@@ -170,7 +113,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
-      {/* ── How It Works ── */}
       <section className="py-20 px-4 bg-muted/30">
         <div className="max-w-4xl mx-auto">
           <SectionHeader title={t('howItWorksTitle')} subtitle={t('howItWorksSubtitle')} narrow />
@@ -212,7 +154,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
-      {/* ── FAQ ── */}
       <section className="py-20 px-4 bg-muted/30">
         <div className="max-w-3xl mx-auto">
           <SectionHeader title={t('faqTitle')} subtitle={t('faqSubtitle')} narrow />

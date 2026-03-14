@@ -1,10 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getPlanLimits } from '@/lib/plan-limits';
-import {
-  areSubscriptionsEnabled,
-  isPaidInformationVisible,
-  isWebpayEnabled,
-} from '@/lib/feature-flags';
+import { areSubscriptionsEnabled, isWebpayEnabled } from '@/lib/feature-flags';
 import type {
   AvailablePlan,
   PlanId,
@@ -17,7 +13,6 @@ export async function getSubscriptionStatusResponse(
   userId: string,
 ): Promise<SubscriptionStatusResponse> {
   const subscriptionsEnabled = areSubscriptionsEnabled();
-  const paidInfoVisible = isPaidInformationVisible();
   const now = new Date();
 
   const [{ data: subscription }, { data: usage }, { count: themesUsed }, { data: allPlans }] =
@@ -78,7 +73,7 @@ export async function getSubscriptionStatusResponse(
         ? 'active'
         : 'cancelled';
 
-  const availablePlans: AvailablePlan[] = paidInfoVisible
+  const availablePlans: AvailablePlan[] = subscriptionsEnabled
     ? ((allPlans ?? []).map((plan) => ({
         id: plan.id as PlanId,
         name: plan.name,
@@ -115,7 +110,7 @@ export async function getSubscriptionStatusResponse(
     autoRenew,
     subscriptionStatus,
     billingEnabled: subscriptionsEnabled,
-    paidInfoVisible,
+    paidInfoVisible: subscriptionsEnabled,
     billingProvider: subscriptionsEnabled ? (subscription?.billing_provider ?? null) : null,
     plan: {
       planId: effectivePlanId,

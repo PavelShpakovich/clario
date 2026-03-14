@@ -35,10 +35,8 @@ const envSchema = z.object({
   // Secret token for Telegram webhook verification (set in BotFather/setWebhook)
   TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
 
-  // Billing feature flags
+  // Billing feature flag — set to "true" to enable Webpay checkout and pricing UI
   NEXT_PUBLIC_ENABLE_SUBSCRIPTIONS: z.string().optional(),
-  NEXT_PUBLIC_ENABLE_WEBPAY: z.string().optional(),
-  NEXT_PUBLIC_SHOW_PAID_INFO: z.string().optional(),
 
   // WEBPAY
   WEBPAY_API_BASE_URL: z.string().url().optional(),

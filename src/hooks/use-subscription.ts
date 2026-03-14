@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
+import { useSession } from 'next-auth/react';
 import type { AvailablePlan, SubscriptionStatusResponse } from '@/lib/billing/subscription-types';
 
 /**
@@ -34,6 +35,7 @@ interface SubscriptionResponse {
 const SubscriptionContext = createContext<SubscriptionResponse | null>(null);
 
 function useFetchSubscription(): SubscriptionResponse {
+  const { status: authStatus } = useSession();
   const [status, setStatus] = useState<SubscriptionStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,8 +73,12 @@ function useFetchSubscription(): SubscriptionResponse {
   }, []);
 
   useEffect(() => {
+    if (authStatus !== 'authenticated') {
+      setIsLoading(false);
+      return;
+    }
     void fetchSubscription();
-  }, [fetchSubscription]);
+  }, [fetchSubscription, authStatus]);
 
   return { status, isLoading, error, refetch: fetchSubscription };
 }

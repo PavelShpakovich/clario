@@ -2,7 +2,6 @@ import { Link } from '@/navigation';
 import { Button } from '@/components/ui/button';
 
 interface HeroSectionProps {
-  locale: string;
   tagline: string;
   headline: string;
   subheadline: string;
@@ -11,7 +10,6 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({
-  locale,
   tagline,
   headline,
   subheadline,
@@ -31,14 +29,10 @@ export function HeroSection({
       </p>
       <div className="flex flex-col sm:flex-row gap-4">
         <Button size="lg" asChild>
-          <Link href="/register" locale={locale}>
-            {ctaGetStarted}
-          </Link>
+          <Link href="/register">{ctaGetStarted}</Link>
         </Button>
         <Button size="lg" variant="outline" asChild>
-          <Link href="/login" locale={locale}>
-            {ctaLogin}
-          </Link>
+          <Link href="/login">{ctaLogin}</Link>
         </Button>
       </div>
     </section>

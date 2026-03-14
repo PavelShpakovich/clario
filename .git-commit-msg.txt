@@ -1,0 +1,19 @@
+refactor: flatten routing, remove locale URL prefix, web-first UX
+
+- Remove [locale] URL routing; switch to cookie-only i18n (NEXT_LOCALE)
+- Default locale Russian; language switching is client-side only
+- Middleware: 301 redirects /en/* and /ru/* to flat paths
+- New flat pages: /login, /register, /forgot-password, /set-password, /privacy, /terms
+- Landing page at /; 404 page added
+- Header: remove Telegram CTA from public nav; Login/Register always visible
+- Auth shell: fix vertical centering via flex-1
+- Remove TG Stars remnants: invoice route, admin refund, openInvoice
+- Consolidate 3 feature flags into NEXT_PUBLIC_ENABLE_SUBSCRIPTIONS
+- Fix CredentialsSignin raw error in login toast
+- Fix /dashboard redirect loop (was redirecting to /tg)
+- Fix subscription 401 spam with authStatus guard
+- Fix useDisplayName 401 retry spam with fetchFailed flag
+- Remove dead telegram-subscription alias route
+- Fix Tailwind v4: break-words -> wrap-break-word
+- Copy: remove WEBPAY mentions, reframe Telegram as bonus
+- Add missing settings.profileUpdated i18n key

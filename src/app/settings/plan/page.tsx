@@ -4,8 +4,7 @@ import { BackLink } from '@/components/common/back-link';
 import { BillingReturnBanner } from '@/components/common/billing-return-banner';
 import { UsageCard } from '@/components/common/usage-card';
 import { PlansCard } from '@/components/common/plans-card';
-import { PlansComingSoonCard } from '@/components/common/plans-coming-soon-card';
-import { areSubscriptionsEnabled, isPaidInformationVisible } from '@/lib/feature-flags';
+import { areSubscriptionsEnabled } from '@/lib/feature-flags';
 
 export const metadata = {
   title: 'Usage & Plans',
@@ -21,14 +20,14 @@ export default async function PlanPage() {
     redirect('/login');
   }
 
-  const canShowBilling = areSubscriptionsEnabled() && isPaidInformationVisible();
+  const canShowBilling = areSubscriptionsEnabled();
 
   return (
     <main className="w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 space-y-6">
       <BackLink />
-      <BillingReturnBanner />
+      {canShowBilling && <BillingReturnBanner />}
       <UsageCard />
-      {canShowBilling ? <PlansCard /> : <PlansComingSoonCard />}
+      {canShowBilling && <PlansCard />}
     </main>
   );
 }
