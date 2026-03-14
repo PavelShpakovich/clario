@@ -52,17 +52,14 @@ export function RootProviders({
     <SessionProvider>
       <LocaleSwitchContext.Provider value={{ switchLocale }}>
         <NextIntlClientProvider locale={locale} messages={messages} timeZone={timeZone} now={now}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            className="flex flex-col flex-1"
-          >
-            <SubscriptionProvider>
-              <TelegramLoader>{children}</TelegramLoader>
-            </SubscriptionProvider>
-            <WelcomeModal />
-            <Toaster position="bottom-right" />
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <div className="flex flex-col flex-1">
+              <SubscriptionProvider>
+                <TelegramLoader>{children}</TelegramLoader>
+              </SubscriptionProvider>
+              <WelcomeModal />
+              <Toaster position="bottom-right" />
+            </div>
           </ThemeProvider>
         </NextIntlClientProvider>
       </LocaleSwitchContext.Provider>
