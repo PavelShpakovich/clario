@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 import { BackLink } from '@/components/common/back-link';
 import { isTelegramWebApp } from '@/components/telegram-provider';
@@ -38,6 +38,7 @@ export function SettingsClient({
   isStub = false,
 }: SettingsClientProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const [displayName, setDisplayName] = useState(initialProfile?.display_name || userName || '');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -93,7 +94,7 @@ export function SettingsClient({
   const onConnectTelegram = async () => {
     try {
       setIsStartingTelegramLink(true);
-      const result = await profileApi.startTelegramLink();
+      const result = await profileApi.startTelegramLink(locale);
 
       if (result.alreadyLinked) {
         toast.success(t('settings.telegramConnected'));

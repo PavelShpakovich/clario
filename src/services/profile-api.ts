@@ -73,9 +73,11 @@ class ProfileApi {
     }
   }
 
-  async startTelegramLink(): Promise<TelegramLinkResponse> {
+  async startTelegramLink(locale?: string): Promise<TelegramLinkResponse> {
     const response = await fetch('/api/profile/link-telegram', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale: locale ?? null }),
     });
 
     if (!response.ok) {

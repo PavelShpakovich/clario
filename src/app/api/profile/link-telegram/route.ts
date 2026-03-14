@@ -44,10 +44,8 @@ export const POST = withApiHandler(async (req) => {
     return NextResponse.json({ success: true, alreadyLinked: true, telegramId });
   }
 
-  // Read the web app's current locale from the cookie so it carries over into TG.
-  const cookieHeader = req.headers.get('cookie') ?? '';
-  const localeMatch = cookieHeader.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
-  const locale = localeMatch?.[1] ?? null;
+  const body = (await req.json().catch(() => ({}))) as { locale?: string | null };
+  const locale = body.locale && ['en', 'ru'].includes(body.locale) ? body.locale : null;
 
   const token = await createTelegramLinkToken(user.id);
   const deepLink = new URL(env.NEXT_PUBLIC_TELEGRAM_BOT_URL);
