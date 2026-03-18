@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useState } from 'react';
+import { useState } from 'react';
 import { Layers, FileText, GraduationCap } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
@@ -25,23 +25,17 @@ const steps = [
 export function WelcomeModal() {
   const t = useTranslations('welcome');
   const { status } = useSession();
-  const [open, setOpen] = useState(false);
-
-  useLayoutEffect(() => {
-    // Check if user is authenticated and hasn't seen the modal
-    if (status !== 'authenticated') return;
-
-    // Queue the state update to avoid cascading render warning
-    queueMicrotask(() => {
-      try {
-        if (!localStorage.getItem(STORAGE_KEY)) {
-          setOpen(true);
-        }
-      } catch {
-        // localStorage may be unavailable in some environments
-      }
-    });
-  }, [status]);
+  // Lazy initializer runs once on the client — no effect needed.
+  // On SSR (typeof window === 'undefined') we default to true so the modal
+  // stays hidden during server render and avoids a hydration mismatch.
+  const [hasSeen, setHasSeen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      return !!localStorage.getItem(STORAGE_KEY);
+    } catch {
+      return true;
+    }
+  });
 
   const handleDismiss = () => {
     try {
@@ -49,11 +43,13 @@ export function WelcomeModal() {
     } catch {
       // ignore
     }
-    setOpen(false);
+    setHasSeen(true);
   };
 
+  const open = status === 'authenticated' && !hasSeen;
+
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog open={open}>
       <AlertDialogContent className="max-w-sm">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-center text-xl">{t('title')}</AlertDialogTitle>
