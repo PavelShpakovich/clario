@@ -5,6 +5,14 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 
+type EmailVerificationTokenRow = {
+  id: string;
+  user_id: string;
+  email: string;
+  expires_at: string;
+  consumed_at: string | null;
+};
+
 function sha256(value: string): string {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
@@ -35,22 +43,31 @@ export async function issueEmailVerificationToken(input: {
   return token;
 }
 
-export async function consumeEmailVerificationToken(token: string): Promise<{
-  userId: string;
-  email: string;
-} | null> {
+export async function findEmailVerificationToken(
+  token: string,
+): Promise<EmailVerificationTokenRow | null> {
   const tokenHash = sha256(token);
-  const now = new Date().toISOString();
 
   const { data: row, error } = await supabaseAdmin
     .from('email_verification_tokens')
     .select('id, user_id, email, expires_at, consumed_at')
     .eq('token_hash', tokenHash)
-    .maybeSingle();
+    .maybeSingle<EmailVerificationTokenRow>();
 
   if (error) {
     throw error;
   }
+
+  return row;
+}
+
+export async function consumeEmailVerificationToken(token: string): Promise<{
+  userId: string;
+  email: string;
+} | null> {
+  const now = new Date().toISOString();
+
+  const row = await findEmailVerificationToken(token);
 
   if (!row || row.consumed_at || row.expires_at <= now) {
     return null;

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { env } from '@/lib/env';
 import {
   consumeEmailVerificationToken,
-  clearEmailVerificationTokensForUser,
+  findEmailVerificationToken,
 } from '@/lib/auth/email-verification';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
@@ -23,13 +23,29 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL('/login?verified=error', appUrl));
   }
 
-  const payload = await consumeEmailVerificationToken(token);
-  if (!payload) {
+  const tokenRow = await findEmailVerificationToken(token);
+  if (!tokenRow) {
     return NextResponse.redirect(new URL('/login?verified=error', appUrl));
   }
 
-  const { data, error } = await supabaseAdmin.auth.admin.getUserById(payload.userId);
-  if (error || !data.user || data.user.email?.toLowerCase() !== payload.email.toLowerCase()) {
+  const { data, error } = await supabaseAdmin.auth.admin.getUserById(tokenRow.user_id);
+  if (error || !data.user || data.user.email?.toLowerCase() !== tokenRow.email.toLowerCase()) {
+    return NextResponse.redirect(new URL('/login?verified=error', appUrl));
+  }
+
+  if (data.user.email_confirmed_at) {
+    return NextResponse.redirect(new URL('/login?verified=true', appUrl));
+  }
+
+  const payload = await consumeEmailVerificationToken(token);
+  if (!payload) {
+    const { data: refreshedData, error: refreshedError } =
+      await supabaseAdmin.auth.admin.getUserById(tokenRow.user_id);
+
+    if (!refreshedError && refreshedData.user?.email_confirmed_at) {
+      return NextResponse.redirect(new URL('/login?verified=true', appUrl));
+    }
+
     return NextResponse.redirect(new URL('/login?verified=error', appUrl));
   }
 
@@ -40,8 +56,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (updateError) {
     return NextResponse.redirect(new URL('/login?verified=error', appUrl));
   }
-
-  await clearEmailVerificationTokensForUser(payload.userId);
 
   return NextResponse.redirect(new URL('/login?verified=true', appUrl));
 }
