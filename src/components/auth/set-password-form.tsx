@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Link } from '@/navigation';
 import { createSupabaseClient } from '@/lib/supabase/client';
+import { authApi } from '@/services/auth-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,10 +69,7 @@ export function SetPasswordForm() {
         data: { session: recoverySession },
       } = await supabase.auth.getSession();
       if (recoverySession?.access_token) {
-        await fetch('/api/auth/password/confirm-reset', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${recoverySession.access_token}` },
-        });
+        await authApi.confirmPasswordReset(recoverySession.access_token);
       }
 
       const result = await signIn('password', {

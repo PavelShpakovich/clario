@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { findAuthUserByEmail } from '@/lib/auth/user-accounts';
@@ -10,6 +11,7 @@ const bodySchema = z.object({
 });
 
 export const POST = withApiHandler(async (req) => {
+  const locale = (await cookies()).get('NEXT_LOCALE')?.value === 'en' ? 'en' : 'ru';
   const ip = getClientIp(req);
   const { allowed } = checkRateLimit(`resend-verification:${ip}`, 3, 60_000);
 
@@ -29,7 +31,7 @@ export const POST = withApiHandler(async (req) => {
 
   // Only resend if the user exists and has not yet confirmed their email.
   if (user && !user.emailConfirmedAt) {
-    await sendVerificationEmail({ email });
+    await sendVerificationEmail({ email, locale });
   }
 
   return NextResponse.json({ success: true });

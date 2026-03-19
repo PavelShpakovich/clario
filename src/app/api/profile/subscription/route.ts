@@ -39,7 +39,16 @@ export const DELETE = withApiHandler(async () => {
     });
   }
 
-  throw new ValidationError({ message: 'WEBPAY cancellation is not configured yet' });
+  const { error } = await supabaseAdmin
+    .from('user_subscriptions')
+    .update({ auto_renew: false, status: 'cancelled' })
+    .eq('id', subscription.id);
+
+  if (error) {
+    throw error;
+  }
+
+  return NextResponse.json({ success: true });
 });
 
 export const PATCH = withApiHandler(async () => {
@@ -73,5 +82,14 @@ export const PATCH = withApiHandler(async () => {
     });
   }
 
-  throw new ValidationError({ message: 'WEBPAY renewal resume is not configured yet' });
+  const { error } = await supabaseAdmin
+    .from('user_subscriptions')
+    .update({ auto_renew: true, status: 'active' })
+    .eq('id', subscription.id);
+
+  if (error) {
+    throw error;
+  }
+
+  return NextResponse.json({ success: true });
 });

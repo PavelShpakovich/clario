@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
@@ -15,6 +16,7 @@ import {
   getWebpayMissingConfig,
   isWebpayConfigured,
 } from '@/lib/billing/webpay';
+import { buildBillingPeriodFrom } from '@/lib/billing/webpay-transactions';
 import type { Json } from '@/lib/supabase/types';
 
 const checkoutSchema = z.object({
@@ -37,7 +39,7 @@ export const POST = withApiHandler(async (req) => {
 
   const { data: plan } = await supabaseAdmin
     .from('subscription_plans')
-    .select('id, is_public, price_minor, currency, webpay_product_id, webpay_plan_id')
+    .select('id, name, is_public, price_minor, currency, webpay_product_id, webpay_plan_id')
     .eq('id', body.data.planId)
     .maybeSingle();
 
@@ -60,6 +62,13 @@ export const POST = withApiHandler(async (req) => {
   }
 
   const { merchantId, callbackUrls } = getWebpayConfig();
+  const [authUser, cookieStore] = await Promise.all([
+    supabaseAdmin.auth.admin.getUserById(user.id),
+    cookies(),
+  ]);
+  const locale = cookieStore.get('NEXT_LOCALE')?.value === 'en' ? 'en' : 'ru';
+  const customerEmail = authUser.data.user?.email ?? null;
+  const billingPeriod = buildBillingPeriodFrom(new Date());
 
   const externalTransactionId = crypto.randomUUID();
   const { data: transaction, error } = await supabaseAdmin
@@ -73,12 +82,18 @@ export const POST = withApiHandler(async (req) => {
       kind: 'subscription_purchase',
       amount_minor: plan.price_minor,
       currency: plan.currency,
+      period_start: billingPeriod.periodStart,
+      period_end: billingPeriod.periodEnd,
       raw_payload: {
         merchant_id: merchantId,
         webpay_product_id: plan.webpay_product_id,
         webpay_plan_id: plan.webpay_plan_id,
         callback_urls: callbackUrls,
         user_id: user.id,
+        locale,
+        customer_email: customerEmail,
+        period_start: billingPeriod.periodStart,
+        period_end: billingPeriod.periodEnd,
       } as unknown as Json,
     })
     .select('id')
@@ -95,6 +110,9 @@ export const POST = withApiHandler(async (req) => {
     productId: plan.webpay_product_id,
     planId: plan.webpay_plan_id,
     customerReference: user.id,
+    locale,
+    customerEmail,
+    planName: plan.name,
   });
 
   return NextResponse.json({

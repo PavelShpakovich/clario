@@ -45,7 +45,6 @@ const envSchema = z.object({
   WEBPAY_WEBHOOK_SECRET: z.string().optional(),
   WEBPAY_SUCCESS_PATH: z.string().optional().default('/settings/plan?billing=success'),
   WEBPAY_CANCEL_PATH: z.string().optional().default('/settings/plan?billing=cancelled'),
-  WEBPAY_FAIL_PATH: z.string().optional().default('/settings/plan?billing=failed'),
 
   // Support
   SUPPORT_EMAIL: z.string().email().optional().default('support@example.com'),

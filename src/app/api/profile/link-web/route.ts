@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
@@ -15,6 +16,7 @@ const bodySchema = z.object({
 
 export const POST = withApiHandler(async (req) => {
   const { user } = await requireAuth();
+  const locale = (await cookies()).get('NEXT_LOCALE')?.value === 'en' ? 'en' : 'ru';
 
   const body = bodySchema.safeParse(await req.json());
   if (!body.success) {
@@ -53,7 +55,7 @@ export const POST = withApiHandler(async (req) => {
 
   await ensureSupabaseIdentityLink(user.id, email);
 
-  await sendVerificationEmail({ email, password });
+  await sendVerificationEmail({ email, password, locale });
 
   return NextResponse.json({ success: true, needsVerification: true });
 });

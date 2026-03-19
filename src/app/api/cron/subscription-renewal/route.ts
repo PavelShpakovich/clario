@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import {
+  buildWebpayRecurringPaymentSession,
+  buildWebpayUnbindSession,
+  parseWebpayNotificationPayload,
+  parseWebpayUnbindResponse,
+  sendWebpayFormRequest,
+} from '@/lib/billing/webpay';
+import {
+  buildNextBillingPeriod,
+  processWebpayPaymentNotification,
+} from '@/lib/billing/webpay-transactions';
+import type { Json } from '@/lib/supabase/types';
 
 /**
  * GET /api/cron/subscription-renewal
@@ -25,6 +37,140 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const now = new Date();
+  let renewalAttempted = 0;
+  let renewalSucceeded = 0;
+  let renewalFailed = 0;
+  let unbound = 0;
+
+  const { data: dueRenewals } = await supabaseAdmin
+    .from('user_subscriptions')
+    .select(
+      'id, user_id, plan_id, current_period_end, billing_customer_id, billing_subscription_id',
+    )
+    .eq('status', 'active')
+    .eq('auto_renew', true)
+    .eq('billing_provider', 'webpay')
+    .lt('current_period_end', now.toISOString());
+
+  const renewalPlanIds = Array.from(new Set((dueRenewals ?? []).map((row) => row.plan_id)));
+  const { data: renewalPlans } = renewalPlanIds.length
+    ? await supabaseAdmin
+        .from('subscription_plans')
+        .select('id, name, price_minor, currency')
+        .in('id', renewalPlanIds)
+    : {
+        data: [] as Array<{
+          id: string;
+          name: string;
+          price_minor: number | null;
+          currency: string;
+        }>,
+      };
+  const renewalPlanMap = new Map((renewalPlans ?? []).map((plan) => [plan.id, plan]));
+
+  for (const subscription of dueRenewals ?? []) {
+    if (!subscription.billing_customer_id || !subscription.billing_subscription_id) {
+      logger.warn(
+        { subscriptionId: subscription.id },
+        'Cron: skipped WEBPAY renewal without token',
+      );
+      renewalFailed += 1;
+      continue;
+    }
+
+    const plan = renewalPlanMap.get(subscription.plan_id);
+    if (!plan || plan.price_minor == null) {
+      logger.warn(
+        { subscriptionId: subscription.id, planId: subscription.plan_id },
+        'Cron: skipped WEBPAY renewal without plan pricing',
+      );
+      renewalFailed += 1;
+      continue;
+    }
+
+    const period = buildNextBillingPeriod(subscription.current_period_end);
+    const { data: existingRenewal } = await supabaseAdmin
+      .from('payment_transactions')
+      .select('id, status')
+      .eq('subscription_id', subscription.id)
+      .eq('provider', 'webpay')
+      .eq('kind', 'subscription_renewal')
+      .eq('period_start', period.periodStart)
+      .eq('period_end', period.periodEnd)
+      .in('status', ['pending', 'paid'])
+      .maybeSingle();
+
+    if (existingRenewal) {
+      continue;
+    }
+
+    renewalAttempted += 1;
+    const externalTransactionId = crypto.randomUUID();
+    const { data: transaction, error: transactionError } = await supabaseAdmin
+      .from('payment_transactions')
+      .insert({
+        user_id: subscription.user_id,
+        plan_id: subscription.plan_id,
+        subscription_id: subscription.id,
+        provider: 'webpay',
+        external_transaction_id: externalTransactionId,
+        status: 'pending',
+        kind: 'subscription_renewal',
+        amount_minor: plan.price_minor,
+        currency: plan.currency,
+        period_start: period.periodStart,
+        period_end: period.periodEnd,
+        raw_payload: {
+          renewal_for_period_end: subscription.current_period_end,
+          recurring_token: subscription.billing_subscription_id,
+          customer_id: subscription.billing_customer_id,
+        } as unknown as Json,
+      })
+      .select('id')
+      .single();
+
+    if (transactionError || !transaction) {
+      logger.error(
+        { transactionError, subscriptionId: subscription.id },
+        'Cron: failed to create renewal transaction',
+      );
+      renewalFailed += 1;
+      continue;
+    }
+
+    try {
+      const request = buildWebpayRecurringPaymentSession({
+        transactionId: transaction.id,
+        amountMinor: plan.price_minor,
+        currency: plan.currency,
+        customerReference: subscription.billing_customer_id,
+        recurringToken: subscription.billing_subscription_id,
+        planName: plan.name,
+      });
+      const response = await sendWebpayFormRequest(request.fields);
+      const notification = parseWebpayNotificationPayload(response.body);
+
+      if (notification) {
+        const result = await processWebpayPaymentNotification(notification);
+        if (result.ok && result.status === 'paid') {
+          renewalSucceeded += 1;
+        } else {
+          renewalFailed += 1;
+        }
+      } else {
+        logger.warn(
+          { subscriptionId: subscription.id, status: response.status, body: response.body },
+          'Cron: WEBPAY renewal response was not a payment notification',
+        );
+      }
+    } catch (error) {
+      logger.error(
+        { error, subscriptionId: subscription.id },
+        'Cron: WEBPAY renewal request failed',
+      );
+      renewalFailed += 1;
+    }
+  }
 
   // ── A: Expire overdue subscriptions ──────────────────────────────────
   // For auto_renew=true subscriptions, allow a 3-day grace period after
@@ -79,9 +225,62 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   logger.info(
-    { expired: expiredUserIds.length, usageDeleted },
+    {
+      expired: expiredUserIds.length,
+      usageDeleted,
+      renewalAttempted,
+      renewalSucceeded,
+      renewalFailed,
+    },
     'Cron: subscription expiry job done',
   );
+
+  const { data: subscriptionsToUnbind } = await supabaseAdmin
+    .from('user_subscriptions')
+    .select('id, user_id, billing_customer_id, billing_subscription_id')
+    .eq('billing_provider', 'webpay')
+    .eq('auto_renew', false)
+    .eq('status', 'expired')
+    .not('billing_customer_id', 'is', null)
+    .not('billing_subscription_id', 'is', null);
+
+  for (const subscription of subscriptionsToUnbind ?? []) {
+    try {
+      const request = buildWebpayUnbindSession({
+        customerReference: subscription.billing_customer_id!,
+        recurringToken: subscription.billing_subscription_id!,
+      });
+      const response = await sendWebpayFormRequest(request.fields);
+      const unbindResponse = parseWebpayUnbindResponse(response.body);
+
+      if (!unbindResponse || unbindResponse.rc !== '0') {
+        logger.warn(
+          { subscriptionId: subscription.id, status: response.status, body: response.body },
+          'Cron: WEBPAY unbind failed or returned unexpected payload',
+        );
+        continue;
+      }
+
+      const { error: clearError } = await supabaseAdmin
+        .from('user_subscriptions')
+        .update({
+          billing_subscription_id: null,
+        })
+        .eq('id', subscription.id);
+
+      if (clearError) {
+        logger.warn(
+          { clearError, subscriptionId: subscription.id },
+          'Cron: failed to clear WEBPAY token after unbind',
+        );
+        continue;
+      }
+
+      unbound += 1;
+    } catch (error) {
+      logger.warn({ error, subscriptionId: subscription.id }, 'Cron: WEBPAY unbind request failed');
+    }
+  }
 
   // ── B: Purge consumed and expired Telegram link tokens ───────────────
   // Tokens are short-lived (15 min TTL) — keep nothing older than 24 h.
@@ -100,7 +299,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   return NextResponse.json({
     expired: expiredUserIds.length,
     reminded: 0,
-    overdueAutoRenew: 0,
+    overdueAutoRenew: renewalFailed,
+    renewalAttempted,
+    renewalSucceeded,
+    renewalFailed,
+    unbound,
     tokensDeleted: tokensDeleted ?? 0,
   });
 }
