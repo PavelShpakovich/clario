@@ -18,6 +18,7 @@
   },
   "navigation": {
     "dashboard": "Dashboard",
+    "bookmarks": "Bookmarks",
     "settings": "Settings",
     "logout": "Logout",
     "login": "Login",
@@ -56,6 +57,7 @@
     "privacyUpdated": "Theme is now {status}",
     "failedLoadThemes": "Failed to load themes. Please try again.",
     "failedLoadSources": "Failed to load sources. Generation will continue without source data.",
+    "failedBookmarkUpdate": "Failed to update bookmark.",
     "generationLimitReached": "You've reached your monthly card generation limit. Expanded paid plans with higher limits are coming soon.",
     "cardsRemainingLow": "You have {count} card{count, plural, one {} other {s}} remaining this month.",
     "cardsGeneratedPartial": "Only {generated} of {requested} cards generated — that's all your remaining quota."
@@ -141,7 +143,19 @@
     "resumeContinue": "Continue from card {number}",
     "resumeStartOver": "Start from beginning",
     "jumpToCard": "Jump to card",
-    "cardNumber": "Card {number}"
+    "cardNumber": "Card {number}",
+    "addBookmark": "Save card",
+    "removeBookmark": "Remove saved card"
+  },
+  "bookmarks": {
+    "heading": "Saved Cards",
+    "description": "Come back to the cards you wanted to keep.",
+    "emptyTitle": "No saved cards yet",
+    "emptyDescription": "Save cards while studying and they will appear here.",
+    "savedCount": "{count} {count, plural, one {saved card} other {saved cards}}",
+    "themeFallback": "Untitled theme",
+    "openTheme": "Open theme",
+    "remove": "Remove"
   },
   "themes": {
     "heading": "Themes",

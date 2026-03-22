@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Loader2, RefreshCw, Plus, Infinity, LogOut, AlertTriangle } from 'lucide-react';
+import { Loader2, RefreshCw, Plus, Infinity, LogOut, AlertTriangle, Bookmark } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CARD_COUNT_OPTIONS, LOW_CARDS_THRESHOLD } from '@/lib/constants';
@@ -22,6 +22,8 @@ interface StudyBottomBarProps {
   onDecreaseFontSize: () => void;
   canIncreaseFontSize: boolean;
   canDecreaseFontSize: boolean;
+  isBookmarked?: boolean;
+  onToggleBookmark: () => void;
   canGenerate?: boolean;
   cardsRemaining?: number | null;
   onScrollToCard: (index: number) => void;
@@ -42,6 +44,8 @@ export function StudyBottomBar({
   onDecreaseFontSize,
   canIncreaseFontSize,
   canDecreaseFontSize,
+  isBookmarked = false,
+  onToggleBookmark,
   canGenerate = true,
   cardsRemaining,
   onScrollToCard,
@@ -121,6 +125,20 @@ export function StudyBottomBar({
           A
         </button>
       </div>
+
+      <div className="shrink-0 w-px h-3 md:h-4 bg-border" />
+
+      <button
+        onClick={onToggleBookmark}
+        title={isBookmarked ? t('study.removeBookmark') : t('study.addBookmark')}
+        className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors cursor-pointer ${
+          isBookmarked
+            ? 'text-primary bg-primary/10 hover:bg-primary/15'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+        }`}
+      >
+        <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
+      </button>
 
       <div className="shrink-0 w-px h-3 md:h-4 bg-border" />
 

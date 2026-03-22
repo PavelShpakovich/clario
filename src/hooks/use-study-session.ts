@@ -44,6 +44,7 @@ export function useStudySession(themeId: string) {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isLimitReached, setIsLimitReached] = useState(false);
   const [cardsRemaining, setCardsRemaining] = useState<number | null>(null);
+  const [bookmarkedCardIds, setBookmarkedCardIds] = useState<string[]>([]);
   const [infiniteMode, setInfiniteMode] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cardCount, setCardCount] = useState(
@@ -135,6 +136,7 @@ export function useStudySession(themeId: string) {
         setIsInitialLoading(true);
         setIsLimitReached(false);
         setCardsRemaining(null);
+        setBookmarkedCardIds([]);
         setSourceIds([]);
 
         const data = await studyApi.initSession(themeId, abortController.signal);
@@ -151,6 +153,13 @@ export function useStudySession(themeId: string) {
           }
         } catch {
           toast.error(t('messages.failedLoadSources'));
+        }
+
+        try {
+          const bookmarkIds = await studyApi.fetchBookmarkedCardIds(abortController.signal);
+          setBookmarkedCardIds(bookmarkIds);
+        } catch {
+          // Non-blocking: studying should still work if bookmark loading fails.
         }
 
         const initialData = await fetchCardsForSession(data.sessionId, {
@@ -312,6 +321,30 @@ export function useStudySession(themeId: string) {
     [studySession],
   );
 
+  const toggleBookmark = useCallback(
+    async (cardId: string) => {
+      const wasBookmarked = bookmarkedCardIds.includes(cardId);
+
+      setBookmarkedCardIds((prev) =>
+        wasBookmarked ? prev.filter((id) => id !== cardId) : [...prev, cardId],
+      );
+
+      try {
+        if (wasBookmarked) {
+          await studyApi.unbookmarkCard(cardId);
+        } else {
+          await studyApi.bookmarkCard(cardId);
+        }
+      } catch (err) {
+        setBookmarkedCardIds((prev) =>
+          wasBookmarked ? [...prev, cardId] : prev.filter((id) => id !== cardId),
+        );
+        toast.error(err instanceof Error ? err.message : t('messages.failedBookmarkUpdate'));
+      }
+    },
+    [bookmarkedCardIds, t],
+  );
+
   const generateMore = useCallback(
     async (count = cardCount) => {
       if (isGenerating || isManualGenerating) return;
@@ -375,11 +408,13 @@ export function useStudySession(themeId: string) {
     isInitialLoading,
     isLimitReached,
     cardsRemaining,
+    bookmarkedCardIds,
     infiniteMode,
     error,
     cardCount,
     fetchCards,
     markCardSeen,
+    toggleBookmark,
     generateMore,
     setInfiniteMode,
     setCardCount,

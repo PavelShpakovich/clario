@@ -31,6 +31,7 @@ import {
   Globe,
   LayoutDashboard,
   Monitor,
+  Bookmark,
 } from 'lucide-react';
 
 export function Header() {
@@ -239,6 +240,12 @@ export function Header() {
                   <Link href="/settings" className="flex items-center gap-2">
                     <Settings className="w-4 h-4" />
                     {t('navigation.settings')}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/bookmarks" className="flex items-center gap-2">
+                    <Bookmark className="w-4 h-4" />
+                    {t('navigation.bookmarks')}
                   </Link>
                 </DropdownMenuItem>
                 {user?.isAdmin && (

@@ -56,15 +56,21 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
     isInitialLoading,
     isLimitReached,
     cardsRemaining,
+    bookmarkedCardIds,
     infiniteMode,
     error,
     cardCount,
     fetchCards,
     markCardSeen,
+    toggleBookmark,
     generateMore,
     setInfiniteMode,
     setCardCount,
   } = useStudySession(themeId);
+
+  const currentCardId = cards[currentCardIndex]?.id;
+  const isCurrentCardBookmarked =
+    currentCardId != null && bookmarkedCardIds.includes(currentCardId);
 
   // Disable infinite mode for non-owners (they can't generate)
   useEffect(() => {
@@ -326,6 +332,12 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
         onDecreaseFontSize={decreaseFontSize}
         canIncreaseFontSize={canIncreaseFontSize}
         canDecreaseFontSize={canDecreaseFontSize}
+        isBookmarked={isCurrentCardBookmarked}
+        onToggleBookmark={() => {
+          if (currentCardId) {
+            void toggleBookmark(currentCardId);
+          }
+        }}
         canGenerate={isOwner && !isLimitReached}
         cardsRemaining={isOwner ? cardsRemaining : null}
         onScrollToCard={(index) => {

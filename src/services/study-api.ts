@@ -7,6 +7,15 @@ import type { Database } from '@/lib/supabase/types';
 
 type Card = Database['public']['Tables']['cards']['Row'];
 
+export interface BookmarkListItem {
+  cardId: string;
+  createdAt: string;
+  themeId: string;
+  themeName: string;
+  cardTitle: string;
+  cardBody: string;
+}
+
 export interface CardsResponse {
   cards: Card[];
   remaining: number;
@@ -85,6 +94,52 @@ class StudyApi {
 
     if (!res.ok) {
       throw new Error('Failed to mark card as seen');
+    }
+  }
+
+  async fetchBookmarkedCardIds(signal?: AbortSignal): Promise<string[]> {
+    const res = await fetch('/api/bookmarks?idsOnly=1', { signal });
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch bookmarks');
+    }
+
+    const data = (await res.json()) as { cardIds: string[] };
+    return data.cardIds;
+  }
+
+  async fetchBookmarks(signal?: AbortSignal): Promise<BookmarkListItem[]> {
+    const res = await fetch('/api/bookmarks', { signal });
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch bookmarks');
+    }
+
+    const data = (await res.json()) as { bookmarks: BookmarkListItem[] };
+    return data.bookmarks;
+  }
+
+  async bookmarkCard(cardId: string, signal?: AbortSignal): Promise<void> {
+    const res = await fetch('/api/bookmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cardId }),
+      signal,
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to bookmark card');
+    }
+  }
+
+  async unbookmarkCard(cardId: string, signal?: AbortSignal): Promise<void> {
+    const res = await fetch(`/api/bookmarks/${cardId}`, {
+      method: 'DELETE',
+      signal,
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to remove bookmark');
     }
   }
 }
