@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import type { Database } from '@/lib/supabase/types';
+import { useSubscription } from '@/hooks/use-subscription';
 import { studyApi } from '@/services/study-api';
 import { themeApi } from '@/services/theme-api';
 import { sourcesApi } from '@/services/sources-api';
@@ -33,6 +34,7 @@ type Card = Database['public']['Tables']['cards']['Row'];
 export function useStudySession(themeId: string) {
   const { data: session } = useSession();
   const t = useTranslations();
+  const { refetch: refetchSubscription } = useSubscription();
   const searchParams = useSearchParams();
   const initialCountParam = searchParams.get('count');
 
@@ -391,11 +393,14 @@ export function useStudySession(themeId: string) {
         if (studySession) {
           await fetchCardsForSession(studySession.id, { triggerGeneration: false });
         }
+
+        void refetchSubscription().catch(() => null);
       } catch (err) {
         const msg = err instanceof Error ? err.message : '';
         if (msg === 'GENERATION_LIMIT_REACHED') {
           setIsLimitReached(true);
           toast.error(t('messages.generationLimitReached'));
+          void refetchSubscription().catch(() => null);
         } else {
           setError(msg || 'GENERATION_FAILED');
         }
@@ -411,6 +416,7 @@ export function useStudySession(themeId: string) {
       studySession,
       fetchCardsForSession,
       sourceIds,
+      refetchSubscription,
       t,
     ],
   );

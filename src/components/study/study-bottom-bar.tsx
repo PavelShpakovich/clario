@@ -2,7 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Loader2, RefreshCw, Plus, Infinity, LogOut, AlertTriangle, Bookmark } from 'lucide-react';
+import {
+  Loader2,
+  RefreshCw,
+  Plus,
+  Infinity,
+  LogOut,
+  AlertTriangle,
+  Bookmark,
+  Sparkles,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CARD_COUNT_OPTIONS, LOW_CARDS_THRESHOLD } from '@/lib/constants';
@@ -156,7 +165,7 @@ export function StudyBottomBar({
             title={t('study.regenerateCard')}
             className="flex items-center justify-center w-7 h-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingCard ? 'animate-spin' : ''}`} />
+            <Sparkles className={`w-3.5 h-3.5 ${isRegeneratingCard ? 'animate-pulse' : ''}`} />
           </button>
 
           <div className="shrink-0 w-px h-3 md:h-4 bg-border" />

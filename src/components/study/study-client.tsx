@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { InfoCard } from '@/components/info-card';
 import { useStudySession } from '@/hooks/use-study-session';
 import { useCardFontSize } from '@/hooks/use-card-font-size';
+import { useSubscription } from '@/hooks/use-subscription';
 import { StudyBottomBar } from '@/components/study/study-bottom-bar';
 import {
   StudyDoneScreen,
@@ -33,6 +34,7 @@ const STUDY_ERROR_KEYS: Record<string, string> = {
 export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
   const t = useTranslations();
   const router = useRouter();
+  const { refetch: refetchSubscription } = useSubscription();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isRegeneratingCard, setIsRegeneratingCard] = useState(false);
   const [resumeDismissed, setResumeDismissed] = useState(false);
@@ -85,6 +87,7 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
     try {
       const result = await studyApi.regenerateCard(currentCardId);
       replaceCard(currentCardId, result.card, result.cardsRemaining);
+      void refetchSubscription().catch(() => null);
 
       if (result.cardsRemaining === 0) {
         toast.error(t('messages.generationLimitReached'));
@@ -94,6 +97,7 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'GENERATION_LIMIT_REACHED') {
+        void refetchSubscription().catch(() => null);
         toast.error(t('messages.generationLimitReached'));
       } else {
         toast.error(t('messages.failedRegenerateCard'));

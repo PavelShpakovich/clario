@@ -17,7 +17,7 @@ export const POST = withApiHandler(async (_req: Request, ctx?: unknown) => {
 
   const { data: existingCard } = await supabaseAdmin
     .from('cards')
-    .select('id, title, body, theme_id, source_id, is_public, created_at')
+    .select('id, title, topic, body, theme_id, source_id, is_public, created_at')
     .eq('id', cardId)
     .maybeSingle();
 
@@ -68,11 +68,16 @@ export const POST = withApiHandler(async (_req: Request, ctx?: unknown) => {
     .join('\n\n---\n\n');
   const sourceText = mergedText?.length ? mergedText : undefined;
   const topicsToAvoid = siblingCards?.map((card) => card.title) ?? [];
+  const regenerationTopic = existingCard.title.trim();
+  const preservedTopic = existingCard.topic?.trim() || regenerationTopic;
+  const regenerationDescription = theme.description
+    ? `${theme.name}\n\n${theme.description}`
+    : theme.name;
 
   const generated = await generateWithSourceChunking(
     {
-      theme: theme.name,
-      description: theme.description ?? undefined,
+      theme: regenerationTopic,
+      description: regenerationDescription,
       sourceText,
       count: 1,
       topicsToAvoid: topicsToAvoid.length > 0 ? topicsToAvoid : undefined,
@@ -94,7 +99,7 @@ export const POST = withApiHandler(async (_req: Request, ctx?: unknown) => {
       source_id: existingCard.source_id,
       title: replacement.title,
       body: replacement.body,
-      topic: theme.name,
+      topic: preservedTopic,
       is_public: existingCard.is_public,
       created_at: existingCard.created_at,
     })
