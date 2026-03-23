@@ -160,8 +160,6 @@
     "hiddenCardsTitle": "All downvoted cards are hidden",
     "hiddenCardsDescription": "You filtered this study deck to hide cards marked as not helpful. Show them again to continue reviewing everything.",
     "regenerateCard": "Regenerate card",
-    "rateHelpful": "Mark card as helpful",
-    "rateHelpfulShort": "Helpful",
     "rateNotHelpful": "Mark card as not helpful",
     "rateNotHelpfulShort": "Not helpful"
   },

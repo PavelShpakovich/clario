@@ -19,7 +19,7 @@ import {
   StudyLoadingMoreScreen,
 } from '@/components/study/study-state-screens';
 import { useTranslations } from 'next-intl';
-import { Lock, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { Bookmark, Lock, Sparkles, ThumbsDown } from 'lucide-react';
 import { studyApi } from '@/services/study-api';
 
 interface StudyClientProps {
@@ -106,10 +106,6 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
       setCurrentCardIndex(visibleCards.length - 1);
     }
   }, [visibleCards.length, currentCardIndex]);
-
-  const currentCardId = visibleCards[currentCardIndex]?.id;
-  const isCurrentCardBookmarked =
-    currentCardId != null && bookmarkedCardIds.includes(currentCardId);
 
   const handleRegenerateCard = async (cardId: string) => {
     if (!cardId || !isOwner || isRegeneratingCard || isGenerating || isManualGenerating) {
@@ -433,12 +429,6 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
         onDecreaseFontSize={decreaseFontSize}
         canIncreaseFontSize={canIncreaseFontSize}
         canDecreaseFontSize={canDecreaseFontSize}
-        isBookmarked={isCurrentCardBookmarked}
-        onToggleBookmark={() => {
-          if (currentCardId) {
-            void toggleBookmark(currentCardId);
-          }
-        }}
         hideDownvotedCards={hideDownvotedCards}
         onToggleHideDownvoted={handleToggleHideDownvoted}
         canGenerate={isOwner && !isLimitReached}
@@ -475,25 +465,33 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
               <>
                 <button
                   type="button"
-                  onClick={() => void rateCard(card.id, 1)}
-                  title={t('study.rateHelpful')}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                    (cardRatings[card.id] ?? 0) === 1
+                  onClick={() => void toggleBookmark(card.id)}
+                  title={
+                    bookmarkedCardIds.includes(card.id)
+                      ? t('study.removeBookmark')
+                      : t('study.addBookmark')
+                  }
+                  className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-2 text-xs font-medium transition-colors cursor-pointer sm:px-3 sm:py-1.5 ${
+                    bookmarkedCardIds.includes(card.id)
                       ? 'border-primary/30 bg-primary/10 text-primary'
                       : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/20'
                   }`}
                 >
-                  <ThumbsUp
-                    className={`h-3.5 w-3.5 ${(cardRatings[card.id] ?? 0) === 1 ? 'fill-current' : ''}`}
+                  <Bookmark
+                    className={`h-3.5 w-3.5 ${bookmarkedCardIds.includes(card.id) ? 'fill-current' : ''}`}
                   />
-                  <span>{t('study.rateHelpfulShort')}</span>
+                  <span className="hidden sm:inline">
+                    {bookmarkedCardIds.includes(card.id)
+                      ? t('study.removeBookmark')
+                      : t('study.addBookmark')}
+                  </span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => void rateCard(card.id, -1)}
+                  onClick={() => void rateCard(card.id)}
                   title={t('study.rateNotHelpful')}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                  className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-2 text-xs font-medium transition-colors cursor-pointer sm:px-3 sm:py-1.5 ${
                     (cardRatings[card.id] ?? 0) === -1
                       ? 'border-destructive/30 bg-destructive/10 text-destructive'
                       : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/20'
@@ -502,7 +500,7 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
                   <ThumbsDown
                     className={`h-3.5 w-3.5 ${(cardRatings[card.id] ?? 0) === -1 ? 'fill-current' : ''}`}
                   />
-                  <span>{t('study.rateNotHelpfulShort')}</span>
+                  <span className="hidden sm:inline">{t('study.rateNotHelpfulShort')}</span>
                 </button>
 
                 {isOwner && !isLimitReached ? (
@@ -511,12 +509,12 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
                     onClick={() => void handleRegenerateCard(card.id)}
                     disabled={isRegeneratingCard}
                     title={t('study.regenerateCard')}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/20 disabled:opacity-50 disabled:cursor-not-allowed sm:px-3 sm:py-1.5"
                   >
                     <Sparkles
                       className={`h-3.5 w-3.5 ${isRegeneratingCard ? 'animate-pulse' : ''}`}
                     />
-                    <span>{t('study.regenerateCard')}</span>
+                    <span className="hidden sm:inline">{t('study.regenerateCard')}</span>
                   </button>
                 ) : null}
               </>

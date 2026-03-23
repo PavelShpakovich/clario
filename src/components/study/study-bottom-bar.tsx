@@ -9,7 +9,6 @@ import {
   Infinity,
   LogOut,
   AlertTriangle,
-  Bookmark,
   Eye,
   EyeOff,
 } from 'lucide-react';
@@ -32,8 +31,6 @@ interface StudyBottomBarProps {
   onDecreaseFontSize: () => void;
   canIncreaseFontSize: boolean;
   canDecreaseFontSize: boolean;
-  isBookmarked?: boolean;
-  onToggleBookmark: () => void;
   hideDownvotedCards?: boolean;
   onToggleHideDownvoted?: () => void;
   canGenerate?: boolean;
@@ -56,8 +53,6 @@ export function StudyBottomBar({
   onDecreaseFontSize,
   canIncreaseFontSize,
   canDecreaseFontSize,
-  isBookmarked = false,
-  onToggleBookmark,
   hideDownvotedCards = false,
   onToggleHideDownvoted,
   canGenerate = true,
@@ -139,20 +134,6 @@ export function StudyBottomBar({
           A
         </button>
       </div>
-
-      <div className="shrink-0 w-px h-3 md:h-4 bg-border" />
-
-      <button
-        onClick={onToggleBookmark}
-        title={isBookmarked ? t('study.removeBookmark') : t('study.addBookmark')}
-        className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors cursor-pointer ${
-          isBookmarked
-            ? 'text-primary bg-primary/10 hover:bg-primary/15'
-            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-        }`}
-      >
-        <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
-      </button>
 
       <div className="shrink-0 w-px h-3 md:h-4 bg-border" />
 

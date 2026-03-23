@@ -358,9 +358,9 @@ export function useStudySession(themeId: string) {
   );
 
   const rateCard = useCallback(
-    async (cardId: string, rating: Exclude<CardRatingValue, 0>) => {
+    async (cardId: string) => {
       const previousRating = cardRatings[cardId] ?? 0;
-      const nextRating: CardRatingValue = previousRating === rating ? 0 : rating;
+      const nextRating: CardRatingValue = previousRating === -1 ? 0 : -1;
 
       setCardRatings((prev) => {
         const updated = { ...prev };

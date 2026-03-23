@@ -6,7 +6,7 @@
 import type { Database } from '@/lib/supabase/types';
 
 type Card = Database['public']['Tables']['cards']['Row'];
-export type CardRatingValue = -1 | 0 | 1;
+export type CardRatingValue = -1 | 0;
 
 export interface BookmarkListItem {
   cardId: string;

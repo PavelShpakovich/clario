@@ -5,7 +5,7 @@ import { withApiHandler } from '@/lib/api/handler';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 
 const bodySchema = z.object({
-  rating: z.union([z.literal(-1), z.literal(0), z.literal(1)]),
+  rating: z.union([z.literal(-1), z.literal(0)]),
 });
 
 export const POST = withApiHandler(async (req: Request, ctx?: unknown) => {

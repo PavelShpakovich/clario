@@ -16,6 +16,7 @@ export const GET = withApiHandler(async (req) => {
     .from('card_ratings')
     .select('card_id, rating, cards!inner(theme_id)')
     .eq('user_id', user.id)
+    .eq('rating', -1)
     .eq('cards.theme_id', themeId);
 
   if (error) {

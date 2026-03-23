@@ -16,13 +16,29 @@ interface InfoCardProps {
 
 const FONT_CONFIG = [
   // 0 — small
-  { title: 'text-base md:text-xl', container: 'text-xs md:text-sm' },
+  {
+    title: 'text-base md:text-xl',
+    container: 'text-xs md:text-sm',
+    code: 'text-[11px] md:text-xs',
+  },
   // 1 — default
-  { title: 'text-xl md:text-3xl', container: 'text-sm md:text-base' },
+  {
+    title: 'text-xl md:text-3xl',
+    container: 'text-sm md:text-base',
+    code: 'text-xs md:text-sm',
+  },
   // 2 — large
-  { title: 'text-2xl md:text-4xl', container: 'text-base md:text-lg' },
+  {
+    title: 'text-2xl md:text-4xl',
+    container: 'text-base md:text-lg',
+    code: 'text-sm md:text-base',
+  },
   // 3 — extra-large
-  { title: 'text-3xl md:text-5xl', container: 'text-lg md:text-xl' },
+  {
+    title: 'text-3xl md:text-5xl',
+    container: 'text-lg md:text-xl',
+    code: 'text-base md:text-lg',
+  },
 ] as const;
 
 export function InfoCard({
@@ -70,7 +86,7 @@ export function InfoCard({
               components={{
                 pre: ({ children }) => (
                   <div className="not-prose my-4 rounded-xl overflow-hidden shadow-md">
-                    <pre className="text-sm leading-relaxed p-0">{children}</pre>
+                    <pre className={`${cfg.code} leading-relaxed p-0`}>{children}</pre>
                   </div>
                 ),
                 table: ({ children }) => (
@@ -84,7 +100,7 @@ export function InfoCard({
                   if (isBlock) {
                     return (
                       <code
-                        className={`${className ?? ''} block p-5 text-sm leading-relaxed`}
+                        className={`${className ?? ''} block p-5 ${cfg.code} leading-relaxed`}
                         {...props}
                       >
                         {children}
@@ -93,7 +109,7 @@ export function InfoCard({
                   }
                   return (
                     <code
-                      className="bg-muted text-foreground/80 rounded px-1.5 py-0.5 text-sm font-mono not-prose"
+                      className={`bg-muted text-foreground/80 rounded px-1.5 py-0.5 ${cfg.code} font-mono not-prose`}
                       {...props}
                     >
                       {children}
