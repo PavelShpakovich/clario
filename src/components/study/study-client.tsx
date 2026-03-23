@@ -93,7 +93,7 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
         toast.error(t('messages.generationLimitReached'));
       }
 
-      toast.success(t('messages.cardRegenerated'));
+      toast.success(t('messages.cardRegenerated'), { duration: 4000 });
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'GENERATION_LIMIT_REACHED') {
