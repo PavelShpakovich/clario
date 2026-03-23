@@ -327,10 +327,7 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
           <p className="mb-6 text-sm text-muted-foreground">
             {t('study.resumePrompt', { count: seenCardIds.length, total: cards.length })}
           </p>
-          <div className="flex gap-3 justify-center">
-            <Button variant="outline" onClick={() => setResumeDismissed(true)}>
-              {t('study.resumeStartOver')}
-            </Button>
+          <div className="flex flex-col gap-3">
             <Button
               onClick={() => {
                 setResumeDismissed(true);
@@ -345,6 +342,9 @@ export function StudyClient({ themeId, isOwner = true }: StudyClientProps) {
               }}
             >
               {t('study.resumeContinue', { number: resumeIndex + 1 })}
+            </Button>
+            <Button variant="outline" onClick={() => setResumeDismissed(true)}>
+              {t('study.resumeStartOver')}
             </Button>
           </div>
         </div>

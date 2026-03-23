@@ -73,7 +73,7 @@ export function StudyBottomBar({
 
   return (
     <div
-      className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 flex items-center gap-1.5 md:gap-3 px-3 md:px-6 py-1.5 md:py-3 bg-background/70 backdrop-blur-md border border-border rounded-full shadow-lg max-w-[90vw] overflow-x-auto no-scrollbar"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 md:gap-3 px-2 md:px-6 py-1.5 md:py-3 bg-background/70 backdrop-blur-md border border-border rounded-full shadow-lg max-w-[96vw] overflow-x-auto no-scrollbar"
       style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {/* Progress - hidden until cards are loaded */}
@@ -124,18 +124,18 @@ export function StudyBottomBar({
           onClick={onDecreaseFontSize}
           disabled={!canDecreaseFontSize}
           title={t('study.decreaseFontSize')}
-          className="flex items-center justify-center w-6 h-6 rounded text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded text-[10px] md:text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
         >
           A
         </button>
-        <span className="text-[10px] text-muted-foreground tabular-nums w-3 text-center">
+        <span className="hidden md:inline text-[10px] text-muted-foreground tabular-nums w-3 text-center">
           {fontSize + 1}
         </span>
         <button
           onClick={onIncreaseFontSize}
           disabled={!canIncreaseFontSize}
           title={t('study.increaseFontSize')}
-          className="flex items-center justify-center w-6 h-6 rounded text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded text-xs md:text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
         >
           A
         </button>
@@ -190,7 +190,7 @@ export function StudyBottomBar({
             <PopoverTrigger asChild>
               <button
                 title={t('study.generateMore')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border cursor-pointer ${
+                className={`flex items-center gap-1 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium transition-all border cursor-pointer ${
                   isLowOnCards
                     ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30 hover:border-yellow-500/60'
                     : 'bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
@@ -241,7 +241,7 @@ export function StudyBottomBar({
         <button
           onClick={onToggleInfiniteMode}
           title={infiniteMode ? t('study.disableAutoGenerate') : t('study.enableAutoGenerate')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border cursor-pointer ${
+          className={`flex items-center gap-1 px-2 md:px-3 py-1.5 rounded-full text-xs font-medium transition-all border cursor-pointer ${
             infiniteMode
               ? 'bg-primary text-primary-foreground border-primary hover:opacity-90'
               : isLowOnCards

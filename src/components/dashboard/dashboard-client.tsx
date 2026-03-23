@@ -181,15 +181,22 @@ export function DashboardClient({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center justify-between mb-8">
-          <TabsList className="grid grid-cols-2">
-            <TabsTrigger value="my-themes">{t('dashboard.myThemesTab')}</TabsTrigger>
-            <TabsTrigger value="community" className="flex items-center gap-1.5">
-              {!canAccessCommunity && <Lock className="w-3 h-3" />}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="my-themes" className="flex-1 sm:flex-none">
+              {t('dashboard.myThemesTab')}
+            </TabsTrigger>
+            <TabsTrigger
+              value="community"
+              className="flex-1 sm:flex-none flex items-center gap-1.5"
+            >
+              {!canAccessCommunity && <Lock className="w-3 h-3 shrink-0" />}
               {t('dashboard.communityTab')}
             </TabsTrigger>
           </TabsList>
-          <ViewToggle viewMode={viewMode} onViewChange={handleViewChange} />
+          <div className="flex justify-end">
+            <ViewToggle viewMode={viewMode} onViewChange={handleViewChange} />
+          </div>
         </div>
         <TabsContent value="my-themes">{renderThemeList(themes, true)}</TabsContent>
         <TabsContent value="community">

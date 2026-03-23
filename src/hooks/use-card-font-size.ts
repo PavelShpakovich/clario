@@ -7,7 +7,7 @@ export type CardFontSize = 0 | 1 | 2 | 3;
 
 const MIN: CardFontSize = 0;
 const MAX: CardFontSize = 3;
-const DEFAULT: CardFontSize = 1;
+const DEFAULT: CardFontSize = 2;
 const STORAGE_KEY = 'card-font-size';
 
 export function useCardFontSize() {
