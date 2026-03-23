@@ -67,7 +67,7 @@ export function StudyBottomBar({
 
   return (
     <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 md:gap-3 px-2 md:px-6 py-1.5 md:py-3 bg-background/70 backdrop-blur-md border border-border rounded-full shadow-lg max-w-[96vw] overflow-x-auto no-scrollbar"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex min-h-10 md:min-h-12 items-center gap-1.5 md:gap-3 px-2 md:px-6 py-1.5 md:py-3 bg-background/70 backdrop-blur-md border border-border rounded-full shadow-lg max-w-[96vw] overflow-x-auto no-scrollbar"
       style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {/* Progress - hidden until cards are loaded */}
