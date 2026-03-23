@@ -115,7 +115,7 @@ export function BookmarksClient({ initialBookmarks }: BookmarksClientProps) {
                       size="sm"
                       disabled={pendingCardId === bookmark.cardId}
                       onClick={() => void handleRemove(bookmark.cardId)}
-                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                      className="shrink-0 text-white hover:text-white"
                     >
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">{t('bookmarks.remove')}</span>
