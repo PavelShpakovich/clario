@@ -122,7 +122,7 @@ export function StudyBottomBar({
         >
           A
         </button>
-        <span className="hidden md:inline text-[10px] text-muted-foreground tabular-nums w-3 text-center">
+        <span className="text-[10px] text-muted-foreground tabular-nums w-3 text-center">
           {fontSize + 1}
         </span>
         <button
