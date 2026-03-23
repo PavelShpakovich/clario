@@ -23,8 +23,34 @@ const FONT_CONFIG = [
   { title: 'text-4xl md:text-5xl', container: 'text-xl' },
 ] as const;
 
+/**
+ * Ensures that any line that looks like a heading (short, starts with capital letter,
+ * not already prefixed with #) is turned into an H2 by adding "## ".
+ * This is a safety net in case the LLM forgets to use proper Markdown headings.
+ */
+function ensureMarkdownHeadings(body: string): string {
+  const lines = body.split('\n');
+  const processed = lines.map((line) => {
+    const trimmed = line.trim();
+    if (
+      trimmed &&
+      !trimmed.startsWith('#') &&
+      (trimmed.length <= 60 || trimmed.endsWith(':')) &&
+      /^[А-ЯA-Z]/.test(trimmed) // starts with uppercase letter (Cyrillic or Latin)
+    ) {
+      // Prepend "## " to the line (preserving original indentation)
+      return '## ' + line;
+    }
+    return line;
+  });
+  return processed.join('\n');
+}
+
 export function InfoCard({ card, fontSize = 1 }: InfoCardProps) {
   const cfg = FONT_CONFIG[fontSize];
+  // Apply heading fix before rendering
+  const fixedBody = ensureMarkdownHeadings(card.body);
+
   return (
     <div className="w-full flex flex-col bg-background relative" data-card-id={card.id}>
       {/* Content — flows naturally, no inner scroll */}
@@ -92,7 +118,7 @@ export function InfoCard({ card, fontSize = 1 }: InfoCardProps) {
                 },
               }}
             >
-              {card.body}
+              {fixedBody}
             </ReactMarkdown>
           </div>
         </div>

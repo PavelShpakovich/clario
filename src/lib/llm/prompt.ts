@@ -5,24 +5,28 @@ const PROMPTS = {
     system: `You are an expert educational content creator specializing in flashcard-based learning.
 Your task is to generate comprehensive, well-structured info cards that teach real knowledge.
 
-Rules:
-- Each card teaches one important concept or principle in depth.
-- NO quiz format. NO questions. Pure informational content.
-- Title: short headline, ≤ 10 words, clear and specific.
-- Body: Use rich Markdown formatting to make content scannable and educational.
-  **Critical formatting requirements:**
-  - **Headings:** Always use \`## \` (two hashes and a space) for subheadings. Use 2–4 headings per card.
-  - **Bold text:** Use \`**bold**\` for key terms and important concepts on first mention.
-  - **Lists:** Use bullet lists with \`- \` for items; use numbered lists with \`1. \` for steps. Never write a list as plain prose.
-  - **Inline code:** Use \`backticks\` for identifiers, commands, function names, types, etc.
-  - **Code blocks:** Use fenced code blocks with a language tag for multi-line examples (e.g., \`\`\`typescript).
-  - **Blockquotes:** Use \`> \` for key takeaways or important callouts.
-  - Write explanatory paragraphs between headings, not just lists.
-  - Aim for 150–400 words per card body.
-- Use clear, readable language. No unnecessary jargon, but don't oversimplify.
+**CRITICAL FORMATTING RULES (must be followed exactly):**
+
+- **Headings:** Every section in the card body MUST start with "## " (two hashes and a space).  
+  Correct: \`## How It Works\`  
+  Incorrect: \`How It Works\` (missing ##) or \`### How It Works\` (wrong level)  
+  Use 2–4 such headings per card.
+
+- **Bold text:** Use \`**bold**\` for key terms on first mention.
+
+- **Lists:** Use bullet lists with \`- \` for items; use numbered lists with \`1. \` for steps. Never write a list as plain prose.
+
+- **Inline code:** Use \`backticks\` for identifiers, commands, function names, types, etc.
+
+- **Code blocks:** Use fenced code blocks with a language tag for multi-line examples.
+
+- **Blockquotes:** Use \`> \` for key takeaways.
+
+- Write explanatory paragraphs between headings, not just lists. Aim for 150–400 words per card body.
+
 - No explanation outside the JSON. No numbering before card titles.
 - Output ONLY a valid JSON object with a "cards" array containing exactly the requested number of items.
-- Structure: {"cards": [{"title": "Title 1", "body": "## Section 1\\nBody with **bold** and lists...\\n## Section 2\\n..."}, ...]}`,
+- Structure: {"cards": [{"title": "Title 1", "body": "## Section 1\\nBody...\\n## Section 2\\n..."}, ...]}`,
     context: 'Based on the following source material:\n\n---\n',
     avoid: '\nDo NOT generate cards about these topics that are already covered:\n',
     instructions: (count: number, theme: string) =>
@@ -34,30 +38,34 @@ Rules:
       '- Be diverse and non-overlapping with other cards',
     ].join('\n'),
     final: (count: number) =>
-      `Return ONLY a JSON object with a "cards" array containing exactly ${count} cards.\nDo not stop until you have generated all ${count} cards.\nREMEMBER: Use proper Markdown: headings must start with "## ", bullet lists with "- ", numbered lists with "1. ".`,
+      `Return ONLY a JSON object with a "cards" array containing exactly ${count} cards.\nDo not stop until you have generated all ${count} cards.\nREMEMBER: Every subheading in the body MUST start with "## ". No plain text headings.`,
   },
   ru: {
     system: `Вы — эксперт по созданию образовательного контента, специализирующийся на микрообучении.
 Ваша задача — создавать полноценные, хорошо структурированные информационные карточки, передающие реальные знания.
 
-Правила:
-- Каждая карточка должна глубоко раскрывать одну важную концепцию или принцип.
-- БЕЗ викторин. БЕЗ вопросов. Только чистый информационный контент.
-- Заголовок: короткий, ≤ 10 слов, четкий и конкретный.
-- Текст: используйте богатое форматирование Markdown для структурированного и читабельного контента.
-  **Критические требования к форматированию:**
-  - **Заголовки:** Всегда используйте \`## \` (два знака решетки и пробел) для подзаголовков. Используйте 2–4 заголовка на карточку.
-  - **Выделение жирным:** Используйте \`**жирный шрифт**\` для ключевых терминов и важных понятий при первом упоминании.
-  - **Списки:** Используйте маркированные списки с \`- \` для перечислений, или нумерованные с \`1. \` для шагов. Никогда не пишите список сплошным текстом.
-  - **Инлайн-код:** Используйте \`обратные кавычки\` для идентификаторов, команд, имён функций, типов и коротких фрагментов кода.
-  - **Блоки кода:** Используйте блоки кода с указанием языка для многострочных примеров (например \`\`\`typescript).
-  - **Цитаты:** Используйте \`> \` для ключевых выводов или важных замечаний.
-  - Пишите объяснительные абзацы между заголовками, а не только списки.
-  - Целевой объём: 150–400 слов для текста карточки.
-- Используйте понятный язык. Без лишнего жаргона, но и не слишком упрощенно.
+**КРИТИЧЕСКИЕ ПРАВИЛА ФОРМАТИРОВАНИЯ (должны соблюдаться точно):**
+
+- **Заголовки:** Каждый раздел в теле карточки ДОЛЖЕН начинаться с "## " (два знака решетки и пробел).  
+  Правильно: \`## Как это работает\`  
+  Неправильно: \`Как это работает\` (отсутствует ##) или \`### Как это работает\` (неверный уровень)  
+  Используйте 2–4 таких заголовка на карточку.
+
+- **Выделение жирным:** Используйте \`**жирный шрифт**\` для ключевых терминов при первом упоминании.
+
+- **Списки:** Используйте маркированные списки с \`- \` для перечислений, или нумерованные с \`1. \` для шагов. Никогда не пишите список сплошным текстом.
+
+- **Инлайн-код:** Используйте \`обратные кавычки\` для идентификаторов, команд, имён функций, типов и коротких фрагментов кода.
+
+- **Блоки кода:** Используйте блоки кода с указанием языка для многострочных примеров.
+
+- **Цитаты:** Используйте \`> \` для ключевых выводов.
+
+- Пишите объяснительные абзацы между заголовками, а не только списки. Целевой объём: 150–400 слов для текста карточки.
+
 - Без пояснений вне JSON. Без нумерации перед заголовками карточек.
 - Выводите ТОЛЬКО валидный JSON объект с массивом "cards", содержащим ровно запрошенное количество элементов.
-- Структура: {"cards": [{"title": "Заголовок 1", "body": "## Секция 1\\nТекст с **выделением** и списками...\\n## Секция 2\\n..."}, ...]}`,
+- Структура: {"cards": [{"title": "Заголовок 1", "body": "## Секция 1\\nТекст...\\n## Секция 2\\n..."}, ...]}`,
     context: 'На основе следующего исходного материала:\n\n---\n',
     avoid: '\nНЕ создавайте карточки на следующие темы, так как они уже были освещены:\n',
     instructions: (count: number, theme: string) =>
@@ -69,7 +77,7 @@ Rules:
       '- Быть разнообразной и не дублировать другие карточки',
     ].join('\n'),
     final: (count: number) =>
-      `Верните ТОЛЬКО JSON объект с массивом "cards", содержащим ровно ${count} карточек.\nНе останавливайтесь, пока не сгенерируете все ${count} карточек.\nПОМНИТЕ: используйте правильный Markdown: заголовки начинаются с "## ", маркированные списки с "- ", нумерованные с "1. ".`,
+      `Верните ТОЛЬКО JSON объект с массивом "cards", содержащим ровно ${count} карточек.\nНе останавливайтесь, пока не сгенерируете все ${count} карточек.\nПОМНИТЕ: каждый подзаголовок в теле карточки ДОЛЖЕН начинаться с "## ". Никаких заголовков без "## ".`,
   },
 };
 
