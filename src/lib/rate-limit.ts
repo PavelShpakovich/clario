@@ -57,6 +57,24 @@ export function checkRateLimit(
 }
 
 /**
+ * Build rate-limit headers for responses.
+ * Includes Retry-After when the request was blocked.
+ */
+export function rateLimitHeaders(result: {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
+}): Record<string, string> {
+  const headers: Record<string, string> = {
+    'X-RateLimit-Remaining': String(result.remaining),
+  };
+  if (!result.allowed) {
+    headers['Retry-After'] = String(Math.ceil((result.resetAt - Date.now()) / 1000));
+  }
+  return headers;
+}
+
+/**
  * Extract a best-effort IP address from a Request (works on Vercel).
  */
 export function getClientIp(req: Request): string {

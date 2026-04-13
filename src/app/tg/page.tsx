@@ -190,8 +190,8 @@ export default function TelegramEntryPage() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
         <AlertCircle className="mb-4 h-12 w-12 text-red-600" />
-        <h1 className="mb-2 text-lg font-semibold text-gray-900">{t('telegram.signinFailed')}</h1>
-        <p className="mb-6 text-sm text-gray-500">{errorMsg}</p>
+        <h1 className="mb-2 text-lg font-semibold text-foreground">{t('telegram.signinFailed')}</h1>
+        <p className="mb-6 text-sm text-muted-foreground">{errorMsg}</p>
         <Button onClick={() => router.replace('/')}>{t('telegram.useEmailLogin')}</Button>
       </main>
     );
@@ -200,7 +200,7 @@ export default function TelegramEntryPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
       <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-muted-foreground">
         {phase === 'detecting'
           ? t('telegram.starting')
           : isLinkingFlow

@@ -229,6 +229,7 @@ export const authOptions: NextAuthOptions = {
 
           if (authError || !authData.user) {
             token.isEmailVerified = false;
+            token.isAdmin = false;
             return token;
           }
 

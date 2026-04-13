@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
-import { NotFoundError } from '@/lib/errors';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const db = supabaseAdmin;
+
+const uuidSchema = z.string().uuid();
 
 export const GET = withApiHandler(async (_req, ctx) => {
   const { user } = await requireAuth();
@@ -13,6 +16,10 @@ export const GET = withApiHandler(async (_req, ctx) => {
 
   if (!chartId) {
     throw new NotFoundError({ message: 'Chart not found' });
+  }
+
+  if (!uuidSchema.safeParse(chartId).success) {
+    throw new ValidationError({ message: 'Invalid chart ID format' });
   }
 
   const [{ data: chart }, { data: snapshots }] = await Promise.all([

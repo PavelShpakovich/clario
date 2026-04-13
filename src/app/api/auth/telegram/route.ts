@@ -207,7 +207,7 @@ export const POST = withApiHandler(async (req) => {
     [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ') ||
     'Telegram User';
 
-  const exp = Date.now() + 2 * 60 * 1000;
+  const exp = Date.now() + 60 * 60 * 1000;
   const payload = Buffer.from(JSON.stringify({ userId, displayName, exp, isStub: false })).toString(
     'base64url',
   );

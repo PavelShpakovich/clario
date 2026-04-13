@@ -1,12 +1,15 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
 import { LandingFooter } from '@/components/layout/landing-footer';
 
-export const metadata = {
-  title: '404 — Страница не найдена',
-};
+export async function generateMetadata() {
+  const t = await getTranslations('notFound');
+  return { title: t('title') };
+}
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getTranslations('notFound');
   return (
     <div className="flex flex-col flex-1">
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-24 text-center">
@@ -17,17 +20,16 @@ export default function NotFound() {
 
         {/* Content — overlaid to tuck into the number visually */}
         <div className="-mt-6 sm:-mt-10 space-y-4 max-w-md">
-          <h1 className="text-2xl sm:text-3xl font-bold">Страница не найдена</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('heading')}</h1>
           <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-            Такой страницы не существует или она была перемещена. Проверьте адрес или вернитесь на
-            главную.
+            {t('description')}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <Button asChild size="lg">
-              <Link href="/">На главную</Link>
+              <Link href="/">{t('goHome')}</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/dashboard">Мои темы</Link>
+              <Link href="/dashboard">{t('goDashboard')}</Link>
             </Button>
           </div>
         </div>

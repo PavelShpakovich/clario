@@ -98,7 +98,7 @@ class AdminApi {
    */
   async toggleAdmin(userId: string, isAdmin: boolean): Promise<ToggleAdminResponse> {
     const res = await fetch(`/api/admin/users/${userId}/admin`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ makeAdmin: isAdmin }),
     });

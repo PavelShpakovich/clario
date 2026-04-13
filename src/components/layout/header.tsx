@@ -108,19 +108,19 @@ export function Header() {
                   onClick={() => setTheme('light')}
                   className={theme === 'light' ? 'bg-muted' : ''}
                 >
-                  <Sun className="w-4 h-4 mr-2" /> {locale === 'ru' ? 'Светлая' : 'Light'}
+                  <Sun className="w-4 h-4 mr-2" /> {t('common.themeLight')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setTheme('dark')}
                   className={theme === 'dark' ? 'bg-muted' : ''}
                 >
-                  <Moon className="w-4 h-4 mr-2" /> {locale === 'ru' ? 'Тёмная' : 'Dark'}
+                  <Moon className="w-4 h-4 mr-2" /> {t('common.themeDark')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setTheme('system')}
                   className={theme === 'system' ? 'bg-muted' : ''}
                 >
-                  <Monitor className="w-4 h-4 mr-2" /> {locale === 'ru' ? 'Системная' : 'System'}
+                  <Monitor className="w-4 h-4 mr-2" /> {t('common.themeSystem')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -234,25 +234,25 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard" className="flex items-center gap-2">
                     <LayoutDashboard className="w-4 h-4" />
-                    {locale === 'ru' ? 'Рабочее пространство' : 'Workspace'}
+                    {t('navigation.workspace')}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/charts" className="flex items-center gap-2">
                     <Orbit className="w-4 h-4" />
-                    {locale === 'ru' ? 'Карты' : 'Charts'}
+                    {t('navigation.charts')}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/readings" className="flex items-center gap-2">
                     <ScrollText className="w-4 h-4" />
-                    {locale === 'ru' ? 'Разборы' : 'Readings'}
+                    {t('navigation.readings')}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/settings" className="flex items-center gap-2">
                     <Settings className="w-4 h-4" />
-                    {locale === 'ru' ? 'Настройки' : 'Settings'}
+                    {t('navigation.settings')}
                   </Link>
                 </DropdownMenuItem>
                 {user?.isAdmin && (

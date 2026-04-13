@@ -494,7 +494,7 @@ function AdminTableContent() {
   }
 
   if (!data?.users?.length) {
-    return <div className="text-center py-8 text-gray-500">{t('noUsers')}</div>;
+    return <div className="text-center py-8 text-muted-foreground">{t('noUsers')}</div>;
   }
 
   const nextUrl = new URL(window.location.href);
@@ -596,7 +596,7 @@ export default function AdminPage() {
           <Suspense
             fallback={
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             }
           >

@@ -13,8 +13,8 @@ export interface UsagePolicy {
 }
 
 const DEFAULT_USAGE_POLICY: UsagePolicy = {
-  chartsPerPeriod: 1,
-  savedChartsLimit: 1,
+  chartsPerPeriod: 3,
+  savedChartsLimit: 5,
   priceMinor: null,
   currency: 'BYN',
 };

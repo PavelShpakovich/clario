@@ -8,6 +8,7 @@ import { deriveDisplayNameFromEmail } from '@/lib/auth/utils';
 import { ensureSupabaseIdentityLink } from '@/lib/auth/account-identities';
 import { findAuthUserByEmail } from '@/lib/auth/user-accounts';
 import { sendVerificationEmail } from '@/lib/email/send-verification';
+import { checkRateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -15,6 +16,15 @@ const bodySchema = z.object({
 });
 
 export const POST = withApiHandler(async (req) => {
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`register:${ip}`, 3, 60 * 60 * 1000); // 3 per hour per IP
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many registration attempts. Please try again later.' },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   const locale = (await cookies()).get('NEXT_LOCALE')?.value === 'en' ? 'en' : 'ru';
   const body = bodySchema.safeParse(await req.json());
   if (!body.success) {

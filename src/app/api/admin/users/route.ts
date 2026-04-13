@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAdmin } from '@/lib/api/auth';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { getUserAccessPolicy, getUserUsage } from '@/lib/access-utils';
+import { getUsagePolicy } from '@/lib/usage-policy';
 import { logger } from '@/lib/logger';
 import { isTelegramStubEmail } from '@/lib/auth/user-accounts';
 
@@ -36,60 +36,52 @@ export const GET = withApiHandler(async (req: Request) => {
       return NextResponse.json({ error: 'Не удалось загрузить пользователей' }, { status: 500 });
     }
 
-    // Enrich each user with profile and workspace usage data.
-    const enrichedUsers = await Promise.all(
-      usersData.users.map(async (authUser) => {
-        try {
-          const email = isTelegramStubEmail(authUser.email) ? null : (authUser.email ?? null);
+    const userIds = usersData.users.map((u) => u.id);
+    const policy = await getUsagePolicy();
+    const now = new Date().toISOString();
 
-          // Get profile and current workspace access info
-          const [profileRes, accessPolicyRes, usageRes] = await Promise.all([
-            supabaseAdmin
-              .from('profiles')
-              .select('display_name, is_admin')
-              .eq('id', authUser.id)
-              .single(),
-            getUserAccessPolicy(authUser.id),
-            getUserUsage(authUser.id),
-          ]);
+    // Batch queries: profiles + usage_counters for all users in one go
+    const [{ data: profiles }, { data: usages }] = await Promise.all([
+      supabaseAdmin.from('profiles').select('id, display_name, is_admin').in('id', userIds),
+      supabaseAdmin
+        .from('usage_counters')
+        .select('user_id, charts_created')
+        .in('user_id', userIds)
+        .lte('period_start', now)
+        .gte('period_end', now),
+    ]);
 
-          return {
-            id: authUser.id,
-            email,
-            telegramId: null,
-            displayName: profileRes.data?.display_name || 'Unknown',
-            isAdmin: profileRes.data?.is_admin || false,
-            isEmailVerified: Boolean(authUser.email_confirmed_at),
-            accessMode: accessPolicyRes.accessMode,
-            chartsLimit: accessPolicyRes.chartsLimit,
-            chartsUsed: usageRes.chartsCreated,
-            chartsRemaining: usageRes.chartsRemaining,
-            createdAt: authUser.created_at,
-          };
-        } catch (error) {
-          logger.error({ error, userId: authUser.id }, 'Failed to enrich user data');
-          return {
-            id: authUser.id,
-            email: isTelegramStubEmail(authUser.email) ? null : (authUser.email ?? null),
-            displayName: 'Error',
-            isAdmin: false,
-            isEmailVerified: Boolean(authUser.email_confirmed_at),
-            accessMode: 'direct',
-            chartsLimit: 0,
-            chartsUsed: 0,
-            chartsRemaining: 0,
-            createdAt: authUser.created_at,
-          };
-        }
-      }),
-    );
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    const usageMap = new Map((usages ?? []).map((u) => [u.user_id, u]));
+
+    const enrichedUsers = usersData.users.map((authUser) => {
+      const email = isTelegramStubEmail(authUser.email) ? null : (authUser.email ?? null);
+      const profile = profileMap.get(authUser.id);
+      const usage = usageMap.get(authUser.id);
+      const chartsCreated = usage?.charts_created ?? 0;
+      const chartsRemaining = Math.max(0, policy.chartsPerPeriod - chartsCreated);
+
+      return {
+        id: authUser.id,
+        email,
+        telegramId: null,
+        displayName: profile?.display_name || 'Unknown',
+        isAdmin: profile?.is_admin || false,
+        isEmailVerified: Boolean(authUser.email_confirmed_at),
+        accessMode: 'direct',
+        chartsLimit: policy.chartsPerPeriod,
+        chartsUsed: chartsCreated,
+        chartsRemaining,
+        createdAt: authUser.created_at,
+      };
+    });
 
     return NextResponse.json({
       users: enrichedUsers,
       pagination: {
         page,
         perPage,
-        total: usersData.users.length, // Note: Supabase listUsers returns exact page results, not total count
+        total: usersData.users.length,
       },
     });
   } catch (error) {

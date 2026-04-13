@@ -12,19 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: `${APP_URL}/ru`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 1,
-    },
-    {
       url: `${APP_URL}/privacy`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    },
-    {
-      url: `${APP_URL}/ru/privacy`,
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.3,
@@ -36,10 +24,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
     {
-      url: `${APP_URL}/ru/terms`,
+      url: `${APP_URL}/login`,
       lastModified: now,
       changeFrequency: 'monthly',
-      priority: 0.3,
+      priority: 0.5,
+    },
+    {
+      url: `${APP_URL}/register`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.5,
     },
   ];
 }

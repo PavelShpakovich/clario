@@ -20,7 +20,7 @@ export async function mergeAccounts(fromUserId: string, toUserId: string): Promi
   logger.info({ fromUserId, toUserId }, 'merge-accounts: starting');
 
   // ── 1. Simple re-owner tables ────────────────────────────────────────────
-  for (const table of [
+  const reOwnerTables = [
     'charts',
     'readings',
     'follow_up_threads',
@@ -29,12 +29,22 @@ export async function mergeAccounts(fromUserId: string, toUserId: string): Promi
     'generation_logs',
     'report_purchases',
     'report_entitlements',
-  ] as const) {
-    const { error } = await db.from(table).update({ user_id: toUserId }).eq('user_id', fromUserId);
+  ] as const;
+
+  const reOwnerResults = await Promise.all(
+    reOwnerTables.map((table) =>
+      db.from(table).update({ user_id: toUserId }).eq('user_id', fromUserId),
+    ),
+  );
+
+  reOwnerResults.forEach(({ error }, i) => {
     if (error) {
-      logger.warn({ error, table, fromUserId, toUserId }, 'merge-accounts: re-owner failed');
+      logger.warn(
+        { error, table: reOwnerTables[i], fromUserId, toUserId },
+        'merge-accounts: re-owner failed',
+      );
     }
-  }
+  });
 
   // ── 2. usage_counters — unique(user_id, period_start): sum product usage ─
   const { data: fromUsages } = await db
