@@ -7,13 +7,12 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/email/resend';
 import {
   renderResetPasswordHtml,
-  RESET_PASSWORD_SUBJECTS,
+  RESET_PASSWORD_SUBJECT,
 } from '@/lib/email/templates/reset-password';
 import { logger } from '@/lib/logger';
 
 const bodySchema = z.object({
   email: z.string().email(),
-  locale: z.enum(['en', 'ru']).default('ru'),
 });
 
 export const POST = withApiHandler(async (req) => {
@@ -24,7 +23,7 @@ export const POST = withApiHandler(async (req) => {
     });
   }
 
-  const { email, locale } = body.data;
+  const { email } = body.data;
 
   const { data, error } = await supabaseAdmin.auth.admin.generateLink({
     type: 'recovery',
@@ -43,8 +42,8 @@ export const POST = withApiHandler(async (req) => {
 
   await sendEmail({
     to: email,
-    subject: RESET_PASSWORD_SUBJECTS[locale],
-    html: renderResetPasswordHtml({ resetUrl: data.properties.action_link, locale }),
+    subject: RESET_PASSWORD_SUBJECT,
+    html: renderResetPasswordHtml({ resetUrl: data.properties.action_link }),
   });
 
   return NextResponse.json({ success: true });

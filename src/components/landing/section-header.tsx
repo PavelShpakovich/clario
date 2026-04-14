@@ -8,6 +8,12 @@ interface SectionHeaderProps {
 export function SectionHeader({ title, subtitle, narrow }: SectionHeaderProps) {
   return (
     <div className="text-center mb-14">
+      {/* Decorative divider */}
+      <div className="flex items-center justify-center gap-3 mb-5">
+        <div className="h-px w-12 bg-primary/30" />
+        <span className="text-primary text-xs">✦</span>
+        <div className="h-px w-12 bg-primary/30" />
+      </div>
       <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-balance">{title}</h2>
       <p
         className={`text-muted-foreground text-lg text-balance ${narrow ? '' : 'max-w-2xl mx-auto'}`}

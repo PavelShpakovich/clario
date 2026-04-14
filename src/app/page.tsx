@@ -24,7 +24,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tryclario.by';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  const isRu = locale !== 'en';
+  const isRu = locale === 'ru';
 
   const title = isRu ? 'Clario — AI-астрологические разборы' : 'Clario — AI Astrology Readings';
   const description = isRu
@@ -63,19 +63,25 @@ export default async function LandingPage() {
       />
 
       {/* Stats strip */}
-      <div className="border-y bg-muted/30">
-        <div className="mx-auto grid max-w-4xl grid-cols-3 divide-x px-4 py-6 text-center sm:px-6">
+      <div className="border-y bg-muted/20">
+        <div className="mx-auto grid max-w-4xl grid-cols-1 divide-y px-4 py-8 text-center sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-6">
           <div className="px-4">
-            <p className="text-2xl font-bold">10</p>
-            <p className="mt-1 text-xs text-muted-foreground">планет и углов</p>
+            <p className="text-3xl font-bold text-primary">10</p>
+            <p className="mt-1.5 text-xs text-muted-foreground uppercase tracking-wide">
+              {t('statsPlanets')}
+            </p>
           </div>
           <div className="px-4">
-            <p className="text-2xl font-bold">9</p>
-            <p className="mt-1 text-xs text-muted-foreground">типов разборов</p>
+            <p className="text-3xl font-bold text-primary">5</p>
+            <p className="mt-1.5 text-xs text-muted-foreground uppercase tracking-wide">
+              {t('statsReadingTypes')}
+            </p>
           </div>
           <div className="px-4">
-            <p className="text-2xl font-bold">∞</p>
-            <p className="mt-1 text-xs text-muted-foreground">вопросов к разбору</p>
+            <p className="text-3xl font-bold text-primary">∞</p>
+            <p className="mt-1.5 text-xs text-muted-foreground uppercase tracking-wide">
+              {t('statsFollowUps')}
+            </p>
           </div>
         </div>
       </div>
@@ -87,7 +93,7 @@ export default async function LandingPage() {
           <StepItem number="1" title={t('howStep1Title')} desc={t('howStep1Desc')} />
           <StepItem number="2" title={t('howStep2Title')} desc={t('howStep2Desc')} />
           <StepItem number="3" title={t('howStep3Title')} desc={t('howStep3Desc')} />
-          <StepItem number="4" title={t('howStep4Title')} desc={t('howStep4Desc')} />
+          <StepItem number="4" title={t('howStep4Title')} desc={t('howStep4Desc')} isLast />
         </div>
       </section>
 
@@ -119,12 +125,20 @@ export default async function LandingPage() {
       </section>
 
       {/* Bottom CTA */}
-      <section className="border-t bg-primary/5">
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 px-4 py-20 text-center sm:px-6">
+      <section className="relative overflow-hidden border-t">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse 60% 80% at 50% 100%, oklch(0.20 0.06 268 / 40%) 0%, transparent 70%)',
+          }}
+        />
+        <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6 px-4 py-24 text-center sm:px-6">
           <Sparkles className="h-8 w-8 text-primary" />
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t('ctaTitle')}</h2>
           <p className="text-muted-foreground">{t('ctaSubtitle')}</p>
-          <Button asChild size="lg">
+          <Button asChild size="lg" className="px-10 shadow-lg shadow-primary/20">
             <Link href="/register">{t('ctaButton')}</Link>
           </Button>
         </div>

@@ -5,6 +5,8 @@ import { Analytics } from '@vercel/analytics/next';
 import { getLocale, getMessages } from 'next-intl/server';
 import { RootProviders } from '@/components/root-providers';
 import { Header } from '@/components/layout/header';
+import { LandingFooter } from '@/components/layout/landing-footer';
+import { auth } from '@/auth';
 import './globals.css';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tryclario.by';
@@ -36,8 +38,6 @@ export async function generateMetadata(): Promise<Metadata> {
       'natal chart',
       'astrology reading',
       'birth data interpretation',
-      'compatibility reading',
-      'transit forecast',
       'birth chart',
       'structured astrology insights',
     ],
@@ -81,24 +81,15 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // next-intl resolves locale from the URL segment (static [locale] routes)
-  // or falls back to the NEXT_LOCALE cookie (dynamic authenticated routes).
   const locale = await getLocale();
   const messages = await getMessages();
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const now = new Date();
+  const session = await auth();
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        {/*
-         * Load the Telegram Mini App SDK before hydration so that
-         * window.Telegram.WebApp.initData is available when /tg mounts.
-         * beforeInteractive only works in the root layout — not nested layouts.
-         * On non-Telegram pages initData is an empty string, which /tg treats
-         * as "not inside Telegram" and redirects to /login.
-         */}
-        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <Script id="yandex-metrica" strategy="afterInteractive">{`
           (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
           m[i].l=1*new Date();
@@ -109,10 +100,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         `}</Script>
       </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground antialiased">
-        <Suspense fallback={<div />}>
-          <RootProviders locale={locale} messages={messages} timeZone={timeZone} now={now}>
+        <Suspense fallback={<div className="min-h-screen bg-background" />}>
+          <RootProviders
+            locale={locale}
+            messages={messages}
+            timeZone={timeZone}
+            now={now}
+            session={session}
+          >
             <Header />
-            {children}
+            <div className="flex-1 flex flex-col">{children}</div>
+            {!session ? <LandingFooter /> : null}
           </RootProviders>
         </Suspense>
         <Analytics />

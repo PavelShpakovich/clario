@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
-import { LandingFooter } from '@/components/layout/landing-footer';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tryclario.by';
 
@@ -33,44 +32,35 @@ export default async function TermsPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main className="flex-1 py-16 px-4">
-        <div className="max-w-3xl mx-auto">
-          <Link
-            href="/"
-            className="inline-block mb-8 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {t('backToHome')}
-          </Link>
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-16 sm:px-6">
+      <Link
+        href="/"
+        className="inline-block mb-8 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {t('backToHome')}
+      </Link>
 
-          <h1 className="text-4xl font-bold mb-2 text-balance">{t('pageTitle')}</h1>
-          <p className="text-sm text-muted-foreground mb-10">{t('lastUpdated')}</p>
+      <h1 className="text-4xl font-bold mb-2 text-balance">{t('pageTitle')}</h1>
+      <p className="text-sm text-muted-foreground mb-10">{t('lastUpdated')}</p>
 
-          <div className="prose prose-gray dark:prose-invert max-w-none">
-            <p className="text-muted-foreground leading-relaxed mb-10">{t('intro')}</p>
+      <div className="prose prose-gray dark:prose-invert max-w-none">
+        <p className="text-muted-foreground leading-relaxed mb-10">{t('intro')}</p>
 
-            {sections.map(({ title, body }) => (
-              <div key={title} className="mb-8">
-                <h2 className="text-xl font-semibold mb-3">{title}</h2>
-                <p className="text-muted-foreground leading-relaxed">{body}</p>
-              </div>
-            ))}
-
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-3">{t('section13Title')}</h2>
-              <p className="text-muted-foreground leading-relaxed mb-2">{t('section13Body')}</p>
-              <a
-                href={`mailto:${supportEmail}`}
-                className="text-primary hover:underline font-medium"
-              >
-                {supportEmail}
-              </a>
-            </div>
+        {sections.map(({ title, body }) => (
+          <div key={title} className="mb-8">
+            <h2 className="text-xl font-semibold mb-3">{title}</h2>
+            <p className="text-muted-foreground leading-relaxed">{body}</p>
           </div>
-        </div>
-      </main>
+        ))}
 
-      <LandingFooter />
-    </div>
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-3">{t('section13Title')}</h2>
+          <p className="text-muted-foreground leading-relaxed mb-2">{t('section13Body')}</p>
+          <a href={`mailto:${supportEmail}`} className="text-primary hover:underline font-medium">
+            {supportEmail}
+          </a>
+        </div>
+      </div>
+    </main>
   );
 }

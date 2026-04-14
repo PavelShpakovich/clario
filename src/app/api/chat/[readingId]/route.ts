@@ -4,7 +4,7 @@ import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { generateChatResponse, type ChatMessage } from '@/lib/llm/structured-generation';
+import { streamChatResponse, type ChatMessage } from '@/lib/llm/structured-generation';
 import { env } from '@/lib/env';
 
 const db = supabaseAdmin;
@@ -118,21 +118,45 @@ export const GET = withApiHandler(async (_req, ctx) => {
 });
 
 // POST /api/chat/[readingId]
-// Send a user message and receive the assistant response.
-export const POST = withApiHandler(async (req, ctx) => {
-  const { user } = await requireAuth();
+// Send a user message and stream the assistant response.
+// Returns text/plain streaming (not JSON) — client reads via ReadableStream.
+export async function POST(req: Request, ctx: unknown) {
+  let user: Awaited<ReturnType<typeof requireAuth>>['user'];
+  try {
+    const auth = await requireAuth();
+    user = auth.user;
+  } catch {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const readingId = await getReadingId(ctx);
 
   if (!readingId || !uuidSchema.safeParse(readingId).success) {
-    throw new ValidationError({ message: 'Invalid reading ID' });
+    return new Response(JSON.stringify({ error: 'Invalid reading ID' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const parsed = sendMessageSchema.safeParse(body);
   if (!parsed.success) {
-    throw new ValidationError({
-      message: parsed.error.issues.map((i) => i.message).join(', '),
-    });
+    return new Response(
+      JSON.stringify({ error: parsed.error.issues.map((i) => i.message).join(', ') }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } },
+    );
   }
 
   const { message } = parsed.data;
@@ -153,7 +177,10 @@ export const POST = withApiHandler(async (req, ctx) => {
   ]);
 
   if (!reading) {
-    throw new NotFoundError({ message: 'Reading not found' });
+    return new Response(JSON.stringify({ error: 'Reading not found' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   // Get or create thread
@@ -179,7 +206,10 @@ export const POST = withApiHandler(async (req, ctx) => {
   }
 
   if (!thread) {
-    throw new Error('Failed to get or create thread');
+    return new Response(JSON.stringify({ error: 'Failed to create thread' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   // Check limit
@@ -190,7 +220,10 @@ export const POST = withApiHandler(async (req, ctx) => {
     .eq('role', 'user');
 
   if ((userMsgCount ?? 0) >= FOLLOW_UP_LIMIT) {
-    throw new ValidationError({ message: `Follow-up limit of ${FOLLOW_UP_LIMIT} reached` });
+    return new Response(JSON.stringify({ error: `Limit of ${FOLLOW_UP_LIMIT} messages reached` }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   // Load history for context
@@ -209,11 +242,7 @@ export const POST = withApiHandler(async (req, ctx) => {
 
   // Build LLM messages
   const systemPrompt = buildSystemPrompt(
-    {
-      title: reading.title,
-      reading_type: reading.reading_type,
-      summary: reading.summary,
-    },
+    { title: reading.title, reading_type: reading.reading_type, summary: reading.summary },
     sections ?? [],
   );
 
@@ -226,24 +255,28 @@ export const POST = withApiHandler(async (req, ctx) => {
     { role: 'user', content: message },
   ];
 
-  const assistantContent = await generateChatResponse(llmMessages);
+  const threadId = thread.id;
+  const newUsed = (userMsgCount ?? 0) + 1;
 
-  // Insert assistant message
-  const { data: assistantMsg } = await db
-    .from('follow_up_messages')
-    .insert({
-      thread_id: thread.id,
-      role: 'assistant',
-      content: assistantContent,
-      model_provider: env.LLM_PROVIDER,
-      model_name: env.LLM_PROVIDER === 'qwen' ? env.QWEN_MODEL : 'mock',
-    })
-    .select('id, role, content, created_at, model_provider, model_name')
-    .single();
-
-  return NextResponse.json({
-    message: assistantMsg,
-    messagesUsed: (userMsgCount ?? 0) + 1,
-    messagesLimit: FOLLOW_UP_LIMIT,
+  // Stream response to client; save assistant message when complete
+  const stream = streamChatResponse(llmMessages, async (fullText) => {
+    if (fullText) {
+      await db.from('follow_up_messages').insert({
+        thread_id: threadId,
+        role: 'assistant',
+        content: fullText,
+        model_provider: env.LLM_PROVIDER,
+        model_name: env.LLM_PROVIDER === 'qwen' ? env.QWEN_MODEL : 'mock',
+      });
+    }
   });
-});
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      'X-Messages-Used': String(newUsed),
+      'X-Messages-Limit': String(FOLLOW_UP_LIMIT),
+    },
+  });
+}

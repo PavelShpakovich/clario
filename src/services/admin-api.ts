@@ -5,14 +5,10 @@ export type { AdminAnalytics };
 export interface AdminUser {
   id: string;
   email: string | null;
-  telegramId: number | null;
   displayName: string;
   isAdmin: boolean;
   isEmailVerified: boolean;
   accessMode: string;
-  chartsLimit: number;
-  chartsUsed: number;
-  chartsRemaining: number;
   createdAt: string;
 }
 
@@ -50,32 +46,6 @@ class AdminApi {
       throw new Error(data.error || 'Не удалось загрузить пользователей');
     }
 
-    return data;
-  }
-
-  /**
-   * Reset the current chart and reading usage counters for a user.
-   */
-  async resetUsage(userId: string): Promise<{ success: boolean; message: string; userId: string }> {
-    const res = await fetch(`/api/admin/users/${userId}/reset-usage`, {
-      method: 'POST',
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Не удалось сбросить использование');
-    }
-
-    return data;
-  }
-
-  /**
-   * Run Telegram bot setup (register webhook + commands)
-   */
-  async runBotSetup(): Promise<Record<string, unknown>> {
-    const res = await fetch('/api/telegram/setup', { method: 'POST' });
-    const data = (await res.json()) as Record<string, unknown>;
     return data;
   }
 

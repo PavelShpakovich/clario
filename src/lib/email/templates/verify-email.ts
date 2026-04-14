@@ -1,56 +1,22 @@
-import type { Locale } from '@/i18n/config';
-
-const content: Record<
-  Locale,
-  {
-    title: string;
-    heading: string;
-    body: string;
-    button: string;
-    fallbackLabel: string;
-    expiry: string;
-    copyright: string;
-  }
-> = {
-  ru: {
-    title: 'Подтвердите ваш email — Clario',
-    heading: 'Подтвердите ваш email',
-    body: 'Спасибо за регистрацию в Clario! Нажмите на кнопку ниже, чтобы подтвердить ваш адрес электронной почты и активировать аккаунт.',
-    button: 'Подтвердить email',
-    fallbackLabel: 'Если кнопка не работает, скопируйте и вставьте ссылку в браузер:',
-    expiry:
-      'Ссылка действительна в течение 24 часов. Если вы не регистрировались в Clario — просто проигнорируйте это письмо.',
-    copyright: `© ${new Date().getFullYear()} Clario. Все права защищены.`,
-  },
-  en: {
-    title: 'Confirm your email — Clario',
-    heading: 'Confirm your email',
-    body: 'Thank you for signing up for Clario! Click the button below to confirm your email address and activate your account.',
-    button: 'Confirm email',
-    fallbackLabel: "If the button doesn't work, copy and paste the link below into your browser:",
-    expiry:
-      "This link is valid for 24 hours. If you didn't sign up for Clario, you can safely ignore this email.",
-    copyright: `© ${new Date().getFullYear()} Clario. All rights reserved.`,
-  },
+const content = {
+  title: 'Подтвердите ваш email — Clario',
+  heading: 'Подтвердите ваш email',
+  body: 'Спасибо за регистрацию в Clario! Нажмите на кнопку ниже, чтобы подтвердить ваш адрес электронной почты и активировать аккаунт.',
+  button: 'Подтвердить email',
+  fallbackLabel: 'Если кнопка не работает, скопируйте и вставьте ссылку в браузер:',
+  expiry:
+    'Ссылка действительна в течение 24 часов. Если вы не регистрировались в Clario — просто проигнорируйте это письмо.',
+  copyright: `© ${new Date().getFullYear()} Clario. Все права защищены.`,
 };
 
-export const VERIFY_EMAIL_SUBJECTS: Record<Locale, string> = {
-  ru: 'Подтвердите ваш email — Clario',
-  en: 'Confirm your email — Clario',
-};
+export const VERIFY_EMAIL_SUBJECT = 'Подтвердите ваш email — Clario';
 
-export function renderVerifyEmailHtml({
-  confirmUrl,
-  locale = 'ru',
-}: {
-  confirmUrl: string;
-  locale?: Locale;
-}): string {
+export function renderVerifyEmailHtml({ confirmUrl }: { confirmUrl: string }): string {
   const escapedUrl = confirmUrl.replace(/"/g, '&quot;');
-  const c = content[locale];
+  const c = content;
 
   return `<!DOCTYPE html>
-<html lang="${locale}">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />

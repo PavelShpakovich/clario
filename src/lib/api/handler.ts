@@ -116,11 +116,9 @@ async function safeMessage(err: AppError): Promise<string> {
     const fallback: Record<string, string> = {
       NOT_FOUND: err.message,
       VALIDATION_ERROR: err.message,
-      INGESTION_ERROR: err.message,
       AUTH_ERROR: 'Authentication required',
       RATE_LIMIT_ERROR: 'Too many requests — please slow down',
-      PLAN_LIMIT_ERROR: err.message,
-      LLM_ERROR: 'Card generation failed — please try again',
+      LLM_ERROR: 'Reading generation failed — please try again',
       INTERNAL_ERROR: 'Internal server error',
     };
     return fallback[err.code] ?? 'Internal server error';
@@ -129,16 +127,12 @@ async function safeMessage(err: AppError): Promise<string> {
   switch (err.code) {
     case 'NOT_FOUND':
     case 'VALIDATION_ERROR':
-    case 'INGESTION_ERROR':
       // These carry specific user-facing messages crafted at the throw site
       return err.message;
     case 'AUTH_ERROR':
       return t('errors.authRequired');
     case 'RATE_LIMIT_ERROR':
       return t('errors.tooManyRequests');
-    case 'PLAN_LIMIT_ERROR':
-      // Message is crafted at the throw site and is already user-facing
-      return err.message;
     case 'LLM_ERROR':
       return t('errors.generationFailed');
     case 'INTERNAL_ERROR':

@@ -22,7 +22,7 @@ const MINSK_INPUT: BirthDataInput = {
   latitude: 53.9045,
   longitude: 27.5615,
   timezone: 'Europe/Minsk',
-  houseSystem: 'placidus',
+  houseSystem: 'equal',
   subjectType: 'self',
 };
 
@@ -38,6 +38,11 @@ const MINSK_NO_COORDS: BirthDataInput = {
   ...MINSK_INPUT,
   latitude: undefined,
   longitude: undefined,
+};
+
+const MINSK_WHOLE_SIGN: BirthDataInput = {
+  ...MINSK_INPUT,
+  houseSystem: 'whole_sign',
 };
 
 // ── engine factory ───────────────────────────────────────────────────────────
@@ -266,5 +271,27 @@ describe('calculateNatalChart determinism', () => {
       r2.positions.map((p) => p.degreeDecimal),
     );
     expect(r1.aspects).toEqual(r2.aspects);
+  });
+});
+
+describe('calculateNatalChart — whole sign houses', () => {
+  it('assigns houses differently from equal houses for at least one planet', async () => {
+    const [equalResult, wholeSignResult] = await Promise.all([
+      calculateNatalChart(MINSK_INPUT),
+      calculateNatalChart(MINSK_WHOLE_SIGN),
+    ]);
+
+    const comparableBodies = equalResult.positions
+      .filter((pos) => !['ascendant', 'midheaven'].includes(pos.bodyKey))
+      .map((pos) => pos.bodyKey);
+
+    const hasDifference = comparableBodies.some((bodyKey) => {
+      const equalPos = equalResult.positions.find((pos) => pos.bodyKey === bodyKey);
+      const wholeSignPos = wholeSignResult.positions.find((pos) => pos.bodyKey === bodyKey);
+      return equalPos?.houseNumber !== wholeSignPos?.houseNumber;
+    });
+
+    expect(hasDifference).toBe(true);
+    expect(wholeSignResult.computedChart.houseSystem).toBe('whole_sign');
   });
 });

@@ -1,9 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-export function isTelegramStubEmail(email: string | null | undefined): boolean {
-  return Boolean(email?.startsWith('telegram_') && email.includes('@noreply'));
-}
-
 export async function findAuthUserByEmail(
   email: string,
 ): Promise<{ id: string; email: string | null; emailConfirmedAt: string | null } | null> {

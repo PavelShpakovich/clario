@@ -4,13 +4,11 @@ export type AppErrorCode =
   | 'NOT_FOUND'
   | 'VALIDATION_ERROR'
   | 'LLM_ERROR'
-  | 'INGESTION_ERROR'
   | 'AUTH_ERROR'
   | 'RATE_LIMIT_ERROR'
-  | 'PLAN_LIMIT_ERROR'
   | 'INTERNAL_ERROR';
 
-export interface AppErrorOptions {
+interface AppErrorOptions {
   message: string;
   cause?: unknown;
   /** Extra context attached to Sentry breadcrumbs / logs. */
@@ -51,12 +49,6 @@ export class LlmError extends AppError {
   }
 }
 
-export class IngestionError extends AppError {
-  constructor(opts: AppErrorOptions) {
-    super('INGESTION_ERROR', opts);
-  }
-}
-
 export class AuthError extends AppError {
   constructor(opts: AppErrorOptions) {
     super('AUTH_ERROR', opts);
@@ -66,13 +58,6 @@ export class AuthError extends AppError {
 export class RateLimitError extends AppError {
   constructor(opts: AppErrorOptions) {
     super('RATE_LIMIT_ERROR', opts);
-  }
-}
-
-/** Thrown when a user hits a workspace resource limit (e.g. chart or reading quota). */
-export class PlanLimitError extends AppError {
-  constructor(opts: AppErrorOptions) {
-    super('PLAN_LIMIT_ERROR', opts);
   }
 }
 
@@ -88,39 +73,8 @@ export function httpStatusForError(error: AppError): number {
       return 401;
     case 'RATE_LIMIT_ERROR':
       return 429;
-    case 'PLAN_LIMIT_ERROR':
-      return 402;
     case 'LLM_ERROR':
-    case 'INGESTION_ERROR':
     case 'INTERNAL_ERROR':
       return 500;
-  }
-}
-
-// ─── Safe async wrapper ───────────────────────────────────────────────────────
-
-type Success<T> = { ok: true; data: T };
-type Failure = { ok: false; error: AppError };
-export type Result<T> = Success<T> | Failure;
-
-/**
- * Wraps an async operation and returns a typed Result instead of throwing.
- * Unhandled errors are coerced to AppError with code INTERNAL_ERROR.
- */
-export async function tryCatch<T>(fn: () => Promise<T>): Promise<Result<T>> {
-  try {
-    const data = await fn();
-    return { ok: true, data };
-  } catch (error) {
-    if (error instanceof AppError) {
-      return { ok: false, error };
-    }
-    return {
-      ok: false,
-      error: new AppError('INTERNAL_ERROR', {
-        message: 'An unexpected error occurred',
-        cause: error,
-      }),
-    };
   }
 }

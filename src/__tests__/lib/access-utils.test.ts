@@ -27,7 +27,7 @@ jest.mock('@/lib/supabase/admin', () => ({
 }));
 
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { getWorkspaceAccessStatus, getUserAccessPolicy, getUserUsage } from '@/lib/access-utils';
+import { getWorkspaceAccessStatus, getUserUsage } from '@/lib/access-utils';
 
 const mockFrom = supabaseAdmin.from as jest.Mock;
 
@@ -93,18 +93,6 @@ describe('getWorkspaceAccessStatus', () => {
 
     expect(status.policy.chartsPerPeriod).toBe(3);
     expect(status.policy.savedChartsLimit).toBe(5);
-  });
-});
-
-// ── getUserAccessPolicy ────────────────────────────────────────────────────
-
-describe('getUserAccessPolicy', () => {
-  it('returns access policy regardless of userId', async () => {
-    const policy = await getUserAccessPolicy('any-user');
-
-    expect(policy.accessMode).toBe('direct');
-    expect(policy.chartsLimit).toBe(3);
-    expect(policy.savedChartsLimit).toBe(5);
   });
 });
 

@@ -98,3 +98,79 @@ async function generateChatWithQwen(messages: ChatMessage[]): Promise<string> {
 
   return response.choices[0]?.message.content ?? '';
 }
+
+/**
+ * Streaming multi-turn chat. Returns a ReadableStream of text chunks.
+ * The full accumulated text is also passed to `onComplete` when the stream ends.
+ */
+export function streamChatResponse(
+  messages: ChatMessage[],
+  onComplete: (fullText: string) => Promise<void>,
+): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+
+  if (env.LLM_PROVIDER === 'mock') {
+    const text =
+      'Это тестовый ответ ассистента. В рабочем режиме здесь был бы развёрнутый ответ на ваш вопрос по разбору.';
+    return new ReadableStream({
+      start(controller) {
+        const words = text.split(' ');
+        let i = 0;
+        const tick = () => {
+          if (i >= words.length) {
+            controller.close();
+            void onComplete(text);
+            return;
+          }
+          controller.enqueue(encoder.encode((i > 0 ? ' ' : '') + words[i]));
+          i++;
+          setTimeout(tick, 30);
+        };
+        tick();
+      },
+    });
+  }
+
+  if (!env.QWEN_API_KEY) {
+    return new ReadableStream({
+      start(controller) {
+        controller.error(new LlmError({ message: 'QWEN_API_KEY is required' }));
+      },
+    });
+  }
+
+  const client = new OpenAI({
+    apiKey: env.QWEN_API_KEY,
+    baseURL: env.QWEN_BASE_URL,
+  });
+
+  let fullContent = '';
+
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        // @ts-expect-error Qwen platform extends OpenAI streaming API with vendor-specific params.
+        const stream = await client.chat.completions.create({
+          model: env.QWEN_MODEL,
+          messages,
+          temperature: 0.7,
+          stream: true,
+          enable_thinking: false,
+        });
+
+        for await (const chunk of stream) {
+          const text = chunk.choices[0]?.delta.content ?? '';
+          if (text) {
+            fullContent += text;
+            controller.enqueue(encoder.encode(text));
+          }
+        }
+
+        controller.close();
+        await onComplete(fullContent);
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+}

@@ -19,6 +19,7 @@ interface ConfirmationDialogProps {
   description: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  disabled?: boolean;
 }
 
 export function ConfirmationDialog({
@@ -29,6 +30,7 @@ export function ConfirmationDialog({
   description,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
+  disabled = false,
 }: ConfirmationDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -38,8 +40,10 @@ export function ConfirmationDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>{confirmLabel}</AlertDialogAction>
+          <AlertDialogCancel disabled={disabled}>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} disabled={disabled}>
+            {confirmLabel}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

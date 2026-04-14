@@ -27,24 +27,12 @@ export type ChartCreatePayload = {
   latitude?: number;
   longitude?: number;
   timezone?: string;
-  houseSystem: 'placidus' | 'whole_sign' | 'koch' | 'equal';
+  houseSystem: 'whole_sign' | 'equal';
   notes?: string;
   locale?: 'en' | 'ru';
 };
 
 class ChartsApi {
-  async listCharts(): Promise<ChartRecord[]> {
-    const response = await fetch('/api/charts', { cache: 'no-store' });
-
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string; message?: string };
-      throw new Error(data.error || data.message || 'Failed to load charts');
-    }
-
-    const data = (await response.json()) as { charts: ChartRecord[] };
-    return data.charts;
-  }
-
   async createChart(payload: ChartCreatePayload): Promise<{ chart: ChartRecord }> {
     const response = await fetch('/api/charts', {
       method: 'POST',

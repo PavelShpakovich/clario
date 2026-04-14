@@ -1,59 +1,23 @@
-import type { Locale } from '@/i18n/config';
-
-const content: Record<
-  Locale,
-  {
-    title: string;
-    heading: string;
-    body: string;
-    button: string;
-    fallbackLabel: string;
-    expiry: string;
-    ignore: string;
-    copyright: string;
-  }
-> = {
-  ru: {
-    title: 'Сброс пароля — Clario',
-    heading: 'Сброс пароля',
-    body: 'Мы получили запрос на сброс пароля для вашего аккаунта Clario. Нажмите на кнопку ниже, чтобы установить новый пароль.',
-    button: 'Установить новый пароль',
-    fallbackLabel: 'Если кнопка не работает, скопируйте и вставьте ссылку в браузер:',
-    expiry: 'Ссылка действительна в течение 1 часа.',
-    ignore:
-      'Если вы не запрашивали сброс пароля — просто проигнорируйте это письмо. Ваш пароль останется прежним.',
-    copyright: `© ${new Date().getFullYear()} Clario. Все права защищены.`,
-  },
-  en: {
-    title: 'Reset your password — Clario',
-    heading: 'Reset your password',
-    body: 'We received a request to reset the password for your Clario account. Click the button below to set a new password.',
-    button: 'Reset password',
-    fallbackLabel: "If the button doesn't work, copy and paste the link below into your browser:",
-    expiry: 'This link is valid for 1 hour.',
-    ignore:
-      "If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.",
-    copyright: `© ${new Date().getFullYear()} Clario. All rights reserved.`,
-  },
+const content = {
+  title: 'Сброс пароля — Clario',
+  heading: 'Сброс пароля',
+  body: 'Мы получили запрос на сброс пароля для вашего аккаунта Clario. Нажмите на кнопку ниже, чтобы установить новый пароль.',
+  button: 'Установить новый пароль',
+  fallbackLabel: 'Если кнопка не работает, скопируйте и вставьте ссылку в браузер:',
+  expiry: 'Ссылка действительна в течение 1 часа.',
+  ignore:
+    'Если вы не запрашивали сброс пароля — просто проигнорируйте это письмо. Ваш пароль останется прежним.',
+  copyright: `© ${new Date().getFullYear()} Clario. Все права защищены.`,
 };
 
-export const RESET_PASSWORD_SUBJECTS: Record<Locale, string> = {
-  ru: 'Сброс пароля — Clario',
-  en: 'Reset your password — Clario',
-};
+export const RESET_PASSWORD_SUBJECT = 'Сброс пароля — Clario';
 
-export function renderResetPasswordHtml({
-  resetUrl,
-  locale = 'ru',
-}: {
-  resetUrl: string;
-  locale?: Locale;
-}): string {
+export function renderResetPasswordHtml({ resetUrl }: { resetUrl: string }): string {
   const escapedUrl = resetUrl.replace(/"/g, '&quot;');
-  const c = content[locale];
+  const c = content;
 
   return `<!DOCTYPE html>
-<html lang="${locale}">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />

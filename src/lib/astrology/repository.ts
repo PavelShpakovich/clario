@@ -48,11 +48,8 @@ export async function markOnboardingComplete(userId: string) {
   }
 }
 
-export async function markChartFailed(chartId: string, message: string) {
-  const { error } = await db
-    .from('charts')
-    .update({ status: 'error', notes: message })
-    .eq('id', chartId);
+export async function markChartFailed(chartId: string) {
+  const { error } = await db.from('charts').update({ status: 'error' }).eq('id', chartId);
 
   if (error) {
     throw error;

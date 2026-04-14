@@ -1,14 +1,13 @@
 import type { NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { decode as nextAuthJwtDecode, encode as nextAuthJwtEncode } from 'next-auth/jwt';
-import { createHmac } from 'crypto';
 import { isAuthApiError } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { deriveDisplayNameFromEmail } from '@/lib/auth/utils';
 import { ensureSupabaseIdentityLink } from '@/lib/auth/account-identities';
 import { env } from '@/lib/env';
 import { createSupabaseAuthClient } from '@/lib/supabase/auth-client';
-import { findAuthUserByEmail, isTelegramStubEmail } from '@/lib/auth/user-accounts';
+import { findAuthUserByEmail } from '@/lib/auth/user-accounts';
 
 declare module 'next-auth' {
   interface User {
@@ -38,16 +37,11 @@ declare module 'next-auth/jwt' {
   }
 }
 
-const nextAuthSecret = env.NEXTAUTH_SECRET;
-
-// In Telegram Web (web.telegram.org) the Mini App runs inside an iframe.
-// SameSite=Lax cookies are not sent on cross-site iframe navigations, so
-// getToken() in middleware never finds the session → infinite spinner loop.
-// SameSite=None; Secure allows the cookie in iframe contexts (cross-site).
+// Standard cookie settings
 const isProduction = process.env.NODE_ENV === 'production';
 
 export const authOptions: NextAuthOptions = {
-  secret: nextAuthSecret,
+  secret: env.NEXTAUTH_SECRET,
   cookies: {
     sessionToken: {
       name: `${isProduction ? '__Secure-' : ''}next-auth.session-token`,
@@ -121,11 +115,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        if (
-          data.user.email &&
-          !isTelegramStubEmail(data.user.email) &&
-          !data.user.email_confirmed_at
-        ) {
+        if (data.user.email && !data.user.email_confirmed_at) {
           throw new Error('email_not_verified');
         }
 
@@ -161,54 +151,15 @@ export const authOptions: NextAuthOptions = {
           name: profile?.display_name || fallbackDisplayName,
           email: authEmail,
           isAdmin: profile?.is_admin || false,
-          isStub: isTelegramStubEmail(authEmail),
+          isStub: false,
           isEmailVerified: Boolean(existingUser?.emailConfirmedAt ?? data.user.email_confirmed_at),
-        };
-      },
-    }),
-    Credentials({
-      id: 'telegram',
-      name: 'Telegram',
-      credentials: {
-        sessionToken: { label: 'Session Token', type: 'text' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.sessionToken) throw new Error('Session token required');
-
-        const parts = credentials.sessionToken.split('.');
-        if (parts.length !== 2) throw new Error('Malformed session token');
-        const [payload, sig] = parts as [string, string];
-
-        // Verify HMAC signature
-        const secret = env.NEXTAUTH_SECRET;
-        const expectedSig = createHmac('sha256', secret).update(payload).digest('base64url');
-        if (sig !== expectedSig) throw new Error('Invalid session token signature');
-
-        // Verify expiry
-        const { userId, displayName, exp, isStub } = JSON.parse(
-          Buffer.from(payload, 'base64url').toString(),
-        ) as { userId: string; displayName: string; exp: number; isStub?: boolean };
-        if (Date.now() > exp) throw new Error('Session token expired');
-
-        // Fetch latest display name
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('display_name')
-          .eq('id', userId)
-          .single();
-
-        return {
-          id: userId,
-          name: profile?.display_name || displayName,
-          email: undefined,
-          isStub: isStub ?? false,
         };
       },
     }),
   ],
   pages: {
-    signIn: '/tg',
-    error: '/tg',
+    signIn: '/login',
+    error: '/login',
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -234,12 +185,10 @@ export const authOptions: NextAuthOptions = {
           }
 
           const authEmail = authData.user.email;
-          const isStub = authEmail ? isTelegramStubEmail(authEmail) : Boolean(token.isStub);
 
           token.email = authEmail || undefined;
-          token.isStub = isStub;
-          token.isEmailVerified =
-            isStub || !authEmail ? true : Boolean(authData.user.email_confirmed_at);
+          token.isStub = false;
+          token.isEmailVerified = !authEmail ? true : Boolean(authData.user.email_confirmed_at);
 
           const { data: profile } = await supabaseAdmin
             .from('profiles')
@@ -254,8 +203,10 @@ export const authOptions: NextAuthOptions = {
           // Check if admin via is_admin column or ADMIN_EMAILS env
           let isAdmin = profile?.is_admin || false;
           if (!isAdmin && env.ADMIN_EMAILS && authEmail) {
-            const adminEmails = env.ADMIN_EMAILS.split(',').map((entry) => entry.trim());
-            isAdmin = adminEmails.includes(authEmail);
+            const adminEmails = env.ADMIN_EMAILS.split(',').map((entry) =>
+              entry.trim().toLowerCase(),
+            );
+            isAdmin = adminEmails.includes(authEmail.toLowerCase());
           }
           token.isAdmin = isAdmin;
         } catch {

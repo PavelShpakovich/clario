@@ -35,6 +35,16 @@ export const POST = withApiHandler(async (req) => {
     });
   }
 
+  // If retrying a failed reading, delete the old one first so it doesn't accumulate
+  if (parsed.data.replaceReadingId) {
+    await db
+      .from('readings')
+      .delete()
+      .eq('id', parsed.data.replaceReadingId)
+      .eq('user_id', user.id)
+      .eq('status', 'error');
+  }
+
   const reading = await createReadingDraft(user.id, parsed.data);
   return NextResponse.json({ reading }, { status: 201 });
 });

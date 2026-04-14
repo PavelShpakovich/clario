@@ -8,6 +8,10 @@ export interface ReadingPromptInput {
   locale: AstrologyLocale;
   readingType: ReadingType;
   toneStyle: ToneStyle;
+  allowSpiritualTone: boolean;
+  contentFocusLove: boolean;
+  contentFocusCareer: boolean;
+  contentFocusGrowth: boolean;
   chartLabel: string;
   personName: string;
   birthDate: string;
@@ -42,13 +46,59 @@ function stableReadingTitle(readingType: ReadingType, chartLabel: string): strin
       return `${chartLabel} Career Reading`;
     case 'strengths':
       return `${chartLabel} Strengths and Challenges`;
-    case 'transit':
-      return `${chartLabel} Transit Snapshot`;
-    case 'compatibility':
-      return `${chartLabel} Compatibility Reading`;
     default:
       return `${chartLabel} Natal Overview`;
   }
+}
+
+function buildStyleInstructions(input: ReadingPromptInput): string {
+  const lines: string[] = [];
+
+  // Tone style — tell the LLM exactly what writing style to adopt
+  switch (input.toneStyle) {
+    case 'mystical':
+      lines.push(
+        'Writing tone: Use symbolic, archetypal, and mythic language. Draw on cosmic patterns, spiritual metaphor, and a sense of meaning and mystery. Invite the reader into a feeling of connection with larger forces.',
+      );
+      break;
+    case 'therapeutic':
+      lines.push(
+        'Writing tone: Center emotional understanding, self-compassion, and psychological healing. Use reflective, gentle, validating language. Focus on inner patterns and self-awareness rather than prediction or certainty.',
+      );
+      break;
+    case 'analytical':
+      lines.push(
+        'Writing tone: Be precise, structured, and factual. Explain the mechanics of each placement clearly. Minimize poetic language and maximize specificity about signs, houses, aspects, and their interactions.',
+      );
+      break;
+    default:
+      lines.push(
+        'Writing tone: Warm, measured, and psychologically grounded. Blend insight with practical advice. Allow poetic touches but never sacrifice clarity for vagueness.',
+      );
+  }
+
+  // Spiritual language gate
+  if (!input.allowSpiritualTone) {
+    lines.push(
+      'Language constraint: Keep all language secular and psychological. Do NOT use spiritual, religious, or new-age terms (e.g. "soul", "karma", "higher self", "cosmic", "universe guides you", "spiritual path", "destiny"). Frame everything in terms of psychology, personality, and lived experience.',
+    );
+  }
+
+  // Focus areas — only add instruction when not all three are equally active
+  const activeAreas: string[] = [];
+  if (input.contentFocusLove) activeAreas.push('love and relationships');
+  if (input.contentFocusCareer) activeAreas.push('career and professional life');
+  if (input.contentFocusGrowth) activeAreas.push('personal growth and self-development');
+
+  if (activeAreas.length > 0 && activeAreas.length < 3) {
+    lines.push(
+      `Focus emphasis: The user has explicitly requested emphasis on ${activeAreas.join(' and ')}. Weave these themes prominently throughout the reading. Sections that are not directly about these areas should still connect back to how they relate.`,
+    );
+  } else if (activeAreas.length === 0) {
+    lines.push('Focus: Provide a balanced overview without emphasis on any particular life area.');
+  }
+
+  return lines.join('\n');
 }
 
 function serializeChartFacts(input: ReadingPromptInput): string {
@@ -73,7 +123,7 @@ function serializeChartFacts(input: ReadingPromptInput): string {
       ? input.warnings.map((warning) => `- ${warning}`).join('\n')
       : '- none';
 
-  return `Chart:\n- Label: ${input.chartLabel}\n- Person: ${input.personName}\n- Birth date: ${input.birthDate}\n- Birth time known: ${input.birthTimeKnown ? 'yes' : 'no'}\n- Place: ${input.city}, ${input.country}\n- House system: ${input.houseSystem}\n- Tone style: ${input.toneStyle}\n\nPositions:\n${positionsBlock}\n\nAspects:\n${aspectsBlock}\n\nWarnings:\n${warningsBlock}`;
+  return `Chart:\n- Label: ${input.chartLabel}\n- Person: ${input.personName}\n- Birth date: ${input.birthDate}\n- Birth time known: ${input.birthTimeKnown ? 'yes' : 'no'}\n- Place: ${input.city}, ${input.country}\n- House system: ${input.houseSystem}\n\nPositions:\n${positionsBlock}\n\nAspects:\n${aspectsBlock}\n\nWarnings:\n${warningsBlock}`;
 }
 
 export function buildReadingPlanPrompts(input: ReadingPromptInput): {
@@ -84,10 +134,15 @@ export function buildReadingPlanPrompts(input: ReadingPromptInput): {
   const language = input.locale === 'ru' ? 'Russian' : 'English';
   const title = stableReadingTitle(input.readingType, input.chartLabel);
 
+  const styleInstructions = buildStyleInstructions(input);
+
   const systemPrompt = `You are an expert astrology analysis planner working for a professional astrology service.
 You must interpret only the supplied chart data and produce a structured, in-depth plan for an astrology reading.
 Do not mention being an AI.
 Do not give medical, legal, financial, or fatalistic certainty.
+
+${styleInstructions}
+
 Return only valid JSON matching this shape exactly:
 {
   "title": string,
@@ -98,7 +153,7 @@ Return only valid JSON matching this shape exactly:
   "cautionNotes": string[],
   "metadata": {
     "locale": "en" | "ru",
-    "readingType": "natal_overview" | "personality" | "love" | "career" | "strengths" | "transit" | "compatibility",
+    "readingType": "natal_overview" | "personality" | "love" | "career" | "strengths",
     "promptVersion": string,
     "schemaVersion": string
   }
@@ -117,9 +172,7 @@ Reading-type guidance for section planning:
 - love: Sections should cover (1) what the person needs from a partner, (2) how they express and receive love (Venus sign/house), (3) patterns attracting or repelling connection (7th house ruler), (4) emotional communication in relationships (Moon/Venus aspects), (5) growth path in love.
 - career: Sections should cover (1) natural talents and vocational calling (10th house/MC), (2) working style and discipline (Saturn/6th house), (3) ambition and drive (Mars/Sun), (4) challenges and latent potential (squares/oppositions to MC), (5) a practical roadmap for professional development.
 - strengths: Sections should cover (1) innate gifts (trines and sextiles), (2) resilience and determination (fire/earth emphasis), (3) interpersonal strengths, (4) creative or intellectual edge (Mercury/Venus/3rd/5th house), (5) how to leverage strengths.
-- transit: Sections should cover (1) current major transiting themes, (2) areas of life highlighted now, (3) inner shifts and growth demands, (4) practical opportunities, (5) timing and rhythm.
-- finance: Sections should cover (1) the person's natural relationship with money and material security (2nd house/Venus/Jupiter), (2) income capacity and earning talents (6th house/Sun placement), (3) risk tolerance and speculative tendencies (5th/8th house rulers, Jupiter/Saturn balance), (4) financial patterns and blind spots (Saturn/Pluto in money houses), (5) practical roadmap for financial well-being.
-- health: Sections should cover (1) constitutional vitality and overall health signature (Sun/Mars/1st house), (2) areas of physical sensitivity and vulnerability (6th house/Chiron), (3) nerves, stress, and mental-emotional impact on health (Moon/Gemini/Mercury placements), (4) restorative and regenerative resources (Moon/Neptune/12th house), (5) lifestyle guidance aligned with the chart.`;
+`;
 
   const userPrompt = `Create a ${input.readingType} astrology reading plan.
 
@@ -187,11 +240,15 @@ export function buildReadingWriterPrompts(
 } {
   const language = input.locale === 'ru' ? 'Russian' : 'English';
 
+  const styleInstructions = buildStyleInstructions(input);
+
   const systemPrompt = `You are a professional astrology writer producing a rich, insightful, and deeply personal reading for a real user.
-Your writing must feel warm, authoritative, and psychologically grounded — like a skilled astrologer speaking directly to the person.
-You must follow the approved plan while expanding every section into substantial, meaningful prose tied to the actual chart data.
+Your writing must follow the approved plan while expanding every section into substantial, meaningful prose tied to the actual chart data.
 Do not mention being an AI.
 Do not give medical, legal, financial, or fatalistic certainty.
+
+${styleInstructions}
+
 Return only valid JSON matching this shape exactly:
 {
   "title": string,
@@ -202,7 +259,7 @@ Return only valid JSON matching this shape exactly:
   "disclaimers": string[],
   "metadata": {
     "locale": "en" | "ru",
-    "readingType": "natal_overview" | "personality" | "love" | "career" | "strengths" | "transit" | "compatibility",
+    "readingType": "natal_overview" | "personality" | "love" | "career" | "strengths",
     "promptVersion": string,
     "schemaVersion": string
   }

@@ -9,11 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthShell } from '@/components/auth/auth-shell';
 
-interface ForgotPasswordFormProps {
-  locale: 'en' | 'ru';
-}
-
-export function ForgotPasswordForm({ locale }: ForgotPasswordFormProps) {
+export function ForgotPasswordForm() {
   const t = useTranslations('auth');
   const validation = useTranslations('validation');
   const [email, setEmail] = useState('');
@@ -33,7 +29,7 @@ export function ForgotPasswordForm({ locale }: ForgotPasswordFormProps) {
       const response = await fetch('/api/auth/password/reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, locale }),
+        body: JSON.stringify({ email }),
       });
 
       if (!response.ok) {

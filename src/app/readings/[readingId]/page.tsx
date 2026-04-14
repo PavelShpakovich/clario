@@ -1,10 +1,12 @@
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { auth } from '@/auth';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { RetryReadingButton } from '@/components/astrology/retry-reading-button';
 import type { Tables } from '@/lib/supabase/types';
 
 const db = supabaseAdmin;
@@ -57,13 +59,14 @@ export default async function ReadingDetailPage({
   ]);
 
   if (!reading) {
-    redirect('/readings');
+    notFound();
   }
 
   const content = (reading.rendered_content_json ?? {}) as ReadingContentJson;
   const readingSections = sections ?? [];
 
-  const readingTypeLabel = String(reading.reading_type).replace('_', ' ');
+  const readingTypeKey = `readingTypes.${reading.reading_type}` as Parameters<typeof t>[0];
+  const readingTypeLabel = t(readingTypeKey) ?? String(reading.reading_type).replace(/_/g, ' ');
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -71,34 +74,65 @@ export default async function ReadingDetailPage({
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            <span className="capitalize">{readingTypeLabel}</span>
+            {readingTypeLabel}
           </p>
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{reading.title}</h1>
-          <p className="text-sm text-muted-foreground md:text-base">
-            {new Date(reading.created_at).toLocaleDateString(reading.locale, {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {new Date(reading.created_at).toLocaleDateString(reading.locale ?? 'ru', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
             {reading.status !== 'ready' ? (
-              <span className="ml-2 inline-block rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                {reading.status}
-              </span>
+              <Badge variant={reading.status === 'error' ? 'destructive' : 'secondary'}>
+                {reading.status === 'error'
+                  ? t('statusError')
+                  : reading.status === 'generating'
+                    ? t('statusGenerating')
+                    : t('statusPending')}
+              </Badge>
             ) : null}
-          </p>
+          </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button asChild variant="outline">
             <Link href="/readings">{t('backToReadings')}</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href={`/charts/${reading.chart_id}`}>{t('viewChart')}</Link>
           </Button>
-          <Button asChild>
-            <Link href={`/chat/${reading.id}`}>{t('askFollowUp')}</Link>
-          </Button>
+          {reading.status === 'ready' ? (
+            <Button asChild>
+              <Link href={`/chat/${reading.id}`}>{t('askFollowUp')}</Link>
+            </Button>
+          ) : null}
+          {reading.status === 'error' ? (
+            <RetryReadingButton
+              chartId={reading.chart_id}
+              readingType={reading.reading_type}
+              readingId={reading.id}
+            />
+          ) : null}
         </div>
       </section>
+
+      {/* Generating banner */}
+      {reading.status === 'generating' ? (
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+          <p className="text-sm font-semibold text-primary">{t('generatingBannerTitle')}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t('generatingBannerDesc')}</p>
+        </div>
+      ) : null}
+
+      {/* Error banner */}
+      {reading.status === 'error' ? (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
+          <p className="text-sm font-semibold text-destructive">{t('errorBannerTitle')}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t('errorBannerDesc')}</p>
+        </div>
+      ) : null}
 
       {/* Summary */}
       {(reading.summary ?? content.summary) ? (
@@ -176,9 +210,9 @@ export default async function ReadingDetailPage({
             {content.advice.map((item, idx) => (
               <div
                 key={idx}
-                className="flex items-start gap-3 rounded-xl border bg-green-50 px-4 py-3 text-sm dark:bg-green-950/20"
+                className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm"
               >
-                <span className="mt-0.5 text-green-500">✓</span>
+                <span className="mt-0.5 text-primary">✓</span>
                 <span>{item}</span>
               </div>
             ))}

@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
-import { LandingFooter } from '@/components/layout/landing-footer';
 
 export async function generateMetadata() {
   const t = await getTranslations('notFound');
@@ -34,8 +33,6 @@ export default async function NotFound() {
           </div>
         </div>
       </main>
-
-      <LandingFooter />
     </div>
   );
 }

@@ -3,16 +3,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
-import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useDisplayName } from '@/hooks/use-display-name';
-import { useUiLanguage } from '@/hooks/use-ui-language';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { isTelegramWebApp } from '@/components/telegram-provider';
-import { TgSettingsBar } from '@/components/dashboard/tg-settings-bar';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,110 +24,152 @@ import {
   LogOut,
   Settings,
   ShieldCheck,
-  User,
   Moon,
   Sun,
-  Globe,
   LayoutDashboard,
   Monitor,
   ScrollText,
   Orbit,
 } from 'lucide-react';
 
+// ─── Shared constants ────────────────────────────────────────────────────────
+const HEADER_CLASS =
+  'sticky top-0 z-40 h-16 shrink-0 border-b border-border/50 bg-background/80 backdrop-blur-md';
+const INNER_CLASS =
+  'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4';
+
+// ─── Theme toggle (shared across auth states) ────────────────────────────────
+function ThemeToggle({
+  theme,
+  setTheme,
+  t,
+}: {
+  theme: string;
+  setTheme: (t: string) => void;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Переключить тему">
+          {theme === 'system' ? (
+            <Monitor className="size-4" />
+          ) : theme === 'dark' ? (
+            <Moon className="size-4" />
+          ) : (
+            <Sun className="size-4" />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={() => setTheme('light')}
+          className={theme === 'light' ? 'bg-muted' : ''}
+        >
+          <Sun className="size-4 mr-2" />
+          {t('common.themeLight')}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setTheme('dark')}
+          className={theme === 'dark' ? 'bg-muted' : ''}
+        >
+          <Moon className="size-4 mr-2" />
+          {t('common.themeDark')}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setTheme('system')}
+          className={theme === 'system' ? 'bg-muted' : ''}
+        >
+          <Monitor className="size-4 mr-2" />
+          {t('common.themeSystem')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// ─── Nav link with active indicator ─────────────────────────────────────────
+function NavLink({
+  href,
+  icon: Icon,
+  label,
+  pathname,
+}: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  pathname: string;
+}) {
+  const active = pathname === href || pathname.startsWith(href + '/');
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+        active
+          ? 'bg-primary/10 text-primary'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+      )}
+    >
+      <Icon className="size-4 shrink-0" />
+      {label}
+    </Link>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
 export function Header() {
   const t = useTranslations();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const { theme: rawTheme, setTheme, resolvedTheme } = useTheme();
   const theme = rawTheme ?? 'system';
   const displayName = useDisplayName();
-  const { locale, setLanguage } = useUiLanguage();
-  const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
 
-  // In Telegram Mini App context, show the compact settings bar everywhere except the /tg auth entry page.
-  if (isTelegramWebApp()) {
-    if (pathname === '/tg') return null;
-    return <TgSettingsBar />;
-  }
+  const logoSrc = resolvedTheme === 'dark' ? '/logo.png' : '/logo-dark.png';
 
-  if (!isAuthenticated) {
+  // ── Loading skeleton ──────────────────────────────────────────────────────
+  if (isLoading) {
     return (
-      <header className="border-b bg-background sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex items-center justify-between">
+      <header className={HEADER_CLASS}>
+        <div className={INNER_CLASS}>
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src={resolvedTheme === 'dark' ? '/logo.png' : '/logo-dark.png'}
-              alt="Logo"
-              width={64}
-              height={64}
+              src={logoSrc}
+              alt="Clario"
+              width={40}
+              height={40}
               priority
-              className="h-16 w-auto"
+              className="h-10 w-auto"
+            />
+          </Link>
+          <Skeleton className="h-8 w-24" />
+        </div>
+      </header>
+    );
+  }
+
+  // ── Unauthenticated ───────────────────────────────────────────────────────
+  if (!isAuthenticated) {
+    return (
+      <header className={HEADER_CLASS}>
+        <div className={INNER_CLASS}>
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src={logoSrc}
+              alt="Clario"
+              width={40}
+              height={40}
+              priority
+              className="h-10 w-auto"
             />
           </Link>
           <div className="flex items-center gap-2">
-            {/* Language Toggle */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <Globe className="size-4" />
-                  <span className="hidden sm:inline text-xs">{locale.toUpperCase()}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => void setLanguage('en')}
-                  className={locale === 'en' ? 'bg-muted' : ''}
-                >
-                  {t('common.english')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => void setLanguage('ru')}
-                  className={locale === 'ru' ? 'bg-muted' : ''}
-                >
-                  {t('common.russian')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Theme Toggle */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  {theme === 'system' ? (
-                    <Monitor className="size-4" />
-                  ) : theme === 'dark' ? (
-                    <Moon className="size-4" />
-                  ) : (
-                    <Sun className="size-4" />
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => setTheme('light')}
-                  className={theme === 'light' ? 'bg-muted' : ''}
-                >
-                  <Sun className="size-4 mr-2" /> {t('common.themeLight')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setTheme('dark')}
-                  className={theme === 'dark' ? 'bg-muted' : ''}
-                >
-                  <Moon className="size-4 mr-2" /> {t('common.themeDark')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setTheme('system')}
-                  className={theme === 'system' ? 'bg-muted' : ''}
-                >
-                  <Monitor className="size-4 mr-2" /> {t('common.themeSystem')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
+            <ThemeToggle theme={theme} setTheme={setTheme} t={t} />
             <Button variant="ghost" size="sm" asChild>
               <Link href="/login">{t('navigation.login')}</Link>
             </Button>
-
             <Button size="sm" asChild>
               <Link href="/register">{t('navigation.register')}</Link>
             </Button>
@@ -138,146 +179,119 @@ export function Header() {
     );
   }
 
+  // ── Authenticated ─────────────────────────────────────────────────────────
   return (
-    <header className="border-b bg-background sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1 md:py-2 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2">
+    <header className={HEADER_CLASS}>
+      <div className={INNER_CLASS}>
+        {/* Logo → dashboard */}
+        <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
           <Image
-            src={resolvedTheme === 'dark' ? '/logo.png' : '/logo-dark.png'}
-            alt="Logo"
-            width={64}
-            height={64}
+            src={logoSrc}
+            alt="Clario"
+            width={40}
+            height={40}
             priority
-            className="h-16 w-auto"
+            className="h-10 w-auto"
           />
         </Link>
 
-        {isAuthenticated ? (
-          <div className="flex items-center gap-2">
-            {/* Language Toggle */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <Globe className="size-4" />
-                  <span className="hidden sm:inline text-xs">{locale.toUpperCase()}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => void setLanguage('en')}
-                  className={locale === 'en' ? 'bg-muted' : ''}
-                >
-                  {t('common.english')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => void setLanguage('ru')}
-                  className={locale === 'ru' ? 'bg-muted' : ''}
-                >
-                  {t('common.russian')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        {/* Primary nav — visible md+ */}
+        <nav className="hidden md:flex items-center gap-1 flex-1" aria-label="Основная навигация">
+          <NavLink href="/charts" icon={Orbit} label={t('navigation.charts')} pathname={pathname} />
+          <NavLink
+            href="/readings"
+            icon={ScrollText}
+            label={t('navigation.readings')}
+            pathname={pathname}
+          />
+        </nav>
 
-            {/* Theme Toggle */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  {theme === 'system' ? (
-                    <Monitor className="size-4" />
-                  ) : theme === 'dark' ? (
-                    <Moon className="size-4" />
-                  ) : (
-                    <Sun className="size-4" />
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => setTheme('light')}
-                  className={theme === 'light' ? 'bg-muted' : ''}
-                >
-                  <Sun className="size-4 mr-2" /> {locale === 'ru' ? 'Светлая' : 'Light'}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setTheme('dark')}
-                  className={theme === 'dark' ? 'bg-muted' : ''}
-                >
-                  <Moon className="size-4 mr-2" /> {locale === 'ru' ? 'Тёмная' : 'Dark'}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setTheme('system')}
-                  className={theme === 'system' ? 'bg-muted' : ''}
-                >
-                  <Monitor className="size-4 mr-2" /> {locale === 'ru' ? 'Системная' : 'System'}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        {/* Right controls */}
+        <div className="flex items-center gap-1">
+          <ThemeToggle theme={theme} setTheme={setTheme} t={t} />
 
-            {/* User Dropdown */}
-            <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <User className="size-4" />
-                  <span className="hidden sm:inline">{displayName}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 max-w-[calc(100vw-2rem)]">
-                <DropdownMenuLabel>
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <p className="font-semibold text-sm">{displayName}</p>
-                    <p className="break-all whitespace-normal text-xs leading-snug text-muted-foreground">
-                      {user?.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard" className="flex items-center gap-2">
-                    <LayoutDashboard className="size-4" />
-                    {t('navigation.workspace')}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/charts" className="flex items-center gap-2">
-                    <Orbit className="size-4" />
-                    {t('navigation.charts')}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/readings" className="flex items-center gap-2">
-                    <ScrollText className="size-4" />
-                    {t('navigation.readings')}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="flex items-center gap-2">
-                    <Settings className="size-4" />
-                    {t('navigation.settings')}
-                  </Link>
-                </DropdownMenuItem>
-                {user?.isAdmin ? (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin" className="flex items-center gap-2">
-                        <ShieldCheck className="size-4" />
-                        {t('navigation.adminPanel')}
-                      </Link>
-                    </DropdownMenuItem>
-                  </>
-                ) : null}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                  className="flex items-center gap-2 text-red-600 cursor-pointer"
-                >
-                  <LogOut className="size-4" />
-                  {t('navigation.logout')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ) : null}
+          {/* User menu */}
+          <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-2 pl-2 pr-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+                  {(displayName?.[0] ?? 'U').toUpperCase()}
+                </span>
+                <span className="hidden sm:inline max-w-[120px] truncate text-sm">
+                  {displayName}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="w-64 max-w-[calc(100vw-2rem)]">
+              {/* User info */}
+              <DropdownMenuLabel>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <p className="font-semibold text-sm">{displayName}</p>
+                  <p className="break-all whitespace-normal text-xs leading-snug text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+
+              <DropdownMenuSeparator />
+
+              {/* Dashboard */}
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard" className="flex items-center gap-2">
+                  <LayoutDashboard className="size-4" />
+                  {t('navigation.workspace')}
+                </Link>
+              </DropdownMenuItem>
+
+              {/* Charts & Readings — always in dropdown (mobile fallback) */}
+              <DropdownMenuItem asChild>
+                <Link href="/charts" className="flex items-center gap-2">
+                  <Orbit className="size-4" />
+                  {t('navigation.charts')}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/readings" className="flex items-center gap-2">
+                  <ScrollText className="size-4" />
+                  {t('navigation.readings')}
+                </Link>
+              </DropdownMenuItem>
+
+              {/* Settings */}
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="flex items-center gap-2">
+                  <Settings className="size-4" />
+                  {t('navigation.settings')}
+                </Link>
+              </DropdownMenuItem>
+
+              {/* Admin (if applicable) */}
+              {user?.isAdmin ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin" className="flex items-center gap-2">
+                      <ShieldCheck className="size-4" />
+                      {t('navigation.adminPanel')}
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+
+              <DropdownMenuSeparator />
+
+              {/* Logout */}
+              <DropdownMenuItem
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
+              >
+                <LogOut className="size-4" />
+                {t('navigation.logout')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
-import { isTelegramStubEmail } from '@/lib/auth/user-accounts';
 
 /**
  * GET /api/cron/cleanup-unverified
@@ -49,9 +48,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const users = data?.users ?? [];
 
-    const stale = users.filter(
-      (u) => !u.email_confirmed_at && u.created_at < cutoff && !isTelegramStubEmail(u.email),
-    );
+    const stale = users.filter((u) => !u.email_confirmed_at && u.created_at < cutoff);
 
     for (const u of stale) {
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(u.id);

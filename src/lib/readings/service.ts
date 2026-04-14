@@ -4,7 +4,6 @@ import { generateStructuredOutput } from '@/lib/llm/structured-generation';
 import { logger } from '@/lib/logger';
 import { TONE_STYLES } from '@/lib/astrology/constants';
 import type { ToneStyle } from '@/lib/astrology/types';
-import { getReadingAccessDecision } from '@/lib/report-access';
 import { readingPlanSchema } from '@/lib/readings/plan-schema';
 import {
   structuredReadingSchema,
@@ -113,10 +112,6 @@ function titleForReadingType(readingType: string, label: string) {
       return `${label} - Career Reading`;
     case 'strengths':
       return `${label} - Strengths and Challenges`;
-    case 'transit':
-      return `${label} - Transit Snapshot`;
-    case 'compatibility':
-      return `${label} - Compatibility`;
     default:
       return `${label} - Reading`;
   }
@@ -230,18 +225,23 @@ export async function createReadingDraft(userId: string, input: ReadingCreateInp
           .eq('chart_snapshot_id', snapshot.id)
           .order('orb_decimal', { ascending: true })
       : Promise.resolve({ data: [] }),
-    db.from('user_preferences').select('tone_style').eq('user_id', userId).maybeSingle(),
+    db
+      .from('user_preferences')
+      .select(
+        'tone_style, allow_spiritual_tone, content_focus_love, content_focus_career, content_focus_growth',
+      )
+      .eq('user_id', userId)
+      .maybeSingle(),
   ]);
 
   let status: 'pending' | 'ready' | 'error' = snapshot?.id ? 'ready' : 'pending';
   let errorMessage: string | null = snapshot?.id ? null : 'No chart snapshot available yet';
   let content: StructuredReadingOutput;
   const generationTraces: GenerationLogDraft[] = [];
-  const accessDecision = await getReadingAccessDecision(userId, input.readingType);
   const accessDecisionPayload = {
-    accessBasis: accessDecision.accessBasis,
-    productId: accessDecision.productId,
-    entitlementId: accessDecision.entitlementId,
+    accessBasis: 'free_core',
+    productId: null,
+    entitlementId: null,
   } satisfies JsonObject;
 
   if (!snapshot?.id) {
@@ -275,6 +275,10 @@ export async function createReadingDraft(userId: string, input: ReadingCreateInp
         locale: input.locale,
         readingType: input.readingType,
         toneStyle: normalizeToneStyle(preferences?.tone_style),
+        allowSpiritualTone: preferences?.allow_spiritual_tone ?? true,
+        contentFocusLove: preferences?.content_focus_love ?? true,
+        contentFocusCareer: preferences?.content_focus_career ?? true,
+        contentFocusGrowth: preferences?.content_focus_growth ?? true,
         chartLabel: chart.label,
         personName: chart.person_name,
         birthDate: chart.birth_date,

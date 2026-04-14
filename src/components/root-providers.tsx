@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useCallback, createContext, useContext } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { AbstractIntlMessages } from 'next-intl';
 import { SessionProvider } from 'next-auth/react';
+import type { Session } from 'next-auth';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
-import { TelegramLoader } from '@/components/telegram-loader';
 import { TOAST_DURATION_MS } from '@/lib/constants';
 
 interface RootProvidersProps {
@@ -15,50 +14,27 @@ interface RootProvidersProps {
   messages: AbstractIntlMessages;
   timeZone: string;
   now: Date;
-}
-
-interface LocaleSwitchContextType {
-  switchLocale: (newLocale: string) => Promise<void>;
-}
-
-const LocaleSwitchContext = createContext<LocaleSwitchContextType>({
-  switchLocale: async () => {},
-});
-
-export function useLocaleSwitch() {
-  return useContext(LocaleSwitchContext);
+  session: Session | null;
 }
 
 export function RootProviders({
   children,
-  locale: initialLocale,
-  messages: initialMessages,
+  locale,
+  messages,
   timeZone,
   now,
+  session,
 }: RootProvidersProps) {
-  const [locale, setLocale] = useState(initialLocale);
-  const [messages, setMessages] = useState(initialMessages);
-
-  const switchLocale = useCallback(async (newLocale: string) => {
-    const newMessages = (await import(`@/i18n/messages/${newLocale}.json`)) as {
-      default: AbstractIntlMessages;
-    };
-    setLocale(newLocale);
-    setMessages(newMessages.default);
-  }, []);
-
   return (
-    <SessionProvider>
-      <LocaleSwitchContext.Provider value={{ switchLocale }}>
-        <NextIntlClientProvider locale={locale} messages={messages} timeZone={timeZone} now={now}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <div className="flex flex-col flex-1">
-              <TelegramLoader>{children}</TelegramLoader>
-              <Toaster position="bottom-right" duration={TOAST_DURATION_MS} />
-            </div>
-          </ThemeProvider>
-        </NextIntlClientProvider>
-      </LocaleSwitchContext.Provider>
+    <SessionProvider session={session}>
+      <NextIntlClientProvider locale={locale} messages={messages} timeZone={timeZone} now={now}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <div className="flex flex-col flex-1">
+            {children}
+            <Toaster position="bottom-right" duration={TOAST_DURATION_MS} />
+          </div>
+        </ThemeProvider>
+      </NextIntlClientProvider>
     </SessionProvider>
   );
 }

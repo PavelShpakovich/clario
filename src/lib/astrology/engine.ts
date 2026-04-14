@@ -6,6 +6,7 @@ import {
   SiderealTime,
   SunPosition,
 } from 'astronomy-engine';
+import { normalizeHouseSystem } from '@/lib/astrology/constants';
 import type {
   BirthDataInput,
   CalculatedAspect,
@@ -140,6 +141,12 @@ function houseForLongitude(lon: number, ascendant: number): number {
   return Math.floor(diff / 30) + 1;
 }
 
+function wholeSignHouseForLongitude(lon: number, ascendant: number): number {
+  const ascSignStart = Math.floor(ascendant / 30) * 30;
+  const diff = (((lon - ascSignStart) % 360) + 360) % 360;
+  return Math.floor(diff / 30) + 1;
+}
+
 /** Build aspects between the given positions using exact angular distances. */
 function buildAspects(positions: CalculatedPosition[]): CalculatedAspect[] {
   const aspects: CalculatedAspect[] = [];
@@ -179,6 +186,7 @@ class RealAstrologyEngine implements AstrologyEngine {
 
   async calculateNatalChart(input: BirthDataInput): Promise<ChartComputationResult> {
     const warnings: string[] = [];
+    const houseSystem = normalizeHouseSystem(input.houseSystem);
 
     // Build birth datetime in UTC
     const [year, month, day] = input.birthDate.split('-').map(Number);
@@ -189,43 +197,62 @@ class RealAstrologyEngine implements AstrologyEngine {
       // If timezone provided, attempt offset; otherwise treat as UTC
       utcDate = new Date(Date.UTC(year, month - 1, day, hour, minute));
       if (input.timezone) {
+        // Pre-validate the timezone string before using it
+        let tzValid = false;
         try {
-          // Try Intl to resolve timezone offset
-          const local = new Date(`${input.birthDate}T${input.birthTime}:00`);
-          const formatter = new Intl.DateTimeFormat('en-US', {
-            timeZone: input.timezone,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false,
-          });
-          // Calculate offset by formatting in that timezone
-          const parts = formatter.formatToParts(local);
-          const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
-          const tzLocal = new Date(
-            Date.UTC(
-              get('year'),
-              get('month') - 1,
-              get('day'),
-              get('hour'),
-              get('minute'),
-              get('second'),
-            ),
-          );
-          const offsetMs = tzLocal.getTime() - local.getTime();
-          utcDate = new Date(local.getTime() + offsetMs);
+          Intl.DateTimeFormat(undefined, { timeZone: input.timezone });
+          tzValid = true;
         } catch {
-          warnings.push('Could not resolve timezone offset; birth time treated as UTC.');
+          warnings.push(
+            `Часовой пояс «${input.timezone}» не распознан — используйте формат IANA (например, Europe/Moscow). Время рождения обработано как UTC.`,
+          );
+        }
+
+        if (tzValid) {
+          try {
+            // Use Date.UTC to avoid server-local-timezone ambiguity.
+            // "Intl trick": treat birth time as UTC, format it in the target tz,
+            // measure the displayed offset, then subtract to get actual UTC.
+            const approxUtc = new Date(Date.UTC(year, month - 1, day, hour, minute));
+            const formatter = new Intl.DateTimeFormat('en-US', {
+              timeZone: input.timezone,
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hourCycle: 'h23', // avoids hour=24 midnight edge-case with hour12:false
+            });
+            const parts = formatter.formatToParts(approxUtc);
+            const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+            // What local time does approxUtc correspond to in the target tz?
+            const displayed = new Date(
+              Date.UTC(
+                get('year'),
+                get('month') - 1,
+                get('day'),
+                get('hour'),
+                get('minute'),
+                get('second'),
+              ),
+            );
+            // offset = how far ahead/behind the tz is vs UTC
+            const offsetMs = displayed.getTime() - approxUtc.getTime();
+            // Actual UTC = birth local time − offset
+            utcDate = new Date(approxUtc.getTime() - offsetMs);
+          } catch {
+            warnings.push(
+              'Не удалось определить смещение часового пояса — время рождения обработано как UTC.',
+            );
+          }
         }
       }
     } else {
       // Unknown birth time → noon UTC as convention
       utcDate = new Date(Date.UTC(year, month - 1, day, 12, 0));
       warnings.push(
-        'Birth time is unknown. Houses, ascendant, and midheaven are omitted. Noon UTC is used for planetary positions.',
+        'Время рождения не указано. Дома, асцендент и середина неба не рассчитаны. Для позиций планет используется полдень UTC.',
       );
     }
 
@@ -274,15 +301,18 @@ class RealAstrologyEngine implements AstrologyEngine {
         houseNumber: 10,
       });
 
-      // Assign houses using Equal house system anchored at ASC
+      // Assign houses using the selected supported house system.
       for (const pos of positions) {
         if (pos.bodyKey !== 'ascendant' && pos.bodyKey !== 'midheaven') {
-          pos.houseNumber = houseForLongitude(pos.degreeDecimal, ascendant);
+          pos.houseNumber =
+            houseSystem === 'whole_sign'
+              ? wholeSignHouseForLongitude(pos.degreeDecimal, ascendant)
+              : houseForLongitude(pos.degreeDecimal, ascendant);
         }
       }
     } else if (input.birthTimeKnown) {
       warnings.push(
-        'Latitude/longitude not provided. Houses and angles cannot be calculated without coordinates.',
+        'Координаты не указаны. Дома и углы карты не могут быть рассчитаны без широты и долготы.',
       );
     }
 
@@ -308,7 +338,7 @@ class RealAstrologyEngine implements AstrologyEngine {
         latitude: input.latitude ?? null,
         longitude: input.longitude ?? null,
       },
-      houseSystem: input.houseSystem,
+      houseSystem,
       dominantSigns,
       dominantBodies,
       warnings,

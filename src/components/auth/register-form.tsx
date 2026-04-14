@@ -119,8 +119,8 @@ export function RegisterForm() {
         </div>
       }
     >
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-2">
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
           <Label htmlFor="email">{t('email')}</Label>
           <Input
             id="email"
@@ -133,7 +133,7 @@ export function RegisterForm() {
             required
           />
         </div>
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <Label htmlFor="password">{t('password')}</Label>
           <Input
             id="password"
@@ -146,7 +146,7 @@ export function RegisterForm() {
             required
           />
         </div>
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <Label htmlFor="confirmPassword">{t('confirmPassword')}</Label>
           <Input
             id="confirmPassword"

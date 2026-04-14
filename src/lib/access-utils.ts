@@ -59,21 +59,6 @@ export async function getWorkspaceAccessStatus(userId: string): Promise<Workspac
   };
 }
 
-export async function getUserAccessPolicy(userId: string): Promise<{
-  accessMode: 'direct';
-  chartsLimit: number;
-  savedChartsLimit: number | null;
-}> {
-  void userId;
-  const policy = await getUsagePolicy();
-
-  return {
-    accessMode: 'direct',
-    chartsLimit: policy.chartsPerPeriod,
-    savedChartsLimit: policy.savedChartsLimit,
-  };
-}
-
 export async function getUserUsage(
   userId: string,
 ): Promise<{ chartsCreated: number; chartsLimit: number; chartsRemaining: number }> {

@@ -2,9 +2,7 @@ import { NextResponse } from 'next/server';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAdmin } from '@/lib/api/auth';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { getUsagePolicy } from '@/lib/usage-policy';
 import { logger } from '@/lib/logger';
-import { isTelegramStubEmail } from '@/lib/auth/user-accounts';
 
 /**
  * GET /api/admin/users
@@ -37,41 +35,25 @@ export const GET = withApiHandler(async (req: Request) => {
     }
 
     const userIds = usersData.users.map((u) => u.id);
-    const policy = await getUsagePolicy();
-    const now = new Date().toISOString();
 
-    // Batch queries: profiles + usage_counters for all users in one go
-    const [{ data: profiles }, { data: usages }] = await Promise.all([
-      supabaseAdmin.from('profiles').select('id, display_name, is_admin').in('id', userIds),
-      supabaseAdmin
-        .from('usage_counters')
-        .select('user_id, charts_created')
-        .in('user_id', userIds)
-        .lte('period_start', now)
-        .gte('period_end', now),
-    ]);
+    const { data: profiles } = await supabaseAdmin
+      .from('profiles')
+      .select('id, display_name, is_admin')
+      .in('id', userIds);
 
     const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
-    const usageMap = new Map((usages ?? []).map((u) => [u.user_id, u]));
 
     const enrichedUsers = usersData.users.map((authUser) => {
-      const email = isTelegramStubEmail(authUser.email) ? null : (authUser.email ?? null);
+      const email = authUser.email ?? null;
       const profile = profileMap.get(authUser.id);
-      const usage = usageMap.get(authUser.id);
-      const chartsCreated = usage?.charts_created ?? 0;
-      const chartsRemaining = Math.max(0, policy.chartsPerPeriod - chartsCreated);
 
       return {
         id: authUser.id,
         email,
-        telegramId: null,
         displayName: profile?.display_name || 'Unknown',
         isAdmin: profile?.is_admin || false,
         isEmailVerified: Boolean(authUser.email_confirmed_at),
         accessMode: 'direct',
-        chartsLimit: policy.chartsPerPeriod,
-        chartsUsed: chartsCreated,
-        chartsRemaining,
         createdAt: authUser.created_at,
       };
     });
@@ -81,7 +63,7 @@ export const GET = withApiHandler(async (req: Request) => {
       pagination: {
         page,
         perPage,
-        total: usersData.users.length,
+        total: usersData.total ?? usersData.users.length,
       },
     });
   } catch (error) {

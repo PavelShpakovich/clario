@@ -48,7 +48,7 @@ const VALID_CHART = {
   birthDate: '1990-06-21',
   birthTime: '14:30',
   birthTimeKnown: true,
-  houseSystem: 'placidus',
+  houseSystem: 'equal',
   city: 'Минск',
   country: 'Беларусь',
   locale: 'ru',
@@ -113,13 +113,13 @@ describe('chartCreateSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('defaults houseSystem to placidus when omitted', () => {
+  it('defaults houseSystem to equal when omitted', () => {
     const input = { ...VALID_CHART };
     delete (input as Partial<typeof VALID_CHART>).houseSystem;
     const result = chartCreateSchema.safeParse(input);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.houseSystem).toBe('placidus');
+      expect(result.data.houseSystem).toBe('equal');
     }
   });
 });

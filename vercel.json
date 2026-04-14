@@ -4,6 +4,9 @@
       "maxDuration": 60
     },
     "src/app/api/readings/**": {
+      "maxDuration": 300
+    },
+    "src/app/api/chat/**": {
       "maxDuration": 60
     },
     "src/app/api/auth/**": {

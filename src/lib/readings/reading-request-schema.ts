@@ -4,7 +4,8 @@ import { ASTROLOGY_SUPPORTED_LOCALES, READING_TYPES } from '@/lib/astrology/cons
 export const readingCreateSchema = z.object({
   chartId: z.string().uuid(),
   readingType: z.enum(READING_TYPES),
-  locale: z.enum(ASTROLOGY_SUPPORTED_LOCALES).default('en'),
+  locale: z.enum(ASTROLOGY_SUPPORTED_LOCALES).default('ru'),
+  replaceReadingId: z.string().uuid().optional(),
 });
 
 export type ReadingCreateInput = z.infer<typeof readingCreateSchema>;

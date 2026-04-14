@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { profileApi } from '@/services/profile-api';
 
-// Module-level cache so all hook instances share state
+// Module-level cache shared across all hook instances
 let cachedName: string | null = null;
-let fetchFailed = false;
-const listeners = new Set<(name: string) => void>();
+let cachedForUserId: string | null = null;
+const listeners = new Set<(name: string | null) => void>();
 
 /** Call this after saving the profile to push the new name to all subscribers instantly */
 export function broadcastDisplayName(name: string) {
@@ -17,9 +17,10 @@ export function broadcastDisplayName(name: string) {
 
 export function useDisplayName() {
   const { data: session } = useSession();
-  const [displayName, setDisplayName] = useState<string | null>(
-    cachedName ?? session?.user?.name ?? null,
-  );
+  const userId = session?.user?.id ?? null;
+  const cachedDisplayName = userId === cachedForUserId ? cachedName : null;
+
+  const [displayName, setDisplayName] = useState<string | null>(cachedDisplayName);
 
   // Subscribe to instant broadcasts (e.g. after saving profile)
   useEffect(() => {
@@ -29,9 +30,16 @@ export function useDisplayName() {
     };
   }, []);
 
-  // Fetch display name from API on mount if not yet cached
   useEffect(() => {
-    if (cachedName || fetchFailed || !session?.user?.id) return;
+    if (userId !== cachedForUserId) {
+      cachedName = null;
+      cachedForUserId = userId;
+    }
+  }, [userId]);
+
+  // Fetch display name from API when not yet cached for this user
+  useEffect(() => {
+    if (cachedDisplayName || !userId) return;
 
     let cancelled = false;
 
@@ -41,17 +49,21 @@ export function useDisplayName() {
         if (cancelled) return;
         const name = data.display_name ?? session?.user?.name ?? null;
         cachedName = name;
-        if (name) setDisplayName(name);
+        cachedForUserId = userId;
+        setDisplayName(name);
       })
       .catch(() => {
-        // Prevent retries on auth failure — fall back to session name
-        fetchFailed = true;
+        // Fall back to session name — will retry on next mount
       });
 
     return () => {
       cancelled = true;
     };
-  }, [session?.user?.id, session?.user?.name]);
+  }, [cachedDisplayName, userId, session?.user?.name]);
 
-  return displayName ?? session?.user?.name ?? session?.user?.email ?? 'User';
+  if (userId !== cachedForUserId) {
+    return session?.user?.name ?? session?.user?.email ?? 'User';
+  }
+
+  return cachedDisplayName ?? displayName ?? session?.user?.name ?? session?.user?.email ?? 'User';
 }

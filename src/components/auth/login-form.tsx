@@ -98,7 +98,6 @@ export function LoginForm() {
               {t('forgotPassword')}
             </Link>
           </p>
-          <p>{t('telegramHint')}</p>
         </div>
       }
     >

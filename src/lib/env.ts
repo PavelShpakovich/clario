@@ -19,12 +19,6 @@ const envSchema = z.object({
   QWEN_MODEL: z.string().default('qwen-plus'),
   QWEN_BASE_URL: z.string().url().optional(),
 
-  // Telegram
-  TELEGRAM_BOT_TOKEN: z.string().optional(),
-  NEXT_PUBLIC_TELEGRAM_BOT_URL: z.string().url().optional(),
-  // Secret token for Telegram webhook verification (set in BotFather/setWebhook)
-  TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
-
   // Support
   SUPPORT_EMAIL: z.string().email().optional().default('support@example.com'),
   ADMIN_EMAILS: z.string().optional(), // Comma-separated email list
@@ -33,8 +27,11 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
 
+  // Maps
+  NEXT_PUBLIC_YANDEX_MAPS_KEY: z.string().optional(),
+
   // Cron security
-  CRON_SECRET: z.string().optional(),
+  CRON_SECRET: z.string().min(1, 'CRON_SECRET is required'),
 
   // Node
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -56,4 +53,3 @@ function validateEnv() {
 }
 
 export const env = validateEnv();
-export type Env = z.infer<typeof envSchema>;

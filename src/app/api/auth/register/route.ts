@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { ValidationError } from '@/lib/errors';
@@ -25,7 +24,6 @@ export const POST = withApiHandler(async (req) => {
     );
   }
 
-  const locale = (await cookies()).get('NEXT_LOCALE')?.value === 'en' ? 'en' : 'ru';
   const body = bodySchema.safeParse(await req.json());
   if (!body.success) {
     throw new ValidationError({
@@ -44,7 +42,7 @@ export const POST = withApiHandler(async (req) => {
     }
     // Unconfirmed account exists — resend the verification email and let the
     // client show the "check your inbox" state again.
-    await sendVerificationEmail({ userId: existingUser.id, email, locale });
+    await sendVerificationEmail({ userId: existingUser.id, email });
     return NextResponse.json({ success: true, needsVerification: true });
   }
 
@@ -75,7 +73,7 @@ export const POST = withApiHandler(async (req) => {
     throw profileError;
   }
 
-  await sendVerificationEmail({ userId: data.user.id, email, locale });
+  await sendVerificationEmail({ userId: data.user.id, email });
 
   return NextResponse.json({ success: true, needsVerification: true });
 });

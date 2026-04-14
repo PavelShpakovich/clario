@@ -31,11 +31,12 @@ const nextConfig: NextConfig = {
         key: 'Content-Security-Policy',
         value: [
           "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org",
-          "style-src 'self' 'unsafe-inline'",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://api-maps.yandex.ru https://yastatic.net",
+          "style-src 'self' 'unsafe-inline' https://yastatic.net",
           "img-src 'self' data: https:",
-          "font-src 'self' data:",
-          "connect-src 'self' https://*.supabase.co https://api.telegram.org",
+          "font-src 'self' data: https://yastatic.net",
+          "connect-src 'self' https://*.supabase.co https://api.telegram.org https://*.maps.yandex.net https://geocode-maps.yandex.ru https://api-maps.yandex.ru https://yastatic.net https://nominatim.openstreetmap.org https://api.bigdatacloud.net",
+          'worker-src blob:',
           "frame-ancestors 'none'", // overridden for /tg below
           "base-uri 'self'",
           "form-action 'self'",

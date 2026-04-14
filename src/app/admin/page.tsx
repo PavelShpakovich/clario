@@ -14,7 +14,6 @@ import {
   Loader2,
   RotateCcw,
   Trash2,
-  Bot,
   Users,
   LayoutGrid,
 } from 'lucide-react';
@@ -72,10 +71,10 @@ function AnalyticsCard() {
   }, [load]);
 
   return (
-    <Card className="p-6 mb-6">
+    <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">{t('analyticsTitle')}</h2>
-        <Button variant="ghost" size="sm" onClick={() => void load()} disabled={loading}>
+        <Button variant="ghost" size="icon" onClick={() => void load()} disabled={loading}>
           <RotateCcw
             className={loading ? 'animate-[spin_1s_linear_infinite_reverse]' : undefined}
           />
@@ -83,14 +82,14 @@ function AnalyticsCard() {
       </div>
 
       {loading && !data ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {Array.from({ length: 2 }).map((_, i) => (
             <Skeleton key={i} className="h-20 rounded-lg" />
           ))}
         </div>
       ) : data ? (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <StatTile
               label={t('analyticsTotalUsers')}
               value={data.totalUsers.toLocaleString()}
@@ -111,58 +110,11 @@ function AnalyticsCard() {
 }
 
 // ---------------------------------------------------------------------------
-// Bot Setup Card
+// (Bot Setup Card removed — Telegram integration removed)
 // ---------------------------------------------------------------------------
-function BotSetupCard() {
-  const t = useTranslations('admin');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<Record<string, unknown> | null>(null);
-
-  const runSetup = async () => {
-    setLoading(true);
-    setResult(null);
-    try {
-      const data = await adminApi.runBotSetup();
-      setResult(data);
-      if (data.ok) {
-        toast.success(t('botSetupSuccess'));
-      } else {
-        toast.error(t('botSetupFailed'));
-      }
-    } catch {
-      toast.error(t('botSetupRequestFailed'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Card className="p-6 mb-6">
-      <div className="flex flex-col gap-2">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Bot className="size-5" />
-            {t('botSetupTitle')}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">{t('botSetupDescription')}</p>
-        </div>
-        <Button onClick={runSetup} disabled={loading} className="shrink-0 self-end">
-          {loading ? <Loader2 className="animate-spin mr-2" /> : null}
-          {loading ? t('botSetupRunning') : t('botSetupRun')}
-        </Button>
-      </div>
-      {result ? (
-        <pre className="mt-4 text-xs bg-muted rounded p-3 overflow-x-auto max-h-48">
-          {JSON.stringify(result, null, 2)}
-        </pre>
-      ) : null}
-    </Card>
-  );
-}
 
 function formatUserIdentifier(user: AdminUser): string {
   if (user.email) return user.email;
-  if (user.telegramId) return `ID: ${user.telegramId}`;
   return user.displayName;
 }
 
@@ -194,9 +146,7 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
   const t = useTranslations('admin');
   const [loading, setLoading] = useState(false);
   const [isAdminState, setIsAdminState] = useState(user.isAdmin);
-  const [pendingAction, setPendingAction] = useState<
-    'toggleAdmin' | 'resetUsage' | 'deleteUser' | null
-  >(null);
+  const [pendingAction, setPendingAction] = useState<'toggleAdmin' | 'deleteUser' | null>(null);
 
   const executeToggleAdmin = async () => {
     setLoading(true);
@@ -204,23 +154,8 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
       await adminApi.toggleAdmin(user.id, !isAdminState);
       setIsAdminState(!isAdminState);
       onRefresh();
-    } catch (error) {
-      console.error('Failed to toggle admin status', error);
+    } catch {
       toast.error(t('failedToggleAdmin'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const executeResetUsage = async () => {
-    setLoading(true);
-    try {
-      await adminApi.resetUsage(user.id);
-      toast.success(t('resetUsageSuccess'));
-      onRefresh();
-    } catch (error) {
-      console.error('Failed to reset usage', error);
-      toast.error(t('failedResetUsage'));
     } finally {
       setLoading(false);
     }
@@ -232,8 +167,7 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
       await adminApi.deleteUser(user.id);
       toast.success(t('deleteUserSuccess'));
       onRefresh();
-    } catch (error) {
-      console.error('Failed to delete user', error);
+    } catch {
       toast.error(t('failedDeleteUser'));
     } finally {
       setLoading(false);
@@ -243,7 +177,6 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
   const executeConfirmed = async () => {
     setPendingAction(null);
     if (pendingAction === 'toggleAdmin') await executeToggleAdmin();
-    if (pendingAction === 'resetUsage') await executeResetUsage();
     if (pendingAction === 'deleteUser') await executeDeleteUser();
   };
 
@@ -252,9 +185,7 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
   const dialogDescription =
     pendingAction === 'toggleAdmin'
       ? t('confirmToggleAdmin', { action })
-      : pendingAction === 'deleteUser'
-        ? t('confirmDeleteUser', { user: formatUserIdentifier(user) })
-        : t('confirmResetUsage');
+      : t('confirmDeleteUser', { user: formatUserIdentifier(user) });
   const confirmLabel = pendingAction === 'deleteUser' ? t('deleteConfirmAction') : t('confirm');
 
   return {
@@ -262,7 +193,6 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
     loading,
     isAdminState,
     handleToggleAdmin: () => setPendingAction('toggleAdmin'),
-    handleResetUsage: () => setPendingAction('resetUsage'),
     handleDeleteUser: () => setPendingAction('deleteUser'),
     dialogOpen: pendingAction !== null,
     dialogTitle,
@@ -306,7 +236,6 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
     loading,
     isAdminState,
     handleToggleAdmin,
-    handleResetUsage,
     handleDeleteUser,
     dialogOpen,
     dialogTitle,
@@ -344,9 +273,6 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
             ) : null}
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {t('colChartsUsed')}: {user.chartsUsed}/{user.chartsLimit}
-        </p>
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <AdminToggle
             t={t}
@@ -355,18 +281,9 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
             handleToggleAdmin={handleToggleAdmin}
             isSelf={isSelf}
           />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleResetUsage}
-            disabled={loading}
-            title={t('resetUsage')}
-          >
-            <RotateCcw />
-          </Button>
           {!isSelf ? (
             <Button
-              size="sm"
+              size="icon"
               variant="destructive"
               onClick={handleDeleteUser}
               disabled={loading}
@@ -388,7 +305,6 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
     loading,
     isAdminState,
     handleToggleAdmin,
-    handleResetUsage,
     handleDeleteUser,
     dialogOpen,
     dialogTitle,
@@ -417,9 +333,6 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
         <td className="px-4 py-3">
           <VerificationBadge user={user} />
         </td>
-        <td className="px-4 py-3 text-sm text-center">
-          {user.chartsUsed}/{user.chartsLimit}
-        </td>
         <td className="px-4 py-3">
           <AdminToggle
             t={t}
@@ -430,20 +343,9 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
           />
         </td>
         <td className="px-4 py-3">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleResetUsage}
-            disabled={loading}
-            title={t('resetUsage')}
-          >
-            <RotateCcw />
-          </Button>
-        </td>
-        <td className="px-4 py-3">
           {!isSelf ? (
             <Button
-              size="sm"
+              size="icon"
               variant="destructive"
               onClick={handleDeleteUser}
               disabled={loading}
@@ -476,8 +378,8 @@ function AdminTableContent() {
       setError(null);
       const result = await adminApi.listUsers(page, perPage);
       setData(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('failedLoadUsers'));
+    } catch {
+      setError(t('failedLoadUsers'));
     } finally {
       setLoading(false);
     }
@@ -525,9 +427,7 @@ function AdminTableContent() {
               <th className="px-4 py-3 text-left font-semibold">{t('colEmail')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colDisplayName')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colVerification')}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t('colChartsUsed')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colAdmin')}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t('resetUsage')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colDelete')}</th>
             </tr>
           </thead>
@@ -580,30 +480,26 @@ function AdminTableContent() {
 export default function AdminPage() {
   const t = useTranslations('admin');
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <BackLink />
-          <h1 className="text-3xl font-bold">{t('title')}</h1>
-          <p className="text-muted-foreground mt-2">{t('description')}</p>
-        </div>
-
-        <AnalyticsCard />
-
-        <BotSetupCard />
-
-        <Card className="p-6">
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="size-8 animate-spin text-muted-foreground" />
-              </div>
-            }
-          >
-            <AdminTableContent />
-          </Suspense>
-        </Card>
+    <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <div>
+        <BackLink />
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <p className="text-muted-foreground mt-2">{t('description')}</p>
       </div>
-    </div>
+
+      <AnalyticsCard />
+
+      <Card className="p-6">
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="size-8 animate-spin text-muted-foreground" />
+            </div>
+          }
+        >
+          <AdminTableContent />
+        </Suspense>
+      </Card>
+    </main>
   );
 }

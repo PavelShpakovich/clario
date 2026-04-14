@@ -5,7 +5,6 @@ import {
   AuthError,
   RateLimitError,
   httpStatusForError,
-  tryCatch,
 } from '@/lib/errors';
 
 describe('AppError subclasses', () => {
@@ -39,32 +38,5 @@ describe('AppError subclasses', () => {
   it('preserves context', () => {
     const err = new ValidationError({ message: 'Bad', context: { field: 'email' } });
     expect(err.context).toEqual({ field: 'email' });
-  });
-});
-
-describe('tryCatch', () => {
-  it('returns ok:true with data on success', async () => {
-    const result = await tryCatch(async () => 42);
-    expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data).toBe(42);
-  });
-
-  it('returns ok:false with AppError when AppError is thrown', async () => {
-    const result = await tryCatch(async () => {
-      throw new NotFoundError({ message: 'not found' });
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error).toBeInstanceOf(NotFoundError);
-      expect(result.error.code).toBe('NOT_FOUND');
-    }
-  });
-
-  it('wraps unknown errors as INTERNAL_ERROR', async () => {
-    const result = await tryCatch(async () => {
-      throw new Error('something unexpected');
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.code).toBe('INTERNAL_ERROR');
   });
 });

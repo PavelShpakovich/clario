@@ -4,13 +4,14 @@ import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
 import { auth } from '@/auth';
 import { ValidationError, AppError, AuthError } from '@/lib/errors';
+import { logger } from '@/lib/logger';
 import { getCacheHeaders, CACHE_PRESETS } from '@/lib/cache-utils';
 import { deriveDisplayNameFromEmail } from '@/lib/auth/utils';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { getTelegramIdForUser } from '@/lib/auth/account-identities';
 
 const updateProfileSchema = z.object({
   displayName: z.string().trim().min(1).max(100).optional(),
+  timezone: z.string().trim().max(80).optional(),
 });
 
 export const GET = withApiHandler(async () => {
@@ -53,7 +54,6 @@ export const GET = withApiHandler(async () => {
 
     const response = NextResponse.json({
       ...createdProfile,
-      telegram_id: await getTelegramIdForUser(user.id),
     });
 
     // Add cache headers
@@ -64,10 +64,8 @@ export const GET = withApiHandler(async () => {
     return response;
   }
 
-  const telegramId = await getTelegramIdForUser(user.id);
   const response = NextResponse.json({
     ...profile,
-    telegram_id: telegramId,
   });
 
   // Add cache headers
@@ -88,20 +86,18 @@ export const PATCH = withApiHandler(async (req) => {
     });
   }
 
-  const { displayName } = body.data;
+  const { displayName, timezone } = body.data;
 
-  const updateData: {
-    id: string;
-    display_name?: string;
-  } = {
+  const updateData = {
     id: user.id,
+    ...(displayName !== undefined && { display_name: displayName }),
+    ...(timezone !== undefined && { timezone }),
   };
-  if (displayName) updateData.display_name = displayName;
 
   const { data: updatedProfile, error } = await supabase
     .from('profiles')
     .upsert(updateData, { onConflict: 'id' })
-    .select('display_name')
+    .select('display_name, timezone')
     .single();
 
   if (error ?? !updatedProfile) {
@@ -110,7 +106,6 @@ export const PATCH = withApiHandler(async (req) => {
 
   return NextResponse.json({
     ...updatedProfile,
-    telegram_id: await getTelegramIdForUser(user.id),
   });
 });
 
@@ -123,7 +118,7 @@ export const DELETE = withApiHandler(async () => {
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
   if (deleteError) {
-    console.error('Supabase admin deleteUser error:', deleteError);
+    logger.error({ err: deleteError }, 'profile: failed to delete user from auth');
     throw new AppError('INTERNAL_ERROR', { message: 'Failed to delete account from database.' });
   }
 
