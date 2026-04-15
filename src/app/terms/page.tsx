@@ -1,16 +1,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tryclario.by';
 
-export const metadata: Metadata = {
-  title: 'Условия использования',
-  description:
-    'Прочитайте Условия использования Clario — правила и условия пользования платформой.',
-  alternates: { canonical: `${APP_URL}/terms` },
-  robots: { index: true, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const isRu = locale === 'ru';
+  const title = isRu ? 'Условия использования' : 'Terms of Service';
+  const description = isRu
+    ? 'Прочитайте Условия использования Clario — правила и условия пользования платформой.'
+    : 'Read the Clario Terms of Service — the rules and conditions for using the platform.';
+  return {
+    title,
+    description,
+    alternates: { canonical: `${APP_URL}/terms` },
+    robots: { index: true, follow: true },
+  };
+}
 
 export default async function TermsPage() {
   const t = await getTranslations('terms');

@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { auth } from '@/auth';
+
+export const metadata: Metadata = { robots: { index: false } };
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getOrCreateDailyForecast } from '@/lib/forecasts/service';
 import { HoroscopeGenerating } from '@/components/astrology/horoscope-generating';

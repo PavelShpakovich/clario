@@ -45,7 +45,7 @@ const ELEMENT_COLOR: Record<string, string> = {
 
 export async function generateMetadata() {
   const t = await getTranslations('dashboard');
-  return { title: t('pageTitle'), description: t('pageDescription') };
+  return { title: t('pageTitle'), description: t('pageDescription'), robots: { index: false } };
 }
 
 export const dynamic = 'force-dynamic';

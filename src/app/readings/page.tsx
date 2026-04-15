@@ -10,7 +10,7 @@ import { ReadingsList } from '@/components/astrology/readings-list';
 
 export async function generateMetadata() {
   const t = await getTranslations('readingsPage');
-  return { title: t('pageTitle'), description: t('pageDescription') };
+  return { title: t('pageTitle'), description: t('pageDescription'), robots: { index: false } };
 }
 
 const db = supabaseAdmin;

@@ -52,7 +52,7 @@ export async function generateMetadata(): Promise<Metadata> {
           url: '/opengraph-image',
           width: 1200,
           height: 630,
-          alt: 'Clario — AI-астрологические разборы',
+          alt: title,
         },
       ],
     },
@@ -70,6 +70,14 @@ export default async function LandingPage() {
   if (session) redirect('/dashboard');
 
   const t = await getTranslations('landing');
+
+  const locale = await getLocale();
+  const isRu = locale === 'ru';
+
+  const appName = isRu ? 'Clario — AI-астрологические разборы' : 'Clario — AI Astrology Readings';
+  const appDesc = isRu
+    ? 'Создавайте натальные карты, получайте структурированные AI-разборы и возвращайтесь к сохранённым инсайтам. Персональная астрология на основе точных астрономических расчётов.'
+    : 'Create natal charts, generate structured AI astrology readings, and revisit saved insights. Personal astrology powered by precise astronomical calculations.';
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -90,19 +98,48 @@ export default async function LandingPage() {
       },
       {
         '@type': 'WebApplication',
-        name: 'Clario — AI-астрологические разборы',
-        description:
-          'Создавайте натальные карты, получайте структурированные AI-разборы и возвращайтесь к сохранённым инсайтам. Персональная астрология на основе точных астрономических расчётов.',
+        name: appName,
+        description: appDesc,
         url: APP_URL,
         applicationCategory: 'LifestyleApplication',
         operatingSystem: 'Web',
-        inLanguage: 'ru',
+        inLanguage: isRu ? 'ru' : 'en',
         offers: {
           '@type': 'Offer',
           price: '0',
-          priceCurrency: 'RUB',
+          priceCurrency: isRu ? 'RUB' : 'USD',
           availability: 'https://schema.org/InStock',
         },
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: t('faq1Q'),
+            acceptedAnswer: { '@type': 'Answer', text: t('faq1A') },
+          },
+          {
+            '@type': 'Question',
+            name: t('faq2Q'),
+            acceptedAnswer: { '@type': 'Answer', text: t('faq2A') },
+          },
+          {
+            '@type': 'Question',
+            name: t('faq3Q'),
+            acceptedAnswer: { '@type': 'Answer', text: t('faq3A') },
+          },
+          {
+            '@type': 'Question',
+            name: t('faq4Q'),
+            acceptedAnswer: { '@type': 'Answer', text: t('faq4A') },
+          },
+          {
+            '@type': 'Question',
+            name: t('faq5Q'),
+            acceptedAnswer: { '@type': 'Answer', text: t('faq5A') },
+          },
+        ],
       },
     ],
   };

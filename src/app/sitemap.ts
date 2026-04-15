@@ -2,38 +2,46 @@ import type { MetadataRoute } from 'next';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tryclario.by';
 
+// Stable build date — avoids marking every page as modified on every deploy
+const BUILD_DATE = new Date('2025-01-01');
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
   return [
     {
       url: APP_URL,
-      lastModified: now,
+      lastModified: BUILD_DATE,
       changeFrequency: 'weekly',
       priority: 1,
     },
     {
       url: `${APP_URL}/privacy`,
-      lastModified: now,
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly',
       priority: 0.3,
     },
     {
       url: `${APP_URL}/terms`,
-      lastModified: now,
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly',
       priority: 0.3,
     },
     {
       url: `${APP_URL}/login`,
-      lastModified: now,
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: `${APP_URL}/register`,
-      lastModified: now,
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly',
       priority: 0.5,
+    },
+    {
+      url: `${APP_URL}/forgot-password`,
+      lastModified: BUILD_DATE,
+      changeFrequency: 'monthly',
+      priority: 0.3,
     },
   ];
 }

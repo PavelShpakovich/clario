@@ -1,16 +1,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tryclario.by';
 
-export const metadata: Metadata = {
-  title: 'Политика конфиденциальности',
-  description:
-    'Прочитайте Политику конфиденциальности Clario — как мы собираем, используем и защищаем ваши данные.',
-  alternates: { canonical: `${APP_URL}/privacy` },
-  robots: { index: true, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const isRu = locale === 'ru';
+  const title = isRu ? 'Политика конфиденциальности' : 'Privacy Policy';
+  const description = isRu
+    ? 'Прочитайте Политику конфиденциальности Clario — как мы собираем, используем и защищаем ваши данные.'
+    : 'Read the Clario Privacy Policy — how we collect, use, and protect your data.';
+  return {
+    title,
+    description,
+    alternates: { canonical: `${APP_URL}/privacy` },
+    robots: { index: true, follow: true },
+  };
+}
 
 export default async function PrivacyPage() {
   const t = await getTranslations('privacy');

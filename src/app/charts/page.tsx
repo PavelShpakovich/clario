@@ -6,7 +6,11 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function generateMetadata() {
   const t = await getTranslations('workspace');
-  return { title: t('chartsPageTitle'), description: t('chartsPageDescription') };
+  return {
+    title: t('chartsPageTitle'),
+    description: t('chartsPageDescription'),
+    robots: { index: false },
+  };
 }
 
 const db = supabaseAdmin;

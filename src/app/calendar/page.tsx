@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { auth } from '@/auth';
+
+export const metadata: Metadata = { robots: { index: false } };
 import { calculateNatalChart } from '@/lib/astrology/engine';
 import { Button } from '@/components/ui/button';
 import { Sun, Moon } from 'lucide-react';

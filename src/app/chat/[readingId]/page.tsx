@@ -21,7 +21,7 @@ export async function generateMetadata({
   const t = await getTranslations('chat');
   const { readingId } = await params;
   void readingId;
-  return { title: t('pageTitle') };
+  return { title: t('pageTitle'), robots: { index: false } };
 }
 
 export default async function ChatPage({ params }: { params: Promise<{ readingId: string }> }) {

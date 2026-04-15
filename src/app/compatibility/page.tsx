@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
+
+export const metadata: Metadata = { robots: { index: false } };
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import {
   CompatibilityOverview,
