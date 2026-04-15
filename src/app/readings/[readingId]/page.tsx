@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { RetryReadingButton } from '@/components/astrology/retry-reading-button';
+import { ReadingGenerating } from '@/components/astrology/reading-generating';
 import type { Tables } from '@/lib/supabase/types';
 
 const db = supabaseAdmin;
@@ -76,7 +77,9 @@ export default async function ReadingDetailPage({
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
             {readingTypeLabel}
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{reading.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
+            {reading.title}
+          </h1>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
               {new Date(reading.created_at).toLocaleDateString(reading.locale ?? 'ru', {
@@ -96,16 +99,23 @@ export default async function ReadingDetailPage({
             ) : null}
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Button asChild variant="outline">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href="/readings">{t('backToReadings')}</Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href={`/charts/${reading.chart_id}`}>{t('viewChart')}</Link>
           </Button>
           {reading.status === 'ready' ? (
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
               <Link href={`/chat/${reading.id}`}>{t('askFollowUp')}</Link>
+            </Button>
+          ) : null}
+          {reading.status === 'ready' ? (
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <a href={`/api/readings/${reading.id}/pdf`} download>
+                {t('downloadPdf')}
+              </a>
             </Button>
           ) : null}
           {reading.status === 'error' ? (
@@ -118,12 +128,9 @@ export default async function ReadingDetailPage({
         </div>
       </section>
 
-      {/* Generating banner */}
-      {reading.status === 'generating' ? (
-        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
-          <p className="text-sm font-semibold text-primary">{t('generatingBannerTitle')}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{t('generatingBannerDesc')}</p>
-        </div>
+      {/* Generating / pending — auto-triggers LLM and refreshes when done */}
+      {reading.status === 'pending' || reading.status === 'generating' ? (
+        <ReadingGenerating readingId={reading.id} />
       ) : null}
 
       {/* Error banner */}
@@ -143,6 +150,25 @@ export default async function ReadingDetailPage({
         </div>
       ) : null}
 
+      {/* Key Takeaways */}
+      {content.advice && content.advice.length > 0 ? (
+        <div className="rounded-2xl border border-primary/20 bg-card p-6">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+            {t('keyTakeaways')}
+          </h2>
+          <ol className="flex flex-col gap-3">
+            {content.advice.map((item, idx) => (
+              <li key={idx} className="flex items-start gap-3 text-sm leading-relaxed">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">
+                  {idx + 1}
+                </span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+
       {/* Sections */}
       {readingSections.length > 0 ? (
         <div className="flex flex-col gap-8">
@@ -154,7 +180,7 @@ export default async function ReadingDetailPage({
                 </span>
                 <h2 className="text-lg font-semibold tracking-tight">{section.title}</h2>
               </div>
-              <div className="prose prose-neutral dark:prose-invert max-w-none pl-10 text-[15px] leading-[1.8]">
+              <div className="prose prose-neutral dark:prose-invert max-w-none pl-0 sm:pl-10 text-[15px] leading-[1.8]">
                 {section.content
                   .split('\n\n')
                   .filter(Boolean)
@@ -175,7 +201,7 @@ export default async function ReadingDetailPage({
                 </span>
                 <h2 className="text-lg font-semibold tracking-tight">{section.title}</h2>
               </div>
-              <div className="prose prose-neutral dark:prose-invert max-w-none pl-10 text-[15px] leading-[1.8]">
+              <div className="prose prose-neutral dark:prose-invert max-w-none pl-0 sm:pl-10 text-[15px] leading-[1.8]">
                 {section.content
                   .split('\n\n')
                   .filter(Boolean)
@@ -196,24 +222,6 @@ export default async function ReadingDetailPage({
             {content.placementHighlights.map((highlight, idx) => (
               <div key={idx} className="rounded-xl border bg-card px-4 py-3 text-sm">
                 {highlight}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Advice */}
-      {content.advice && content.advice.length > 0 ? (
-        <div>
-          <h2 className="mb-3 text-base font-semibold">{t('advice')}</h2>
-          <div className="grid gap-2">
-            {content.advice.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm"
-              >
-                <span className="mt-0.5 text-primary">✓</span>
-                <span>{item}</span>
               </div>
             ))}
           </div>

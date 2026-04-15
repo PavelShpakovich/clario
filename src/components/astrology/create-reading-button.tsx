@@ -46,9 +46,7 @@ export function CreateReadingButton({ chartId, chartStatus }: CreateReadingButto
           throw new Error(data.error || t('error'));
         }
 
-        toast.success(t('success'));
         router.push(`/readings/${data.reading.id}`);
-        router.refresh();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('error'));
       } finally {

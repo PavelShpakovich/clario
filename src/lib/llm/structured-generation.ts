@@ -11,18 +11,39 @@ interface StructuredGenerationRequest<T> {
   mockResponse: T;
 }
 
+export interface StructuredGenerationResult<T> {
+  content: T;
+  usageTokens: number | null;
+}
+
 export async function generateStructuredOutput<T>(
   request: StructuredGenerationRequest<T>,
 ): Promise<T> {
-  if (env.LLM_PROVIDER === 'mock') {
-    return request.mockResponse;
-  }
-
-  const raw = await generateStructuredText(request.systemPrompt, request.userPrompt);
-  return parseStructuredJson(raw, request.schema);
+  const result = await generateStructuredOutputWithUsage(request);
+  return result.content;
 }
 
-async function generateStructuredText(systemPrompt: string, userPrompt: string): Promise<string> {
+export async function generateStructuredOutputWithUsage<T>(
+  request: StructuredGenerationRequest<T>,
+): Promise<StructuredGenerationResult<T>> {
+  if (env.LLM_PROVIDER === 'mock') {
+    return {
+      content: request.mockResponse,
+      usageTokens: null,
+    };
+  }
+
+  const result = await generateStructuredText(request.systemPrompt, request.userPrompt);
+  return {
+    content: parseStructuredJson(result.text, request.schema),
+    usageTokens: result.usageTokens,
+  };
+}
+
+async function generateStructuredText(
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<{ text: string; usageTokens: number | null }> {
   switch (env.LLM_PROVIDER) {
     case 'qwen':
       return generateWithQwen(systemPrompt, userPrompt);
@@ -33,7 +54,10 @@ async function generateStructuredText(systemPrompt: string, userPrompt: string):
   }
 }
 
-async function generateWithQwen(systemPrompt: string, userPrompt: string): Promise<string> {
+async function generateWithQwen(
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<{ text: string; usageTokens: number | null }> {
   if (!env.QWEN_API_KEY) {
     throw new LlmError({ message: 'QWEN_API_KEY is required when LLM_PROVIDER=qwen' });
   }
@@ -54,10 +78,14 @@ async function generateWithQwen(systemPrompt: string, userPrompt: string): Promi
     enable_thinking: false,
   });
 
-  return response.choices[0]?.message.content ?? '';
+  return {
+    text: response.choices[0]?.message.content ?? '',
+    usageTokens: response.usage?.total_tokens ?? null,
+  };
 }
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
+export type ChatOnComplete = (fullText: string, tokensUsed?: number) => Promise<void>;
 
 /**
  * Multi-turn chat completion. Used for follow-up questions on a reading.
@@ -101,11 +129,13 @@ async function generateChatWithQwen(messages: ChatMessage[]): Promise<string> {
 
 /**
  * Streaming multi-turn chat. Returns a ReadableStream of text chunks.
- * The full accumulated text is also passed to `onComplete` when the stream ends.
+ * The full accumulated text and total token usage are passed to `onComplete`
+ * when the stream ends. `tokensUsed` is undefined when the provider doesn't
+ * report usage (e.g. mock mode or if the API doesn't support stream_options).
  */
 export function streamChatResponse(
   messages: ChatMessage[],
-  onComplete: (fullText: string) => Promise<void>,
+  onComplete: ChatOnComplete,
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
 
@@ -119,7 +149,7 @@ export function streamChatResponse(
         const tick = () => {
           if (i >= words.length) {
             controller.close();
-            void onComplete(text);
+            void onComplete(text, undefined);
             return;
           }
           controller.enqueue(encoder.encode((i > 0 ? ' ' : '') + words[i]));
@@ -145,6 +175,7 @@ export function streamChatResponse(
   });
 
   let fullContent = '';
+  let tokensUsed: number | undefined;
 
   return new ReadableStream({
     async start(controller) {
@@ -155,6 +186,7 @@ export function streamChatResponse(
           messages,
           temperature: 0.7,
           stream: true,
+          stream_options: { include_usage: true },
           enable_thinking: false,
         });
 
@@ -164,10 +196,14 @@ export function streamChatResponse(
             fullContent += text;
             controller.enqueue(encoder.encode(text));
           }
+          // Final chunk carries usage data when stream_options.include_usage is true
+          if (chunk.usage?.total_tokens) {
+            tokensUsed = chunk.usage.total_tokens;
+          }
         }
 
         controller.close();
-        await onComplete(fullContent);
+        await onComplete(fullContent, tokensUsed);
       } catch (err) {
         controller.error(err);
       }

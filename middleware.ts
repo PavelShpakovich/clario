@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 // API routes that skip auth
-const PUBLIC_API_ROUTES = ['/api/auth', '/api/telegram/webhook', '/api/cron'];
+const PUBLIC_API_ROUTES = ['/api/auth', '/api/cron'];
 
 // Public pages requiring no auth
 const PUBLIC_PAGES = [
@@ -26,10 +26,6 @@ export async function middleware(request: NextRequest) {
   }
 
   if (PUBLIC_API_ROUTES.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next();
-  }
-
-  if (pathname === '/tg' || pathname.startsWith('/tg/')) {
     return NextResponse.next();
   }
 

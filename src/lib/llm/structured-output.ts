@@ -30,10 +30,31 @@ export function extractStructuredJson(raw: string): string {
 
   let depth = 0;
   let endIndex = jsonStart;
+  let inString = false;
+  let escaped = false;
 
   for (let index = jsonStart; index < text.length; index += 1) {
-    if (text[index] === openChar) depth += 1;
-    if (text[index] === closeChar) depth -= 1;
+    const char = text[index];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\' && inString) {
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) continue;
+
+    if (char === openChar) depth += 1;
+    if (char === closeChar) depth -= 1;
     if (depth === 0) {
       endIndex = index;
       break;

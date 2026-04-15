@@ -16,9 +16,7 @@ const toggleAdminSchema = z.object({
  * Only users in ADMIN_EMAILS can promote/demote others
  */
 export const PATCH = withApiHandler(async (req: Request, ctx?: unknown) => {
-  const adminCheck = await requireAdmin();
-  if (adminCheck instanceof NextResponse) return adminCheck;
-  const { user } = adminCheck;
+  const { user } = await requireAdmin();
   const { params } = (ctx as { params: Promise<Record<string, string>> } | undefined) || {};
   const { userId } = (await params) || {};
 

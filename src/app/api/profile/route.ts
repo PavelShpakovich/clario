@@ -12,6 +12,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 const updateProfileSchema = z.object({
   displayName: z.string().trim().min(1).max(100).optional(),
   timezone: z.string().trim().max(80).optional(),
+  onboardingCompleted: z.boolean().optional(),
 });
 
 export const GET = withApiHandler(async () => {
@@ -86,12 +87,13 @@ export const PATCH = withApiHandler(async (req) => {
     });
   }
 
-  const { displayName, timezone } = body.data;
+  const { displayName, timezone, onboardingCompleted } = body.data;
 
   const updateData = {
     id: user.id,
     ...(displayName !== undefined && { display_name: displayName }),
     ...(timezone !== undefined && { timezone }),
+    ...(onboardingCompleted === true && { onboarding_completed_at: new Date().toISOString() }),
   };
 
   const { data: updatedProfile, error } = await supabase

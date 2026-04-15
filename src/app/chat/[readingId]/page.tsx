@@ -5,9 +5,9 @@ import { auth } from '@/auth';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { FollowUpChat } from '@/components/astrology/follow-up-chat';
 import type { ChatMessageItem } from '@/components/astrology/follow-up-chat';
+import { FOLLOW_UP_LIMIT } from '@/lib/astrology/constants';
 
 const db = supabaseAdmin;
-const FOLLOW_UP_LIMIT = 10;
 
 function isUUID(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -34,7 +34,7 @@ export default async function ChatPage({ params }: { params: Promise<{ readingId
 
   const { data: reading } = await db
     .from('readings')
-    .select('id, title, chart_id')
+    .select('id, title, chart_id, reading_type')
     .eq('id', readingId)
     .eq('user_id', session.user.id)
     .maybeSingle();
@@ -75,10 +75,11 @@ export default async function ChatPage({ params }: { params: Promise<{ readingId
   const used = msgs.filter((m) => m.role === 'user').length;
 
   return (
-    <main className="min-h-screen">
+    <main className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden">
       <FollowUpChat
         readingId={readingId}
         readingTitle={reading.title}
+        readingType={reading.reading_type}
         initialMessages={msgs}
         initialUsed={used}
         limit={FOLLOW_UP_LIMIT}

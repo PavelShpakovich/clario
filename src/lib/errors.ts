@@ -5,6 +5,7 @@ export type AppErrorCode =
   | 'VALIDATION_ERROR'
   | 'LLM_ERROR'
   | 'AUTH_ERROR'
+  | 'FORBIDDEN'
   | 'RATE_LIMIT_ERROR'
   | 'INTERNAL_ERROR';
 
@@ -61,6 +62,12 @@ export class RateLimitError extends AppError {
   }
 }
 
+export class ForbiddenError extends AppError {
+  constructor(opts: AppErrorOptions) {
+    super('FORBIDDEN', opts);
+  }
+}
+
 // ─── HTTP status mapping ──────────────────────────────────────────────────────
 
 export function httpStatusForError(error: AppError): number {
@@ -71,6 +78,8 @@ export function httpStatusForError(error: AppError): number {
       return 422;
     case 'AUTH_ERROR':
       return 401;
+    case 'FORBIDDEN':
+      return 403;
     case 'RATE_LIMIT_ERROR':
       return 429;
     case 'LLM_ERROR':

@@ -116,6 +116,7 @@ async function safeMessage(err: AppError): Promise<string> {
     const fallback: Record<string, string> = {
       NOT_FOUND: err.message,
       VALIDATION_ERROR: err.message,
+      FORBIDDEN: err.message,
       AUTH_ERROR: 'Authentication required',
       RATE_LIMIT_ERROR: 'Too many requests — please slow down',
       LLM_ERROR: 'Reading generation failed — please try again',
@@ -127,6 +128,7 @@ async function safeMessage(err: AppError): Promise<string> {
   switch (err.code) {
     case 'NOT_FOUND':
     case 'VALIDATION_ERROR':
+    case 'FORBIDDEN':
       // These carry specific user-facing messages crafted at the throw site
       return err.message;
     case 'AUTH_ERROR':

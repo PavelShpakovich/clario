@@ -42,7 +42,18 @@ const envSchema = z.object({
  * The application will throw at startup if any required var is missing or malformed.
  */
 function validateEnv() {
-  const result = envSchema.safeParse(process.env);
+  const result = envSchema
+    .superRefine((data, ctx) => {
+      if (data.LLM_PROVIDER === 'qwen' && !data.QWEN_API_KEY) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['QWEN_API_KEY'],
+          message: 'QWEN_API_KEY is required when LLM_PROVIDER=qwen',
+        });
+      }
+    })
+    .safeParse(process.env);
+
   if (!result.success) {
     const formatted = result.error.issues
       .map((e) => `  • ${String(e.path.join('.'))}: ${e.message}`)

@@ -34,6 +34,7 @@ export interface ChartWheelProps {
   positions: WheelPosition[];
   aspects?: WheelAspect[];
   houseSystem?: 'whole_sign' | 'equal';
+  ariaLabel?: string;
 }
 
 import { PLANET_COLORS } from '@/components/ui/astrology-icons';
@@ -381,7 +382,12 @@ function assignRadii(
   return map;
 }
 
-export function ChartWheel({ positions, aspects = [], houseSystem = 'equal' }: ChartWheelProps) {
+export function ChartWheel({
+  positions,
+  aspects = [],
+  houseSystem = 'equal',
+  ariaLabel = 'Natal chart wheel',
+}: ChartWheelProps) {
   const ascPos = positions.find((p) => p.bodyKey === 'ascendant');
   const mcPos = positions.find((p) => p.bodyKey === 'midheaven');
   /** If ASC is unknown, default to 0° (Aries rising) — zodiac ring still shows. */
@@ -399,7 +405,7 @@ export function ChartWheel({ positions, aspects = [], houseSystem = 'equal' }: C
       viewBox={`0 0 ${SZ} ${SZ}`}
       xmlns="http://www.w3.org/2000/svg"
       className="mx-auto block w-full max-w-140"
-      aria-label="Natal chart wheel"
+      aria-label={ariaLabel}
       role="img"
     >
       <defs>

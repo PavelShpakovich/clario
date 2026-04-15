@@ -34,9 +34,38 @@ export interface ReadingPromptInput {
     applying: boolean | null;
   }>;
   warnings: string[];
+  /** Current planetary positions for transit readings */
+  transitPositions?: Array<{
+    bodyKey: string;
+    signKey: string;
+    houseNumber: number | null;
+    degreeDecimal: number;
+    retrograde: boolean;
+  }>;
 }
 
-function stableReadingTitle(readingType: ReadingType, chartLabel: string): string {
+export function stableReadingTitle(
+  readingType: ReadingType,
+  chartLabel: string,
+  locale = 'ru',
+): string {
+  if (locale === 'ru') {
+    switch (readingType) {
+      case 'personality':
+        return `${chartLabel} — Личность`;
+      case 'love':
+        return `${chartLabel} — Любовь и отношения`;
+      case 'career':
+        return `${chartLabel} — Карьера`;
+      case 'strengths':
+        return `${chartLabel} — Сильные стороны`;
+      case 'transit':
+        return `${chartLabel} — Текущие транзиты`;
+      default:
+        return `${chartLabel} — Натальный обзор`;
+    }
+  }
+
   switch (readingType) {
     case 'personality':
       return `${chartLabel} Personality Reading`;
@@ -46,6 +75,8 @@ function stableReadingTitle(readingType: ReadingType, chartLabel: string): strin
       return `${chartLabel} Career Reading`;
     case 'strengths':
       return `${chartLabel} Strengths and Challenges`;
+    case 'transit':
+      return `${chartLabel} Current Transits`;
     default:
       return `${chartLabel} Natal Overview`;
   }
@@ -123,7 +154,19 @@ function serializeChartFacts(input: ReadingPromptInput): string {
       ? input.warnings.map((warning) => `- ${warning}`).join('\n')
       : '- none';
 
-  return `Chart:\n- Label: ${input.chartLabel}\n- Person: ${input.personName}\n- Birth date: ${input.birthDate}\n- Birth time known: ${input.birthTimeKnown ? 'yes' : 'no'}\n- Place: ${input.city}, ${input.country}\n- House system: ${input.houseSystem}\n\nPositions:\n${positionsBlock}\n\nAspects:\n${aspectsBlock}\n\nWarnings:\n${warningsBlock}`;
+  let transitBlock = '';
+  if (input.transitPositions && input.transitPositions.length > 0) {
+    const transitLines = input.transitPositions
+      .slice(0, 12)
+      .map(
+        (p) =>
+          `- ${p.bodyKey} in ${p.signKey}, house ${p.houseNumber ?? 'unknown'}, ${p.degreeDecimal.toFixed(2)}°, retrograde=${p.retrograde}`,
+      )
+      .join('\n');
+    transitBlock = `\n\nCurrent sky (transiting positions as of today):\n${transitLines}`;
+  }
+
+  return `Chart:\n- Label: ${input.chartLabel}\n- Person: ${input.personName}\n- Birth date: ${input.birthDate}\n- Birth time known: ${input.birthTimeKnown ? 'yes' : 'no'}\n- Place: ${input.city}, ${input.country}\n- House system: ${input.houseSystem}\n\nNatal positions:\n${positionsBlock}\n\nAspects:\n${aspectsBlock}\n\nWarnings:\n${warningsBlock}${transitBlock}`;
 }
 
 export function buildReadingPlanPrompts(input: ReadingPromptInput): {
@@ -132,7 +175,7 @@ export function buildReadingPlanPrompts(input: ReadingPromptInput): {
   mockResponse: ReadingPlanOutput;
 } {
   const language = input.locale === 'ru' ? 'Russian' : 'English';
-  const title = stableReadingTitle(input.readingType, input.chartLabel);
+  const title = stableReadingTitle(input.readingType, input.chartLabel, input.locale);
 
   const styleInstructions = buildStyleInstructions(input);
 
@@ -153,7 +196,7 @@ Return only valid JSON matching this shape exactly:
   "cautionNotes": string[],
   "metadata": {
     "locale": "en" | "ru",
-    "readingType": "natal_overview" | "personality" | "love" | "career" | "strengths",
+    "readingType": "natal_overview" | "personality" | "love" | "career" | "strengths" | "finance" | "health" | "transit" | "year_ahead" | "progressions",
     "promptVersion": string,
     "schemaVersion": string
   }
@@ -172,6 +215,11 @@ Reading-type guidance for section planning:
 - love: Sections should cover (1) what the person needs from a partner, (2) how they express and receive love (Venus sign/house), (3) patterns attracting or repelling connection (7th house ruler), (4) emotional communication in relationships (Moon/Venus aspects), (5) growth path in love.
 - career: Sections should cover (1) natural talents and vocational calling (10th house/MC), (2) working style and discipline (Saturn/6th house), (3) ambition and drive (Mars/Sun), (4) challenges and latent potential (squares/oppositions to MC), (5) a practical roadmap for professional development.
 - strengths: Sections should cover (1) innate gifts (trines and sextiles), (2) resilience and determination (fire/earth emphasis), (3) interpersonal strengths, (4) creative or intellectual edge (Mercury/Venus/3rd/5th house), (5) how to leverage strengths.
+- finance: Sections should cover (1) natural relationship with money and resources (2nd house/ruler/Venus), (2) earning potential and financial style (Jupiter/8th house), (3) spending and security patterns (Moon/Saturn), (4) financial risks and shadow patterns (squares/Neptune/12th house), (5) practical steps toward financial stability grounded in the chart.
+- health: Sections should cover (1) overall vitality and life force (Sun/1st house/Ascendant), (2) emotional and nervous-system health (Moon/Mercury/stress aspects), (3) physical constitution and areas of sensitivity (Mars/6th house/Virgo placements), (4) long-term wellbeing and chronic tendencies (Saturn/Chiron/8th house), (5) holistic practices and self-care approaches aligned with the chart. Note: frame all health content as tendencies and self-awareness, NOT medical diagnosis. Always include strong medical-disclaimer language.
+- transit: If current sky positions are provided, this is a transit reading — show how today's planetary sky interacts with the natal chart. Sections should cover (1) overview of the most significant active transits (outer planets aspecting natal luminaries), (2) current Saturn and Jupiter transits and their life-area themes, (3) shorter-cycle transits affecting relationships and daily life (Venus/Mars transiting natal angles), (4) inner growth themes and awareness called for right now (Pluto/Neptune/Uranus long transits), (5) practical guidance for navigating the current period. Reference specific transit-to-natal aspects with orbs. If no transit positions are provided, write a general chart-based reading of current life themes.
+- year_ahead: A 12-month personal forecast combining natal chart themes with active transits. Sections should cover (1) the overarching theme and dominant energy of the coming year (major outer planet transits to natal Sun/Moon/ASC), (2) opportunities and expansion zones (Jupiter transits and harmonious aspects), (3) challenges, responsibilities, and karmic lessons (Saturn transits and hard aspects), (4) relationship and personal life rhythms over the year (Venus, Mars, and inner planet transits by season), (5) a month-by-month or quarter-by-quarter practical roadmap with concrete guidance on timing and focus areas.
+- progressions: A secondary progressions reading based on the progressed chart positions (1 day = 1 year after birth). Sections should cover (1) the progressed Sun — its current sign and house, what ego evolution and new identity themes are unfolding now, (2) the progressed Moon — current sign, house, and emotional atmosphere, what inner work is highlighted, (3) key progressed aspects between progressed and natal planets — their life-event and psychological themes, (4) the overall progressed chart narrative — what chapter of life this period represents compared to the natal blueprint, (5) practical guidance for consciously working with the progressed energy.
 `;
 
   const userPrompt = `Create a ${input.readingType} astrology reading plan.
@@ -259,7 +307,7 @@ Return only valid JSON matching this shape exactly:
   "disclaimers": string[],
   "metadata": {
     "locale": "en" | "ru",
-    "readingType": "natal_overview" | "personality" | "love" | "career" | "strengths",
+    "readingType": "natal_overview" | "personality" | "love" | "career" | "strengths" | "finance" | "health" | "transit" | "year_ahead" | "progressions",
     "promptVersion": string,
     "schemaVersion": string
   }
@@ -278,7 +326,12 @@ Requirements:
 - summary must be 3–5 engaging sentences that capture the core character of the chart.
 - Do NOT write hollow filler sentences. Every sentence must add meaning derived from the chart.`;
 
-  const userPrompt = `Write a full ${input.readingType} astrology reading for ${input.personName}. This reading will be delivered to the client — make it rich, personal, and substantive. Each section must be 350–500 words minimum.
+  const transitNote =
+    input.readingType === 'transit' && input.transitPositions
+      ? ' Use the current sky positions provided to identify active transit-to-natal aspects and ground each section in what is happening NOW.'
+      : '';
+
+  const userPrompt = `Write a full ${input.readingType} astrology reading for ${input.personName}.${transitNote} This reading will be delivered to the client — make it rich, personal, and substantive. Each section must be 350–500 words minimum.
 
 ${serializeChartFacts(input)}
 

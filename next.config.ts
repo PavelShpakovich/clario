@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   // React Compiler enables automatic memoization and optimizations
   reactCompiler: true,
 
+  // @react-pdf/renderer uses native canvas internals — must not be bundled by webpack.
+  serverExternalPackages: ['@react-pdf/renderer'],
+
   // Image optimization
   images: {
     unoptimized: true,

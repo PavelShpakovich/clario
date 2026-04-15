@@ -181,7 +181,7 @@ export function AdminTableSkeleton() {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 // Mirrors: dashboard/page.tsx
-// Layout: hero → stats row (2 cards) → quick-actions card → recent charts (3-col grid) → recent readings (list)
+// Layout: hero → sky widget → horoscope widget → stats strip → quick-actions → recent charts → recent readings → suggested readings
 
 export function DashboardSkeleton() {
   return (
@@ -192,16 +192,40 @@ export function DashboardSkeleton() {
         <Skeleton className="h-9 w-64" />
       </section>
 
-      {/* Stats row — 2 equal cards */}
-      <div className="flex gap-3">
+      {/* Today's sky widget */}
+      <div className="rounded-2xl border bg-card px-6 py-4">
+        <Skeleton className="h-3 w-28 mb-3" />
+        <div className="flex flex-wrap gap-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Skeleton className="size-6 rounded-full shrink-0" />
+              <div className="flex flex-col gap-1">
+                <Skeleton className="h-2.5 w-14" />
+                <Skeleton className="h-3.5 w-12" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Personal horoscope widget */}
+      <div className="flex flex-col gap-3 rounded-2xl border bg-card px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1 min-w-0">
+          <Skeleton className="h-3 w-40" />
+          <Skeleton className="h-4 w-56" />
+        </div>
+        <Skeleton className="h-8 w-24 rounded-lg shrink-0" />
+      </div>
+
+      {/* Stats strip — unified card split into 2 cols */}
+      <div className="grid grid-cols-2 divide-x rounded-xl border bg-card overflow-hidden">
         {[0, 1].map((i) => (
-          <div
-            key={i}
-            className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border bg-card py-6"
-          >
-            <Skeleton className="size-5 rounded" />
-            <Skeleton className="h-7 w-8" />
-            <Skeleton className="h-3 w-12" />
+          <div key={i} className="flex items-center gap-3 px-5 py-4">
+            <Skeleton className="size-9 rounded-lg shrink-0" />
+            <div className="flex flex-col gap-1.5">
+              <Skeleton className="h-5 w-8" />
+              <Skeleton className="h-3 w-12" />
+            </div>
           </div>
         ))}
       </div>
@@ -256,6 +280,24 @@ export function DashboardSkeleton() {
                 <Skeleton className="h-3 w-32" />
               </div>
               <Skeleton className="h-5 w-14 rounded-full shrink-0" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Suggested readings */}
+      <section className="flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-4 rounded shrink-0" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card px-4 py-3 flex flex-col gap-2">
+              <Skeleton className="h-3.5 w-28" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+              <Skeleton className="h-3 w-16 mt-1" />
             </div>
           ))}
         </div>
@@ -382,11 +424,14 @@ export function NewChartSkeleton() {
 
 // ─── Chart detail ────────────────────────────────────────────────────────────
 // Mirrors: charts/[chartId]/page.tsx
-// Layout: hero card (avatar + name + actions + birth DL) → wheel → positions grid → aspects grid → readings list
+// Layout: breadcrumb → hero card → chart stats (3-col) → wheel → positions + angles → aspects → readings
 
 export function ChartDetailSkeleton() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      {/* Breadcrumb */}
+      <Skeleton className="h-8 w-28 rounded-lg" />
+
       {/* Hero card */}
       <section className="rounded-2xl border bg-card p-6 md:p-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -402,11 +447,10 @@ export function ChartDetailSkeleton() {
               </div>
             </div>
           </div>
-          <div className="flex shrink-0 gap-2">
-            <Skeleton className="h-8 w-24 rounded-lg" />
-            <Skeleton className="h-8 w-24 rounded-lg" />
-            <Skeleton className="h-8 w-20 rounded-lg" />
-            <Skeleton className="h-8 w-32 rounded-lg" />
+          {/* Primary CTA + icon toolbar */}
+          <div className="flex shrink-0 flex-col items-end gap-2.5">
+            <Skeleton className="h-9 w-36 rounded-lg" />
+            <Skeleton className="h-8 w-28 rounded-lg" />
           </div>
         </div>
         <div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-3">
@@ -419,8 +463,33 @@ export function ChartDetailSkeleton() {
         </div>
       </section>
 
+      {/* Chart stats — 3-col grid */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="rounded-2xl border bg-card p-5 flex flex-col gap-4">
+            <Skeleton className="h-3 w-20" />
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: i < 2 ? 4 : 2 }).map((_, j) => (
+                <div key={j} className="flex items-center gap-2">
+                  <Skeleton className="h-3 w-14 shrink-0" />
+                  <div className="flex flex-1 gap-1">
+                    {Array.from({ length: 5 }).map((_, k) => (
+                      <Skeleton key={k} className="size-2 rounded-full" />
+                    ))}
+                  </div>
+                  <Skeleton className="h-4 w-4" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Chart wheel */}
-      <Skeleton className="h-[300px] w-full rounded-2xl sm:h-[400px]" />
+      <section className="flex flex-col gap-3">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-[300px] w-full rounded-2xl sm:h-[400px]" />
+      </section>
 
       {/* Positions */}
       <section className="flex flex-col gap-3">
@@ -432,6 +501,22 @@ export function ChartDetailSkeleton() {
               <div className="flex flex-col gap-1.5 flex-1">
                 <Skeleton className="h-3.5 w-20" />
                 <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-2.5 w-32" />
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Angles strip */}
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 rounded-xl border bg-muted/40 px-4 py-3"
+            >
+              <Skeleton className="size-5 rounded shrink-0" />
+              <div className="flex flex-col gap-1.5 flex-1">
+                <Skeleton className="h-3.5 w-36" />
+                <Skeleton className="h-3 w-24" />
               </div>
             </div>
           ))}
@@ -447,6 +532,25 @@ export function ChartDetailSkeleton() {
               <Skeleton className="size-6 rounded shrink-0" />
               <Skeleton className="h-3.5 flex-1" />
               <Skeleton className="h-3 w-16" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Readings */}
+      <section className="flex flex-col gap-3">
+        <Skeleton className="h-4 w-36" />
+        <div className="grid gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex flex-col gap-1.5">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                  <Skeleton className="h-3 w-full max-w-xs" />
+                </div>
+                <Skeleton className="h-5 w-14 rounded-full shrink-0" />
+              </div>
             </div>
           ))}
         </div>
@@ -496,6 +600,331 @@ export function ReadingsPageSkeleton() {
           </div>
         ))}
       </div>
+    </main>
+  );
+}
+
+// ─── Reading detail ───────────────────────────────────────────────────────────
+// Mirrors: readings/[readingId]/page.tsx
+// Layout: header (type label + title + date + 4 action buttons) → summary → key takeaways → sections list
+
+export function ReadingDetailSkeleton() {
+  return (
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header */}
+      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-9 w-72 max-w-full" />
+          <div className="flex items-center gap-2 mt-1">
+            <Skeleton className="h-3.5 w-32" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+          <Skeleton className="h-9 w-32 rounded-lg" />
+          <Skeleton className="h-9 w-28 rounded-lg" />
+          <Skeleton className="h-9 w-32 rounded-lg" />
+          <Skeleton className="h-9 w-28 rounded-lg" />
+        </div>
+      </section>
+
+      {/* Summary */}
+      <div className="rounded-2xl border bg-primary/5 p-6 md:p-8">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-4/5 mt-2" />
+        <Skeleton className="h-3.5 w-3/5 mt-2" />
+      </div>
+
+      {/* Key Takeaways — numbered list */}
+      <div className="rounded-2xl border border-primary/20 bg-card p-6 flex flex-col gap-4">
+        <Skeleton className="h-3 w-28" />
+        <ol className="flex flex-col gap-3">
+          {[0, 1, 2].map((i) => (
+            <li key={i} className="flex items-start gap-3">
+              <Skeleton className="size-5 rounded-full shrink-0 mt-0.5" />
+              <Skeleton className="h-3.5 flex-1" />
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {/* Sections */}
+      <div className="flex flex-col gap-8">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <Skeleton className="size-7 rounded-full shrink-0" />
+              <Skeleton className="h-5 w-40" />
+            </div>
+            <div className="flex flex-col gap-2 pl-0 sm:pl-10">
+              <Skeleton className="h-3.5 w-full" />
+              <Skeleton className="h-3.5 w-full" />
+              <Skeleton className="h-3.5 w-2/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+// ─── Horoscope ────────────────────────────────────────────────────────────────
+// Mirrors: horoscope/page.tsx
+// Layout: header (label + name + date) → key theme chip → moon phase line → interpretation card → advice card → footer nav
+
+export function HoroscopeSkeleton() {
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
+      {/* Header */}
+      <section className="flex flex-col gap-2">
+        <Skeleton className="h-3 w-32" />
+        <Skeleton className="h-9 w-48" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-4 rounded" />
+          <Skeleton className="h-3.5 w-48" />
+        </div>
+      </section>
+
+      {/* Key theme chip */}
+      <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+        <Skeleton className="size-4 rounded shrink-0" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+
+      {/* Moon phase line */}
+      <div className="border-l-2 border-primary/30 pl-4">
+        <Skeleton className="h-3.5 w-56" />
+      </div>
+
+      {/* Main interpretation card */}
+      <div className="rounded-2xl border bg-card p-6 md:p-8 flex flex-col gap-3">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-4/5" />
+        <Skeleton className="h-3.5 w-full mt-1" />
+        <Skeleton className="h-3.5 w-3/5" />
+      </div>
+
+      {/* Advice card */}
+      <div className="rounded-2xl border border-primary/20 bg-card p-5 flex flex-col gap-2">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-4/5" />
+      </div>
+
+      {/* Footer nav */}
+      <div className="flex gap-2">
+        <Skeleton className="h-8 w-36 rounded-lg" />
+        <Skeleton className="h-8 w-28 rounded-lg" />
+      </div>
+    </main>
+  );
+}
+
+// ─── Compatibility ────────────────────────────────────────────────────────────
+// Mirrors: compatibility/page.tsx → CompatibilityOverview component
+// Layout: section header + new button → list of report Cards (CardHeader + CardContent)
+
+export function CompatibilitySkeleton() {
+  return (
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      {/* Section header */}
+      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-9 w-40" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+        </div>
+        <Skeleton className="h-9 w-36 rounded-lg shrink-0" />
+      </section>
+
+      {/* Report cards — mirrors CardHeader + CardContent structure */}
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-xl border bg-card">
+            {/* CardHeader: Heart icon + section label + CardTitle */}
+            <div className="px-5 pt-4 pb-2 flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <Skeleton className="size-3.5 rounded shrink-0" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+              <Skeleton className="h-5 w-52" />
+            </div>
+            {/* CardContent: status + date + delete */}
+            <div className="px-5 pb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <Skeleton className="size-8 rounded-lg" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+// ─── Compatibility report detail ──────────────────────────────────────────────
+// Mirrors: compatibility/[reportId]/page.tsx
+// Layout: header → person header card → harmony score section → summary → sections → advice
+
+export function CompatibilityReportSkeleton() {
+  return (
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header */}
+      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-9 w-72 max-w-full" />
+          <Skeleton className="h-3.5 w-32" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-8 w-24 rounded-lg" />
+          <Skeleton className="h-8 w-28 rounded-lg" />
+          <Skeleton className="h-8 w-28 rounded-lg" />
+        </div>
+      </section>
+
+      {/* Harmony score card */}
+      <section className="overflow-hidden rounded-[2rem] border bg-card">
+        {/* Person header strip */}
+        <div className="border-b px-6 py-5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-11 rounded-full shrink-0" />
+            <div className="flex flex-col gap-1">
+              <Skeleton className="h-3.5 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-16" />
+          <div className="flex flex-row-reverse items-center gap-3">
+            <Skeleton className="size-11 rounded-full shrink-0" />
+            <div className="flex flex-col gap-1 items-end">
+              <Skeleton className="h-3.5 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+        </div>
+        {/* Gauge + info grid */}
+        <div className="grid gap-6 px-6 py-6 xl:grid-cols-2 xl:items-center">
+          {/* Gauge area */}
+          <div className="rounded-[1.75rem] border bg-background/80 px-4 py-6 flex flex-col items-center gap-4">
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="w-full max-w-80 aspect-[260/190] rounded-2xl" />
+            <Skeleton className="h-8 w-32 rounded-full" />
+            <Skeleton className="h-7 w-28 rounded-full" />
+          </div>
+          {/* Info column */}
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-12 w-24" />
+            </div>
+            <Skeleton className="h-8 w-32 rounded-full" />
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-4/5" />
+            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="rounded-2xl border bg-muted/30 p-4 flex flex-col gap-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3.5 w-full" />
+                  <Skeleton className="h-3.5 w-4/5" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Summary */}
+      <div className="rounded-2xl border bg-primary/5 p-6 md:p-8">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-4/5 mt-2" />
+        <Skeleton className="h-3.5 w-3/5 mt-2" />
+      </div>
+
+      {/* Sections */}
+      <div className="flex flex-col gap-8">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <Skeleton className="size-7 rounded-full shrink-0" />
+              <Skeleton className="h-5 w-40" />
+            </div>
+            <div className="flex flex-col gap-2 pl-0 sm:pl-10">
+              <Skeleton className="h-3.5 w-full" />
+              <Skeleton className="h-3.5 w-full" />
+              <Skeleton className="h-3.5 w-2/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────────────
+// Mirrors: calendar/page.tsx
+// Layout: header (with side button) → legend (4 items) → month sections with responsive 6-col day grid
+
+export function CalendarSkeleton() {
+  return (
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header with side button */}
+      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-9 w-56" />
+          <Skeleton className="h-4 w-80 max-w-full" />
+        </div>
+        <Skeleton className="h-8 w-36 rounded-lg shrink-0" />
+      </section>
+
+      {/* Legend — 4 items: Sun, Moon, new moon, full moon */}
+      <div className="flex flex-wrap gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <Skeleton className="size-3 rounded-sm shrink-0" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        ))}
+      </div>
+
+      {/* First month section */}
+      <section>
+        <Skeleton className="h-5 w-36 mb-4" />
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
+          {Array.from({ length: 18 }).map((_, i) => (
+            <div key={i} className="rounded-xl border p-3 bg-card flex flex-col gap-1.5">
+              <div className="flex items-center justify-between mb-1">
+                <Skeleton className="h-4 w-5" />
+                <Skeleton className="size-3 rounded-sm" />
+              </div>
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Second month section (partial) */}
+      <section>
+        <Skeleton className="h-5 w-36 mb-4" />
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="rounded-xl border p-3 bg-card flex flex-col gap-1.5">
+              <div className="flex items-center justify-between mb-1">
+                <Skeleton className="h-4 w-5" />
+                <Skeleton className="size-3 rounded-sm" />
+              </div>
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }

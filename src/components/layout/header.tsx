@@ -30,6 +30,8 @@ import {
   Monitor,
   ScrollText,
   Orbit,
+  Heart,
+  CalendarDays,
 } from 'lucide-react';
 
 // ─── Shared constants ────────────────────────────────────────────────────────
@@ -51,7 +53,7 @@ function ThemeToggle({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Переключить тему">
+        <Button variant="ghost" size="icon" aria-label={t('common.toggleTheme')}>
           {theme === 'system' ? (
             <Monitor className="size-4" />
           ) : theme === 'dark' ? (
@@ -167,10 +169,10 @@ export function Header() {
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle theme={theme} setTheme={setTheme} t={t} />
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" asChild className="h-11 px-4">
               <Link href="/login">{t('navigation.login')}</Link>
             </Button>
-            <Button size="sm" asChild>
+            <Button asChild className="h-11 px-4">
               <Link href="/register">{t('navigation.register')}</Link>
             </Button>
           </div>
@@ -196,12 +198,24 @@ export function Header() {
         </Link>
 
         {/* Primary nav — visible md+ */}
-        <nav className="hidden md:flex items-center gap-1 flex-1" aria-label="Основная навигация">
+        <nav className="hidden md:flex items-center gap-1 flex-1" aria-label={t('common.mainNav')}>
           <NavLink href="/charts" icon={Orbit} label={t('navigation.charts')} pathname={pathname} />
           <NavLink
             href="/readings"
             icon={ScrollText}
             label={t('navigation.readings')}
+            pathname={pathname}
+          />
+          <NavLink
+            href="/compatibility"
+            icon={Heart}
+            label={t('navigation.compatibility')}
+            pathname={pathname}
+          />
+          <NavLink
+            href="/calendar"
+            icon={CalendarDays}
+            label={t('navigation.calendar')}
             pathname={pathname}
           />
         </nav>
@@ -213,7 +227,7 @@ export function Header() {
           {/* User menu */}
           <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 pl-2 pr-3">
+              <Button variant="ghost" className="h-11 gap-2 pl-2 pr-3">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
                   {(displayName?.[0] ?? 'U').toUpperCase()}
                 </span>
@@ -255,6 +269,18 @@ export function Header() {
                 <Link href="/readings" className="flex items-center gap-2">
                   <ScrollText className="size-4" />
                   {t('navigation.readings')}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/compatibility" className="flex items-center gap-2">
+                  <Heart className="size-4" />
+                  {t('navigation.compatibility')}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/calendar" className="flex items-center gap-2">
+                  <CalendarDays className="size-4" />
+                  {t('navigation.calendar')}
                 </Link>
               </DropdownMenuItem>
 

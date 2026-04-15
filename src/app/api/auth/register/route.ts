@@ -11,7 +11,7 @@ import { checkRateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit'
 
 const bodySchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 export const POST = withApiHandler(async (req) => {

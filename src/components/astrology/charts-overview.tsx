@@ -77,10 +77,12 @@ export function ChartsOverview({
       {/* Hero */}
       <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{t('heading')}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
+            {t('heading')}
+          </h1>
           <p className="max-w-xl text-sm text-muted-foreground md:text-base">{t('description')}</p>
         </div>
-        <Button asChild size="lg">
+        <Button asChild size="lg" className="w-full md:w-auto">
           <Link href="/charts/new">{t('newChart')}</Link>
         </Button>
       </section>
@@ -204,7 +206,7 @@ export function ChartsOverview({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-8 text-muted-foreground hover:text-destructive"
+                        className="size-10 text-muted-foreground hover:text-destructive"
                         onClick={(e) => {
                           e.preventDefault();
                           setDeleteId(chart.id);

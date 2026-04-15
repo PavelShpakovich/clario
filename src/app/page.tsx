@@ -28,19 +28,39 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const title = isRu ? 'Clario — AI-астрологические разборы' : 'Clario — AI Astrology Readings';
   const description = isRu
-    ? 'Создавайте натальные карты, получайте AI-разборы и возвращайтесь к сохранённым инсайтам на основе структурированных астрологических данных.'
-    : 'Create natal charts, generate AI astrology readings, and revisit saved insights built from structured chart data.';
+    ? 'Создавайте натальные карты, получайте структурированные AI-разборы и возвращайтесь к сохранённым инсайтам. Персональная астрология на основе точных астрономических расчётов.'
+    : 'Create natal charts, generate structured AI astrology readings, and revisit saved insights. Personal astrology powered by precise astronomical calculations.';
+
+  const keywords = isRu
+    ? 'натальная карта, астрологический разбор, AI астрология, натальная карта онлайн, разбор натальной карты, астролог онлайн, нейросеть астрология, персональный гороскоп'
+    : 'natal chart, astrology reading, AI astrology, birth chart, natal chart reading, online astrologer, personal horoscope';
 
   return {
     title,
     description,
+    keywords,
     alternates: { canonical: APP_URL },
     openGraph: {
+      type: 'website',
       title,
       description,
       url: APP_URL,
+      siteName: 'Clario',
       locale: isRu ? 'ru_RU' : 'en_US',
-      images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Clario' }],
+      images: [
+        {
+          url: '/opengraph-image',
+          width: 1200,
+          height: 630,
+          alt: 'Clario — AI-астрологические разборы',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/opengraph-image'],
     },
   };
 }
@@ -51,8 +71,48 @@ export default async function LandingPage() {
 
   const t = await getTranslations('landing');
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${APP_URL}/#organization`,
+        name: 'Clario',
+        url: APP_URL,
+        logo: { '@type': 'ImageObject', url: `${APP_URL}/apple-touch-icon.png` },
+      },
+      {
+        '@type': 'WebSite',
+        '@id': `${APP_URL}/#website`,
+        url: APP_URL,
+        name: 'Clario',
+        publisher: { '@id': `${APP_URL}/#organization` },
+      },
+      {
+        '@type': 'WebApplication',
+        name: 'Clario — AI-астрологические разборы',
+        description:
+          'Создавайте натальные карты, получайте структурированные AI-разборы и возвращайтесь к сохранённым инсайтам. Персональная астрология на основе точных астрономических расчётов.',
+        url: APP_URL,
+        applicationCategory: 'LifestyleApplication',
+        operatingSystem: 'Web',
+        inLanguage: 'ru',
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'RUB',
+          availability: 'https://schema.org/InStock',
+        },
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Hero */}
       <HeroSection
         tagline={t('heroTagline')}
@@ -72,13 +132,13 @@ export default async function LandingPage() {
             </p>
           </div>
           <div className="px-4">
-            <p className="text-3xl font-bold text-primary">5</p>
+            <p className="text-3xl font-bold text-primary">8</p>
             <p className="mt-1.5 text-xs text-muted-foreground uppercase tracking-wide">
               {t('statsReadingTypes')}
             </p>
           </div>
           <div className="px-4">
-            <p className="text-3xl font-bold text-primary">∞</p>
+            <p className="text-3xl font-bold text-primary">5</p>
             <p className="mt-1.5 text-xs text-muted-foreground uppercase tracking-wide">
               {t('statsFollowUps')}
             </p>

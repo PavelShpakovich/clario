@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,13 @@ import {
   Trash2,
   Users,
   LayoutGrid,
+  BookOpen,
+  Heart,
+  Zap,
+  AlertTriangle,
+  MessageSquare,
+  Coins,
+  RefreshCw,
 } from 'lucide-react';
 import { BackLink } from '@/components/common/back-link';
 import { useTranslations } from 'next-intl';
@@ -25,32 +32,74 @@ import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { adminApi, type AdminUser, type AdminAnalytics } from '@/services/admin-api';
 
 // ---------------------------------------------------------------------------
-// Analytics Card
+// Reading type label map
+// ---------------------------------------------------------------------------
+const READING_TYPE_LABELS: Record<string, string> = {
+  natal_overview: 'Натальный обзор',
+  personality: 'Личность',
+  love: 'Любовь',
+  career: 'Карьера',
+  strengths: 'Сильные стороны',
+  finance: 'Финансы',
+  health: 'Здоровье',
+  transit: 'Транзиты',
+  year_ahead: 'Год вперёд',
+  progressions: 'Прогрессии',
+  compatibility: 'Синастрия',
+  solar_return: 'Солярный',
+  lunar_return: 'Лунный возврат',
+  karmic: 'Кармическая',
+};
+
+// ---------------------------------------------------------------------------
+// Stat Tile
 // ---------------------------------------------------------------------------
 function StatTile({
   label,
   value,
   icon: Icon,
-  sub,
+  monthDelta,
+  accent,
 }: {
   label: string;
   value: string | number;
   icon: React.ElementType;
-  sub?: string;
+  monthDelta?: number;
+  accent?: 'red' | 'blue' | 'purple';
 }) {
+  const iconClass =
+    accent === 'red'
+      ? 'text-red-500'
+      : accent === 'blue'
+        ? 'text-blue-500'
+        : accent === 'purple'
+          ? 'text-violet-500'
+          : 'text-muted-foreground';
+
   return (
-    <div className="flex flex-col gap-1 p-4 rounded-lg border bg-card">
-      <div className="flex items-center gap-2 text-muted-foreground text-xs">
-        <Icon className="size-3.5" />
-        {label}
+    <div className="flex flex-col justify-between gap-3 rounded-xl border bg-card p-4">
+      <div className={`flex items-center gap-1.5 text-xs font-medium ${iconClass}`}>
+        <Icon className="size-3.5 shrink-0" />
+        <span className="truncate">{label}</span>
       </div>
-      <p className="text-2xl font-bold">{value}</p>
-      {sub ? <p className="text-xs text-muted-foreground">{sub}</p> : null}
+      <div className="flex items-end justify-between gap-2">
+        <p className="text-2xl font-bold leading-none tabular-nums">{value}</p>
+        {monthDelta !== undefined && (
+          <span
+            className={`mb-0.5 text-xs font-medium ${monthDelta > 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}
+          >
+            {monthDelta > 0 ? `+${monthDelta}` : '—'} мес.
+          </span>
+        )}
+      </div>
     </div>
   );
 }
 
-function AnalyticsCard() {
+// ---------------------------------------------------------------------------
+// Analytics section
+// ---------------------------------------------------------------------------
+function AnalyticsSection() {
   const t = useTranslations('admin');
   const [data, setData] = useState<AdminAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,8 +120,8 @@ function AnalyticsCard() {
   }, [load]);
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-4">
+    <Card className="p-6 flex flex-col gap-5">
+      <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">{t('analyticsTitle')}</h2>
         <Button variant="ghost" size="icon" onClick={() => void load()} disabled={loading}>
           <RotateCcw
@@ -82,45 +131,124 @@ function AnalyticsCard() {
       </div>
 
       {loading && !data ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-lg" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-xl" />
           ))}
         </div>
       ) : data ? (
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <>
+          {/* Primary stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatTile
               label={t('analyticsTotalUsers')}
-              value={data.totalUsers.toLocaleString()}
+              value={data.totalUsers}
               icon={Users}
-              sub={t('analyticsNewThisMonth', { count: data.newUsersThisMonth })}
+              monthDelta={data.newUsersThisMonth}
             />
             <StatTile
-              label={t('analyticsChartsCreated')}
-              value={data.chartsCreatedThisMonth.toLocaleString()}
+              label={t('analyticsTotalCharts')}
+              value={data.totalCharts}
               icon={LayoutGrid}
-              sub={t('analyticsThisMonth')}
+              monthDelta={data.chartsThisMonth}
+            />
+            <StatTile
+              label={t('analyticsTotalReadings')}
+              value={data.totalReadings}
+              icon={BookOpen}
+              monthDelta={data.readingsThisMonth}
+            />
+            <StatTile
+              label={t('analyticsCompatibility')}
+              value={data.totalCompatibilityReports}
+              icon={Heart}
             />
           </div>
-        </div>
+
+          {/* AI + Reading types */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* AI stats */}
+            <div className="rounded-xl border bg-muted/20 p-4 flex flex-col gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                AI-активность
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <StatTile
+                  label={t('analyticsAiCalls')}
+                  value={data.totalAiCalls}
+                  icon={Zap}
+                  monthDelta={data.aiCallsThisMonth}
+                  accent="blue"
+                />
+                <StatTile
+                  label={t('analyticsAiErrors')}
+                  value={data.aiErrors}
+                  icon={AlertTriangle}
+                  accent={data.aiErrors > 0 ? 'red' : undefined}
+                />
+                <StatTile
+                  label={t('analyticsFollowUpMessages')}
+                  value={data.totalFollowUpMessages}
+                  icon={MessageSquare}
+                  accent="purple"
+                />
+                <StatTile
+                  label={t('analyticsTokensUsed')}
+                  value={data.totalTokensUsed > 0 ? data.totalTokensUsed.toLocaleString() : '—'}
+                  icon={Coins}
+                  accent="purple"
+                />
+              </div>
+            </div>
+
+            {/* Reading type breakdown */}
+            {Object.keys(data.readingsByType).length > 0
+              ? (() => {
+                  const entries = Object.entries(data.readingsByType).sort(([, a], [, b]) => b - a);
+                  const maxCount = entries[0]?.[1] ?? 1;
+                  return (
+                    <div className="rounded-xl border bg-muted/20 p-4 flex flex-col gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('analyticsReadingTypes')}
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        {entries.map(([type, count]) => (
+                          <div key={type} className="flex items-center gap-3">
+                            <span className="w-32 shrink-0 truncate text-sm text-foreground">
+                              {READING_TYPE_LABELS[type] ?? type}
+                            </span>
+                            <div className="flex-1 h-1.5 rounded-full bg-border overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-primary/60 transition-all"
+                                style={{ width: `${(count / maxCount) * 100}%` }}
+                              />
+                            </div>
+                            <span className="w-6 shrink-0 text-right text-sm font-semibold tabular-nums">
+                              {count}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()
+              : null}
+          </div>
+        </>
       ) : null}
     </Card>
   );
 }
 
 // ---------------------------------------------------------------------------
-// (Bot Setup Card removed — Telegram integration removed)
+// User actions hook
 // ---------------------------------------------------------------------------
-
 function formatUserIdentifier(user: AdminUser): string {
-  if (user.email) return user.email;
-  return user.displayName;
+  return user.email || user.displayName;
 }
 
 function VerificationBadge({ user }: { user: AdminUser }) {
   const t = useTranslations('admin');
-
   if (!user.email) {
     return (
       <Badge variant="outline" className="text-xs">
@@ -128,13 +256,18 @@ function VerificationBadge({ user }: { user: AdminUser }) {
       </Badge>
     );
   }
-
   return user.isEmailVerified ? (
-    <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{t('verified')}</Badge>
+    <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-xs">
+      {t('verified')}
+    </Badge>
   ) : (
-    <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{t('unverified')}</Badge>
+    <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 text-xs">
+      {t('unverified')}
+    </Badge>
   );
 }
+
+type PendingAction = 'toggleAdmin' | 'deleteUser' | 'resetUsage' | null;
 
 interface UserRowProps {
   user: AdminUser;
@@ -146,7 +279,7 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
   const t = useTranslations('admin');
   const [loading, setLoading] = useState(false);
   const [isAdminState, setIsAdminState] = useState(user.isAdmin);
-  const [pendingAction, setPendingAction] = useState<'toggleAdmin' | 'deleteUser' | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   const executeToggleAdmin = async () => {
     setLoading(true);
@@ -174,19 +307,49 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
     }
   };
 
-  const executeConfirmed = async () => {
-    setPendingAction(null);
-    if (pendingAction === 'toggleAdmin') await executeToggleAdmin();
-    if (pendingAction === 'deleteUser') await executeDeleteUser();
+  const executeResetUsage = async () => {
+    setLoading(true);
+    try {
+      await adminApi.resetUsage(user.id);
+      toast.success(t('resetUsageSuccess'));
+      onRefresh();
+    } catch {
+      toast.error(t('failedResetUsage'));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const action = isAdminState ? t('demote').toLowerCase() : t('promote').toLowerCase();
-  const dialogTitle = pendingAction === 'deleteUser' ? t('deleteConfirmTitle') : t('confirmTitle');
+  const executeConfirmed = async () => {
+    const action = pendingAction;
+    setPendingAction(null);
+    if (action === 'toggleAdmin') await executeToggleAdmin();
+    if (action === 'deleteUser') await executeDeleteUser();
+    if (action === 'resetUsage') await executeResetUsage();
+  };
+
+  const actionLabel = isAdminState ? t('demote').toLowerCase() : t('promote').toLowerCase();
+
+  const dialogTitle =
+    pendingAction === 'deleteUser'
+      ? t('deleteConfirmTitle')
+      : pendingAction === 'resetUsage'
+        ? t('resetUsageConfirmTitle')
+        : t('confirmTitle');
+
   const dialogDescription =
     pendingAction === 'toggleAdmin'
-      ? t('confirmToggleAdmin', { action })
-      : t('confirmDeleteUser', { user: formatUserIdentifier(user) });
-  const confirmLabel = pendingAction === 'deleteUser' ? t('deleteConfirmAction') : t('confirm');
+      ? t('confirmToggleAdmin', { action: actionLabel })
+      : pendingAction === 'deleteUser'
+        ? t('confirmDeleteUser', { user: formatUserIdentifier(user) })
+        : t('resetUsageConfirmDesc', { user: formatUserIdentifier(user) });
+
+  const confirmLabel =
+    pendingAction === 'deleteUser'
+      ? t('deleteConfirmAction')
+      : pendingAction === 'resetUsage'
+        ? t('resetUsage')
+        : t('confirm');
 
   return {
     t,
@@ -194,6 +357,7 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
     isAdminState,
     handleToggleAdmin: () => setPendingAction('toggleAdmin'),
     handleDeleteUser: () => setPendingAction('deleteUser'),
+    handleResetUsage: () => setPendingAction('resetUsage'),
     dialogOpen: pendingAction !== null,
     dialogTitle,
     dialogDescription,
@@ -203,33 +367,9 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
   };
 }
 
-function AdminToggle({
-  t,
-  loading,
-  isAdminState,
-  handleToggleAdmin,
-  isSelf,
-}: {
-  t: ReturnType<typeof useTranslations>;
-  loading: boolean;
-  isAdminState: boolean;
-  handleToggleAdmin: () => void;
-  isSelf: boolean;
-}) {
-  if (isSelf) return null;
-  return (
-    <Button
-      size="sm"
-      variant={isAdminState ? 'destructive' : 'outline'}
-      onClick={handleToggleAdmin}
-      disabled={loading}
-    >
-      {isAdminState ? t('demote') : t('promote')}
-    </Button>
-  );
-}
-
-/** Mobile card view */
+// ---------------------------------------------------------------------------
+// Mobile card
+// ---------------------------------------------------------------------------
 function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
   const {
     t,
@@ -237,6 +377,7 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
     isAdminState,
     handleToggleAdmin,
     handleDeleteUser,
+    handleResetUsage,
     dialogOpen,
     dialogTitle,
     dialogDescription,
@@ -245,6 +386,7 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
     executeConfirmed,
   } = useUserActions(user, onRefresh);
   const isSelf = user.id === currentUserId;
+
   return (
     <>
       <ConfirmationDialog
@@ -263,42 +405,78 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
           <div className="min-w-0">
             <p className="font-medium text-sm truncate">{formatUserIdentifier(user)}</p>
             <p className="text-xs text-muted-foreground truncate">{user.displayName}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {new Date(user.createdAt).toLocaleDateString('ru', {
+                day: '2-digit',
+                month: '2-digit',
+                year: '2-digit',
+              })}
+            </p>
           </div>
-          <div className="flex flex-col items-center gap-2 shrink-0">
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
             <VerificationBadge user={user} />
-            {isAdminState ? (
+            {isAdminState && (
               <Badge variant="secondary" className="text-xs">
                 {t('colAdmin')}
               </Badge>
-            ) : null}
+            )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <AdminToggle
-            t={t}
-            loading={loading}
-            isAdminState={isAdminState}
-            handleToggleAdmin={handleToggleAdmin}
-            isSelf={isSelf}
-          />
-          {!isSelf ? (
+
+        <div className="flex gap-4 text-xs text-muted-foreground">
+          <span>
+            Разборов: <strong className="text-foreground">{user.totalReadings}</strong>
+            {user.readingsThisMonth > 0 && (
+              <span className="text-primary"> (+{user.readingsThisMonth} мес.)</span>
+            )}
+          </span>
+          <span>
+            Карт: <strong className="text-foreground">{user.totalCharts}</strong>
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {!isSelf && (
+            <Button
+              size="sm"
+              variant={isAdminState ? 'destructive' : 'outline'}
+              onClick={handleToggleAdmin}
+              disabled={loading}
+            >
+              {isAdminState ? t('demote') : t('promote')}
+            </Button>
+          )}
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={handleResetUsage}
+            disabled={loading}
+            title={t('resetUsage')}
+            className="size-8"
+          >
+            <RefreshCw className="size-3.5" />
+          </Button>
+          {!isSelf && (
             <Button
               size="icon"
               variant="destructive"
               onClick={handleDeleteUser}
               disabled={loading}
               title={t('deleteUser')}
+              className="size-8"
             >
-              <Trash2 />
+              <Trash2 className="size-3.5" />
             </Button>
-          ) : null}
+          )}
         </div>
       </div>
     </>
   );
 }
 
-/** Desktop table row */
+// ---------------------------------------------------------------------------
+// Desktop table row
+// ---------------------------------------------------------------------------
 function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
   const {
     t,
@@ -306,6 +484,7 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
     isAdminState,
     handleToggleAdmin,
     handleDeleteUser,
+    handleResetUsage,
     dialogOpen,
     dialogTitle,
     dialogDescription,
@@ -314,6 +493,7 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
     executeConfirmed,
   } = useUserActions(user, onRefresh);
   const isSelf = user.id === currentUserId;
+
   return (
     <>
       <ConfirmationDialog
@@ -327,44 +507,94 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
         confirmLabel={confirmLabel}
         cancelLabel={t('cancel')}
       />
-      <tr className="border-b hover:bg-muted/40">
-        <td className="px-4 py-3 text-sm">{formatUserIdentifier(user)}</td>
-        <td className="px-4 py-3 text-sm">{user.displayName}</td>
+      <tr className="border-b hover:bg-muted/30 transition-colors">
+        <td className="px-4 py-3">
+          <div>
+            <p className="text-sm font-medium">{formatUserIdentifier(user)}</p>
+            {user.displayName !== formatUserIdentifier(user) && (
+              <p className="text-xs text-muted-foreground">{user.displayName}</p>
+            )}
+          </div>
+        </td>
         <td className="px-4 py-3">
           <VerificationBadge user={user} />
         </td>
-        <td className="px-4 py-3">
-          <AdminToggle
-            t={t}
-            loading={loading}
-            isAdminState={isAdminState}
-            handleToggleAdmin={handleToggleAdmin}
-            isSelf={isSelf}
-          />
+        <td className="px-4 py-3 text-xs text-muted-foreground">
+          {new Date(user.createdAt).toLocaleDateString('ru', {
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit',
+          })}
+        </td>
+        <td className="px-4 py-3 text-sm tabular-nums">
+          <p className="font-semibold">{user.totalReadings}</p>
+          {user.readingsThisMonth > 0 && (
+            <p className="text-xs text-primary">+{user.readingsThisMonth} мес.</p>
+          )}
+        </td>
+        <td className="px-4 py-3 text-sm tabular-nums">
+          <p className="font-semibold">{user.totalCharts}</p>
+          {user.chartsThisMonth > 0 && (
+            <p className="text-xs text-primary">+{user.chartsThisMonth} мес.</p>
+          )}
         </td>
         <td className="px-4 py-3">
-          {!isSelf ? (
+          {isAdminState && (
+            <Badge variant="secondary" className="text-xs">
+              {t('colAdmin')}
+            </Badge>
+          )}
+        </td>
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-1.5">
+            {!isSelf && (
+              <Button
+                size="sm"
+                variant={isAdminState ? 'destructive' : 'outline'}
+                onClick={handleToggleAdmin}
+                disabled={loading}
+              >
+                {isAdminState ? t('demote') : t('promote')}
+              </Button>
+            )}
             <Button
               size="icon"
-              variant="destructive"
-              onClick={handleDeleteUser}
+              variant="outline"
+              onClick={handleResetUsage}
               disabled={loading}
-              title={t('deleteUser')}
+              title={t('resetUsage')}
+              className="size-8"
             >
-              <Trash2 />
+              <RefreshCw className="size-3.5" />
             </Button>
-          ) : null}
+            {!isSelf && (
+              <Button
+                size="icon"
+                variant="destructive"
+                onClick={handleDeleteUser}
+                disabled={loading}
+                title={t('deleteUser')}
+                className="size-8"
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            )}
+          </div>
         </td>
       </tr>
     </>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Users table
+// ---------------------------------------------------------------------------
 function AdminTableContent() {
   const t = useTranslations('admin');
   const { data: session } = useSession();
   const currentUserId = session?.user?.id ?? '';
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
   const perPage = 20;
 
@@ -390,24 +620,16 @@ function AdminTableContent() {
   }, [loadUsers]);
 
   if (loading) return <AdminTableSkeleton />;
-
-  if (error) {
-    return <div className="text-center py-8 text-red-600">{error}</div>;
-  }
-
-  if (!data?.users?.length) {
+  if (error) return <div className="text-center py-8 text-red-600">{error}</div>;
+  if (!data?.users?.length)
     return <div className="text-center py-8 text-muted-foreground">{t('noUsers')}</div>;
-  }
 
-  const nextUrl = new URL(window.location.href);
-  nextUrl.searchParams.set('page', String(page + 1));
-
-  const prevUrl = new URL(window.location.href);
-  prevUrl.searchParams.set('page', String(page - 1));
+  const nextUrl = `${pathname}?page=${page + 1}`;
+  const prevUrl = `${pathname}?page=${page - 1}`;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Mobile card list */}
+      {/* Mobile */}
       <div className="md:hidden flex flex-col gap-3">
         {data.users.map((user) => (
           <UserMobileCard
@@ -425,10 +647,12 @@ function AdminTableContent() {
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="px-4 py-3 text-left font-semibold">{t('colEmail')}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t('colDisplayName')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colVerification')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('colJoined')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('colReadings')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('colCharts')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colAdmin')}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t('colDelete')}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t('colActions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -444,16 +668,17 @@ function AdminTableContent() {
         </table>
       </div>
 
+      {/* Pagination */}
       <div className="flex items-center justify-between">
         {page === 1 ? (
           <Button variant="outline" size="sm" disabled className="gap-2">
-            <ChevronLeft />
+            <ChevronLeft className="size-4" />
             {t('previous')}
           </Button>
         ) : (
           <Button variant="outline" size="sm" asChild className="gap-2">
-            <Link href={prevUrl.toString()}>
-              <ChevronLeft />
+            <Link href={prevUrl}>
+              <ChevronLeft className="size-4" />
               {t('previous')}
             </Link>
           </Button>
@@ -462,13 +687,13 @@ function AdminTableContent() {
         {data.users.length < perPage ? (
           <Button variant="outline" size="sm" disabled className="gap-2">
             {t('next')}
-            <ChevronRight />
+            <ChevronRight className="size-4" />
           </Button>
         ) : (
           <Button variant="outline" size="sm" asChild className="gap-2">
-            <Link href={nextUrl.toString()}>
+            <Link href={nextUrl}>
               {t('next')}
-              <ChevronRight />
+              <ChevronRight className="size-4" />
             </Link>
           </Button>
         )}
@@ -477,6 +702,9 @@ function AdminTableContent() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 export default function AdminPage() {
   const t = useTranslations('admin');
   return (
@@ -484,12 +712,13 @@ export default function AdminPage() {
       <div>
         <BackLink />
         <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground mt-2">{t('description')}</p>
+        <p className="text-muted-foreground mt-1">{t('description')}</p>
       </div>
 
-      <AnalyticsCard />
+      <AnalyticsSection />
 
-      <Card className="p-6">
+      <Card className="p-6 flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">{t('usersTitle')}</h2>
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-8">

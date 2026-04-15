@@ -466,6 +466,7 @@ export type Database = {
           provider: string | null;
           request_payload_json: Json;
           response_payload_json: Json;
+          usage_tokens: number | null;
           user_id: string | null;
         };
         Insert: {
@@ -480,6 +481,7 @@ export type Database = {
           provider?: string | null;
           request_payload_json?: Json;
           response_payload_json?: Json;
+          usage_tokens?: number | null;
           user_id?: string | null;
         };
         Update: {
@@ -494,6 +496,7 @@ export type Database = {
           provider?: string | null;
           request_payload_json?: Json;
           response_payload_json?: Json;
+          usage_tokens?: number | null;
           user_id?: string | null;
         };
         Relationships: [];
@@ -540,42 +543,6 @@ export type Database = {
           pending_email?: string | null;
           timezone?: string | null;
           updated_at?: string;
-        };
-        Relationships: [];
-      };
-      prompt_templates: {
-        Row: {
-          active: boolean;
-          created_at: string;
-          developer_prompt: string | null;
-          id: string;
-          key: string;
-          locale: string;
-          output_schema_json: Json;
-          system_prompt: string;
-          version: string;
-        };
-        Insert: {
-          active?: boolean;
-          created_at?: string;
-          developer_prompt?: string | null;
-          id?: string;
-          key: string;
-          locale?: string;
-          output_schema_json?: Json;
-          system_prompt: string;
-          version: string;
-        };
-        Update: {
-          active?: boolean;
-          created_at?: string;
-          developer_prompt?: string | null;
-          id?: string;
-          key?: string;
-          locale?: string;
-          output_schema_json?: Json;
-          system_prompt?: string;
-          version?: string;
         };
         Relationships: [];
       };
@@ -858,30 +825,6 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
-      };
-      telegram_link_tokens: {
-        Row: {
-          consumed_at: string | null;
-          created_at: string;
-          expires_at: string;
-          token: string;
-          user_id: string;
-        };
-        Insert: {
-          consumed_at?: string | null;
-          created_at?: string;
-          expires_at: string;
-          token: string;
-          user_id: string;
-        };
-        Update: {
-          consumed_at?: string | null;
-          created_at?: string;
-          expires_at?: string;
-          token?: string;
-          user_id?: string;
-        };
-        Relationships: [];
       };
       usage_counters: {
         Row: {

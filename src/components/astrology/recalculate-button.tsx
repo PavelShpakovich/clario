@@ -20,9 +20,10 @@ import {
 
 interface RecalculateButtonProps {
   chartId: string;
+  iconOnly?: boolean;
 }
 
-export function RecalculateButton({ chartId }: RecalculateButtonProps) {
+export function RecalculateButton({ chartId, iconOnly = false }: RecalculateButtonProps) {
   const t = useTranslations('chartDetail');
   const tErrors = useTranslations('errors');
   const router = useRouter();
@@ -62,10 +63,22 @@ export function RecalculateButton({ chartId }: RecalculateButtonProps) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isPending}>
-          <RefreshCw className={`mr-1.5 size-3.5 ${isPending ? 'animate-spin' : ''}`} />
-          {t('recalculate')}
-        </Button>
+        {iconOnly ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={isPending}
+            title={t('recalculate')}
+            className="size-8"
+          >
+            <RefreshCw className={`size-4 ${isPending ? 'animate-spin' : ''}`} />
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled={isPending}>
+            <RefreshCw className={`mr-1.5 size-3.5 ${isPending ? 'animate-spin' : ''}`} />
+            {t('recalculate')}
+          </Button>
+        )}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

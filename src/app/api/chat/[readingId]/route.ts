@@ -6,6 +6,7 @@ import { NotFoundError, ValidationError } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { streamChatResponse, type ChatMessage } from '@/lib/llm/structured-generation';
 import { env } from '@/lib/env';
+import { FOLLOW_UP_LIMIT } from '@/lib/astrology/constants';
 
 const db = supabaseAdmin;
 
@@ -13,9 +14,6 @@ const uuidSchema = z.string().uuid();
 const sendMessageSchema = z.object({
   message: z.string().min(1).max(1000),
 });
-
-/** Max user messages per thread. */
-const FOLLOW_UP_LIMIT = 10;
 
 async function getReadingId(ctx: unknown): Promise<string | undefined> {
   const routeContext = ctx as { params?: Promise<{ readingId: string }> } | undefined;
@@ -258,8 +256,8 @@ export async function POST(req: Request, ctx: unknown) {
   const threadId = thread.id;
   const newUsed = (userMsgCount ?? 0) + 1;
 
-  // Stream response to client; save assistant message when complete
-  const stream = streamChatResponse(llmMessages, async (fullText) => {
+  // Stream response to client; save assistant message (with token usage) when complete
+  const stream = streamChatResponse(llmMessages, async (fullText, tokensUsed) => {
     if (fullText) {
       await db.from('follow_up_messages').insert({
         thread_id: threadId,
@@ -267,6 +265,7 @@ export async function POST(req: Request, ctx: unknown) {
         content: fullText,
         model_provider: env.LLM_PROVIDER,
         model_name: env.LLM_PROVIDER === 'qwen' ? env.QWEN_MODEL : 'mock',
+        usage_tokens: tokensUsed ?? null,
       });
     }
   });

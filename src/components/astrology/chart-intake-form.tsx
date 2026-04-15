@@ -207,7 +207,10 @@ export function ChartIntakeForm({
 
   useEffect(() => {
     allTimezones.current = getIanaTimezones();
-  }, [update]);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const handleCityInput = useCallback(
     (value: string) => {
@@ -576,7 +579,7 @@ export function ChartIntakeForm({
                             <li key={`${entry.displayName}-${index}`}>
                               <button
                                 type="button"
-                                className="flex w-full items-baseline gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                                className="flex min-h-[44px] w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent"
                                 onMouseDown={() => void selectCity(entry)}
                               >
                                 <span className="font-medium">{entry.city}</span>
@@ -630,7 +633,7 @@ export function ChartIntakeForm({
                           <li key={timezone}>
                             <button
                               type="button"
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
+                              className="min-h-[44px] w-full truncate px-3 py-2.5 text-left text-sm hover:bg-accent"
                               onMouseDown={() => {
                                 update('timezone', timezone);
                                 setTzSearch(timezone);
@@ -757,21 +760,27 @@ export function ChartIntakeForm({
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                {!isLastStep ? (
-                  <Button type="button" onClick={goToNextStep}>
-                    {t('nextStep')}
-                  </Button>
-                ) : (
-                  <Button type="button" disabled={isPending} onClick={saveChart}>
-                    {mode === 'edit'
-                      ? isPending
-                        ? t('submittingEdit')
-                        : t('submitEdit')
-                      : isPending
-                        ? t('submitting')
-                        : t('submit')}
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  className={isLastStep ? 'hidden' : undefined}
+                  onClick={goToNextStep}
+                >
+                  {t('nextStep')}
+                </Button>
+                <Button
+                  type="button"
+                  className={!isLastStep ? 'hidden' : undefined}
+                  disabled={isPending}
+                  onClick={saveChart}
+                >
+                  {mode === 'edit'
+                    ? isPending
+                      ? t('submittingEdit')
+                      : t('submitEdit')
+                    : isPending
+                      ? t('submitting')
+                      : t('submit')}
+                </Button>
               </div>
             </div>
           </form>

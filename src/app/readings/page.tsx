@@ -37,7 +37,9 @@ export default async function ReadingsPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
           {t('sectionLabel')}
         </p>
-        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{t('heading')}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
+          {t('heading')}
+        </h1>
         <p className="max-w-2xl text-sm text-muted-foreground md:text-base">{t('description')}</p>
       </section>
 
@@ -47,11 +49,11 @@ export default async function ReadingsPage() {
             <CardTitle>{t('noReadingsTitle')}</CardTitle>
             <CardDescription>{t('noReadingsDescription')}</CardDescription>
           </CardHeader>
-          <CardContent className="flex gap-3">
-            <Button asChild>
+          <CardContent className="flex flex-col gap-3 sm:flex-row">
+            <Button asChild className="w-full sm:w-auto">
               <Link href="/charts/new">{t('createChart')}</Link>
             </Button>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link href="/charts">{t('openCharts')}</Link>
             </Button>
           </CardContent>

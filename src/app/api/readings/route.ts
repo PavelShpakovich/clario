@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
-import { ValidationError } from '@/lib/errors';
+import { ValidationError, RateLimitError } from '@/lib/errors';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { readingCreateSchema } from '@/lib/readings/reading-request-schema';
-import { createReadingDraft } from '@/lib/readings/service';
+import { createPendingReading } from '@/lib/readings/service';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const db = supabaseAdmin;
@@ -26,6 +27,15 @@ export const GET = withApiHandler(async () => {
 
 export const POST = withApiHandler(async (req) => {
   const { user } = await requireAuth();
+
+  const rl = checkRateLimit(`reading-create:${user.id}`, 5, 60 * 60 * 1000); // 5 per hour
+  if (!rl.allowed) {
+    throw new RateLimitError({
+      message: 'Too many reading requests. Please wait before generating another.',
+      context: { retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) },
+    });
+  }
+
   const json = await req.json();
   const parsed = readingCreateSchema.safeParse(json);
 
@@ -35,7 +45,9 @@ export const POST = withApiHandler(async (req) => {
     });
   }
 
-  // If retrying a failed reading, delete the old one first so it doesn't accumulate
+  const reading = await createPendingReading(user.id, parsed.data);
+
+  // Delete the old failed reading now that the replacement pending record exists
   if (parsed.data.replaceReadingId) {
     await db
       .from('readings')
@@ -45,6 +57,5 @@ export const POST = withApiHandler(async (req) => {
       .eq('status', 'error');
   }
 
-  const reading = await createReadingDraft(user.id, parsed.data);
   return NextResponse.json({ reading }, { status: 201 });
 });

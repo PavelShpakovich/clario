@@ -1,4 +1,4 @@
-export const ASTROLOGY_SUPPORTED_LOCALES = ['en', 'ru'] as const;
+export const ASTROLOGY_SUPPORTED_LOCALES = ['ru'] as const;
 
 export const HOUSE_SYSTEMS = ['whole_sign', 'equal'] as const;
 
@@ -17,10 +17,14 @@ export const READING_TYPES = [
   'love',
   'career',
   'strengths',
+  'transit',
 ] as const;
 
 export const READING_STATUSES = ['pending', 'generating', 'ready', 'error'] as const;
 
 export const FOLLOW_UP_ROLES = ['user', 'assistant', 'system'] as const;
+
+/** Max follow-up questions a user can ask per reading thread. */
+export const FOLLOW_UP_LIMIT = 5;
 
 export const TONE_STYLES = ['balanced', 'mystical', 'therapeutic', 'analytical'] as const;

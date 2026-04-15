@@ -7,6 +7,17 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { Tables } from '@/lib/supabase/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Pencil,
+  Heart,
+  ChevronLeft,
+  Sun,
+  Moon,
+  Asterisk,
+  Square,
+  Triangle,
+  ArrowLeftRight,
+} from 'lucide-react';
 import { CreateReadingButton } from '@/components/astrology/create-reading-button';
 import { RecalculateButton } from '@/components/astrology/recalculate-button';
 import { ChartWheel } from '@/components/astrology/chart-wheel';
@@ -77,43 +88,32 @@ const SIGN_RULER: Record<string, string> = {
   pisces: 'neptune',
 };
 
-const SIGN_KEYWORDS: Record<string, string> = {
-  aries: 'Напор · Инициатива · Смелость',
-  taurus: 'Стабильность · Чувственность · Терпение',
-  gemini: 'Общение · Адаптация · Любопытство',
-  cancer: 'Забота · Интуиция · Чувствительность',
-  leo: 'Самовыражение · Творчество · Щедрость',
-  virgo: 'Анализ · Точность · Практичность',
-  libra: 'Гармония · Баланс · Дипломатия',
-  scorpio: 'Интенсивность · Трансформация · Проницательность',
-  sagittarius: 'Свобода · Философия · Оптимизм',
-  capricorn: 'Амбиции · Дисциплина · Структура',
-  aquarius: 'Оригинальность · Реформы · Гуманизм',
-  pisces: 'Интуиция · Сострадание · Мечтательность',
-};
-
-const PLANET_MEANING: Record<string, string> = {
-  sun: 'Личность, жизненная сила',
-  moon: 'Эмоции, инстинкты',
-  mercury: 'Мышление, общение',
-  venus: 'Любовь, красота',
-  mars: 'Действие, желание',
-  jupiter: 'Рост, удача',
-  saturn: 'Дисциплина, уроки',
-  uranus: 'Перемены, свобода',
-  neptune: 'Мечты, духовность',
-  pluto: 'Трансформация, власть',
-};
-
 // Personal planets used for element/modality balance
 const BALANCE_BODIES = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
 
-const ASPECT_META: Record<string, { symbol: string; color: string }> = {
-  conjunction: { symbol: '☌', color: 'text-primary' },
-  sextile: { symbol: '⚹', color: 'text-sky-500' },
-  square: { symbol: '□', color: 'text-destructive' },
-  trine: { symbol: '△', color: 'text-emerald-500' },
-  opposition: { symbol: '☍', color: 'text-orange-400' },
+// Tiny custom icon for Conjunction (two circles touching) — no Lucide equivalent
+function ConjunctionIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <circle cx="5" cy="8" r="3" />
+      <circle cx="11" cy="8" r="3" />
+    </svg>
+  );
+}
+
+const ASPECT_META: Record<string, { icon: React.ElementType; color: string }> = {
+  conjunction: { icon: ConjunctionIcon, color: 'text-primary' },
+  sextile: { icon: Asterisk, color: 'text-sky-500' },
+  square: { icon: Square, color: 'text-destructive' },
+  trine: { icon: Triangle, color: 'text-emerald-500' },
+  opposition: { icon: ArrowLeftRight, color: 'text-orange-400' },
 };
 
 // Natural display order for planets
@@ -240,6 +240,21 @@ export default async function ChartDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      {/* ── Breadcrumb ── */}
+      <div>
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="-ml-2 text-muted-foreground hover:text-foreground"
+        >
+          <Link href="/charts">
+            <ChevronLeft className="size-4" />
+            {t('backToCharts')}
+          </Link>
+        </Button>
+      </div>
+
       {/* ── Person hero ── */}
       <section className="rounded-2xl border bg-card p-6 md:p-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -280,15 +295,31 @@ export default async function ChartDetailPage({
             </div>
           </div>
           {/* Actions */}
-          <div className="flex shrink-0 gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/charts/${chart.id}/edit`}>{t('editChart')}</Link>
-            </Button>
-            <RecalculateButton chartId={chart.id} />
-            <Button asChild variant="outline" size="sm">
-              <Link href="/charts">{t('backToCharts')}</Link>
-            </Button>
+          <div className="flex shrink-0 flex-col items-end gap-2.5">
+            {/* Primary CTA */}
             <CreateReadingButton chartId={chart.id} chartStatus={chart.status} />
+            {/* Secondary icon toolbar */}
+            <div className="flex items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5">
+              <Button asChild variant="ghost" size="icon" className="size-8" title={t('editChart')}>
+                <Link href={`/charts/${chart.id}/edit`}>
+                  <Pencil className="size-3.5" />
+                </Link>
+              </Button>
+              <div className="mx-0.5 h-4 w-px bg-border" />
+              <RecalculateButton chartId={chart.id} iconOnly />
+              <div className="mx-0.5 h-4 w-px bg-border" />
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                title={t('compareWithChart')}
+              >
+                <Link href={`/compatibility/new?primaryChartId=${chart.id}`}>
+                  <Heart className="size-3.5" />
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -363,21 +394,21 @@ export default async function ChartDetailPage({
           {/* Elements */}
           <div className="rounded-2xl border bg-card p-5">
             <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Стихии
+              {t('elementsTitle')}
             </p>
             <div className="grid gap-3">
-              {(
-                [
-                  { key: 'fire', label: 'Огонь', dot: 'bg-orange-500' },
-                  { key: 'earth', label: 'Земля', dot: 'bg-emerald-600' },
-                  { key: 'air', label: 'Воздух', dot: 'bg-sky-400' },
-                  { key: 'water', label: 'Вода', dot: 'bg-blue-500' },
-                ] as const
-              ).map((el) => {
+              {[
+                { key: 'fire' as const, dot: 'bg-orange-500' },
+                { key: 'earth' as const, dot: 'bg-emerald-600' },
+                { key: 'air' as const, dot: 'bg-sky-400' },
+                { key: 'water' as const, dot: 'bg-blue-500' },
+              ].map((el) => {
                 const count = elementCounts[el.key];
                 return (
                   <div key={el.key} className="flex items-center gap-2">
-                    <span className="w-14 shrink-0 text-xs text-muted-foreground">{el.label}</span>
+                    <span className="w-14 shrink-0 text-xs text-muted-foreground">
+                      {t(`elements.${el.key}` as Parameters<typeof t>[0])}
+                    </span>
                     <div className="flex flex-1 gap-1">
                       {Array.from({ length: count }).map((_, i) => (
                         <span key={i} className={`h-2 w-2 rounded-full ${el.dot}`} />
@@ -398,20 +429,20 @@ export default async function ChartDetailPage({
           {/* Modalities */}
           <div className="rounded-2xl border bg-card p-5">
             <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Качества
+              {t('modalitiesTitle')}
             </p>
             <div className="grid gap-3">
-              {(
-                [
-                  { key: 'cardinal', label: 'Кардинальные', dot: 'bg-primary' },
-                  { key: 'fixed', label: 'Фиксированные', dot: 'bg-purple-500' },
-                  { key: 'mutable', label: 'Мутабельные', dot: 'bg-emerald-500' },
-                ] as const
-              ).map((mod) => {
+              {[
+                { key: 'cardinal' as const, dot: 'bg-primary' },
+                { key: 'fixed' as const, dot: 'bg-purple-500' },
+                { key: 'mutable' as const, dot: 'bg-emerald-500' },
+              ].map((mod) => {
                 const count = modalityCounts[mod.key];
                 return (
                   <div key={mod.key} className="flex items-center gap-2">
-                    <span className="w-28 shrink-0 text-xs text-muted-foreground">{mod.label}</span>
+                    <span className="w-28 shrink-0 text-xs text-muted-foreground">
+                      {t(`modalities.${mod.key}` as Parameters<typeof t>[0])}
+                    </span>
                     <div className="flex flex-1 gap-1">
                       {Array.from({ length: count }).map((_, i) => (
                         <span key={i} className={`h-2 w-2 rounded-full ${mod.dot}`} />
@@ -432,7 +463,7 @@ export default async function ChartDetailPage({
           {/* Chart info */}
           <div className="rounded-2xl border bg-card p-5">
             <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              О карте
+              {t('aboutChart')}
             </p>
             <div className="grid gap-4">
               {chartRulerPos && chartRulerKey ? (
@@ -447,13 +478,14 @@ export default async function ChartDetailPage({
                     />
                   </span>
                   <div>
-                    <p className="text-xs text-muted-foreground">Управитель карты</p>
+                    <p className="text-xs text-muted-foreground">{t('chartRuler')}</p>
                     <p className="mt-0.5 text-sm font-semibold">
                       {t(`planets.${chartRulerKey}` as Parameters<typeof t>[0])}
                       {chartRulerPos.sign_key ? (
                         <span className="font-normal text-muted-foreground">
                           {' '}
-                          в {t(`signs.${chartRulerPos.sign_key}` as Parameters<typeof t>[0])}
+                          {t('inSign')}{' '}
+                          {t(`signs.${chartRulerPos.sign_key}` as Parameters<typeof t>[0])}
                         </span>
                       ) : null}
                     </p>
@@ -468,22 +500,23 @@ export default async function ChartDetailPage({
 
               {hasTimeData ? (
                 <div>
-                  <p className="text-xs text-muted-foreground">Тип карты</p>
-                  <p className="mt-0.5 text-sm font-semibold">
-                    {isDay ? '☀ Дневная карта' : '☽ Ночная карта'}
+                  <p className="text-xs text-muted-foreground">{t('chartType')}</p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold">
+                    {isDay ? (
+                      <Sun className="size-3.5 text-amber-500 shrink-0" />
+                    ) : (
+                      <Moon className="size-3.5 text-sky-400 shrink-0" />
+                    )}
+                    {isDay ? t('dayChart') : t('nightChart')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {isDay
-                      ? 'Солнце над горизонтом — Солнце, Сатурн и Юпитер сильнее'
-                      : 'Солнце под горизонтом — Луна, Венера и Марс сильнее'}
+                    {isDay ? t('dayChartDesc') : t('nightChartDesc')}
                   </p>
                 </div>
               ) : null}
 
               {!chartRulerPos && !hasTimeData ? (
-                <p className="text-sm text-muted-foreground">
-                  Добавьте место и время рождения для полного анализа
-                </p>
+                <p className="text-sm text-muted-foreground">{t('addLocationHint')}</p>
               ) : null}
             </div>
           </div>
@@ -494,21 +527,24 @@ export default async function ChartDetailPage({
       {sortedPlanets.length > 0 ? (
         <section>
           <h2 className="mb-3 text-base font-semibold">{t('chartWheel')}</h2>
-          <div className="overflow-hidden rounded-2xl border bg-card p-4">
-            <ChartWheel
-              positions={[...sortedPlanets, ...angles].map((p: ChartPositionRow) => ({
-                bodyKey: p.body_key,
-                degreeDecimal: p.degree_decimal,
-                retrograde: p.retrograde ?? false,
-              }))}
-              houseSystem={normalizedHouseSystem}
-              aspects={(aspects ?? []).map((a: ChartAspectRow) => ({
-                bodyA: a.body_a,
-                bodyB: a.body_b,
-                aspectKey: a.aspect_key,
-                orbDecimal: a.orb_decimal,
-              }))}
-            />
+          <div className="overflow-x-auto rounded-2xl border bg-card p-4">
+            <div className="min-w-[340px]">
+              <ChartWheel
+                positions={[...sortedPlanets, ...angles].map((p: ChartPositionRow) => ({
+                  bodyKey: p.body_key,
+                  degreeDecimal: p.degree_decimal,
+                  retrograde: p.retrograde ?? false,
+                }))}
+                houseSystem={normalizedHouseSystem}
+                ariaLabel={t('chartWheelAriaLabel')}
+                aspects={(aspects ?? []).map((a: ChartAspectRow) => ({
+                  bodyA: a.body_a,
+                  bodyB: a.body_b,
+                  aspectKey: a.aspect_key,
+                  orbDecimal: a.orb_decimal,
+                }))}
+              />
+            </div>
           </div>
         </section>
       ) : null}
@@ -542,7 +578,7 @@ export default async function ChartDetailPage({
                         </span>
                       ) : null}
                       <span className="text-xs text-muted-foreground/60">
-                        {PLANET_MEANING[pos.body_key] ?? ''}
+                        {t(`planetMeanings.${pos.body_key}` as Parameters<typeof t>[0]) ?? ''}
                       </span>
                     </div>
                     <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
@@ -554,9 +590,9 @@ export default async function ChartDetailPage({
                         <span>· {t('houseLabel', { number: pos.house_number })}</span>
                       ) : null}
                     </div>
-                    {SIGN_KEYWORDS[pos.sign_key] ? (
+                    {pos.sign_key ? (
                       <p className="mt-0.5 text-[10px] text-muted-foreground/55 leading-tight">
-                        {SIGN_KEYWORDS[pos.sign_key]}
+                        {t(`signKeywords.${pos.sign_key}` as Parameters<typeof t>[0])}
                       </p>
                     ) : null}
                   </div>
@@ -612,16 +648,21 @@ export default async function ChartDetailPage({
               const planetA = t(`planets.${asp.body_a}` as Parameters<typeof t>[0]) ?? asp.body_a;
               const planetB = t(`planets.${asp.body_b}` as Parameters<typeof t>[0]) ?? asp.body_b;
               const meta = ASPECT_META[asp.aspect_key] ?? {
-                symbol: asp.aspect_key,
+                icon: null,
                 color: 'text-foreground',
               };
+              const AspectIcon = meta.icon;
               return (
                 <div
                   key={asp.id}
                   className="flex items-center gap-3 rounded-xl border bg-card px-4 py-2.5 text-sm"
                 >
-                  <span className={`w-6 shrink-0 text-center text-base font-bold ${meta.color}`}>
-                    {meta.symbol}
+                  <span className={`flex w-6 shrink-0 items-center justify-center ${meta.color}`}>
+                    {AspectIcon ? (
+                      <AspectIcon className="size-4" />
+                    ) : (
+                      <span className="text-base font-bold">{asp.aspect_key}</span>
+                    )}
                   </span>
                   <span className="flex-1 font-medium">
                     {planetA} <span className="text-muted-foreground">·</span> {planetB}
@@ -673,14 +714,8 @@ export default async function ChartDetailPage({
                       ) : null}
                     </div>
                     <Badge
-                      variant={
-                        reading.status === 'ready'
-                          ? 'default'
-                          : reading.status === 'error'
-                            ? 'destructive'
-                            : 'secondary'
-                      }
-                      className="shrink-0"
+                      variant={reading.status === 'error' ? 'destructive' : 'outline'}
+                      className={`shrink-0 ${reading.status === 'ready' ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400' : ''}`}
                     >
                       {reading.status === 'ready'
                         ? t('statusReady')

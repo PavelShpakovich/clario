@@ -1,9 +1,8 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { auth } from '@/auth';
-import { AuthError } from '@/lib/errors';
+import { AuthError, ForbiddenError } from '@/lib/errors';
 import { env } from '@/lib/env';
-import { NextResponse } from 'next/server';
 
 /**
  * Retrieves and validates the current authenticated user from the request cookies.
@@ -55,20 +54,18 @@ function isAdminUser(user: Awaited<ReturnType<typeof requireAuth>>['user']): boo
 
 /**
  * Requires the current user to be authenticated AND have admin privileges.
- * Returns a 403 NextResponse if the check fails (call `return` on the result).
+ * Throws ForbiddenError (→ HTTP 403) if the check fails.
  *
  * @example
- * const adminCheck = await requireAdmin();
- * if (adminCheck instanceof NextResponse) return adminCheck;
- * const { user } = adminCheck;
+ * const { user } = await requireAdmin();
  */
-export async function requireAdmin(): Promise<
-  { user: Awaited<ReturnType<typeof requireAuth>>['user'] } | NextResponse
-> {
+export async function requireAdmin(): Promise<{
+  user: Awaited<ReturnType<typeof requireAuth>>['user'];
+}> {
   const { user } = await requireAuth();
 
   if (!isAdminUser(user)) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    throw new ForbiddenError({ message: 'Admin access required' });
   }
 
   return { user };
