@@ -1,12 +1,6 @@
-import {
-  AstroTime,
-  Body,
-  EclipticGeoMoon,
-  EclipticLongitude,
-  SiderealTime,
-  SunPosition,
-} from 'astronomy-engine';
-import { normalizeHouseSystem } from '@/lib/astrology/constants';
+import { calculateChart } from 'celestine';
+import type { HouseSystem } from '@/lib/astrology/constants';
+import { toCelestineHouseSystem } from '@/lib/astrology/constants';
 import type {
   BirthDataInput,
   CalculatedAspect,
@@ -20,19 +14,6 @@ export interface AstrologyEngine {
 }
 
 /* ---------- constants ---------- */
-
-const PLANET_BODIES = [
-  'sun',
-  'moon',
-  'mercury',
-  'venus',
-  'mars',
-  'jupiter',
-  'saturn',
-  'uranus',
-  'neptune',
-  'pluto',
-] as const;
 
 const SIGNS = [
   'aries',
@@ -49,17 +30,6 @@ const SIGNS = [
   'pisces',
 ] as const;
 
-/** Standard major aspect definitions: [name, exactAngle, defaultOrb]. */
-const ASPECT_DEFS: Array<[string, number, number]> = [
-  ['conjunction', 0, 8],
-  ['sextile', 60, 6],
-  ['square', 90, 7],
-  ['trine', 120, 8],
-  ['opposition', 180, 8],
-];
-
-const MEAN_OBLIQUITY_DEG = 23.4393;
-
 /* ---------- helpers ---------- */
 
 function signForLongitude(lon: number): (typeof SIGNS)[number] {
@@ -67,257 +37,175 @@ function signForLongitude(lon: number): (typeof SIGNS)[number] {
   return SIGNS[idx];
 }
 
-/** Map internal body key to astronomy-engine Body enum. */
-function bodyEnumForKey(key: string): Body | null {
-  const map: Record<string, Body> = {
-    mercury: Body.Mercury,
-    venus: Body.Venus,
-    mars: Body.Mars,
-    jupiter: Body.Jupiter,
-    saturn: Body.Saturn,
-    uranus: Body.Uranus,
-    neptune: Body.Neptune,
-    pluto: Body.Pluto,
-  };
-  return map[key] ?? null;
+/** Convert a celestine body name ("Sun") to our internal key ("sun"). */
+function bodyKeyFromName(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, '_');
 }
 
-/** Get ecliptic longitude in degrees [0..360) for a planet at the given time. */
-function getPlanetLongitude(body: string, time: AstroTime): number {
-  if (body === 'sun') {
-    return SunPosition(time).elon;
-  }
-  if (body === 'moon') {
-    return EclipticGeoMoon(time).lon;
-  }
-  const bodyEnum = bodyEnumForKey(body);
-  if (!bodyEnum) throw new Error(`Unknown body: ${body}`);
-  return EclipticLongitude(bodyEnum, time);
-}
-
-/** Determine retrograde by comparing ecliptic longitude one day later. */
-function isRetrograde(body: string, time: AstroTime): boolean {
-  if (body === 'sun' || body === 'moon') return false;
-  const lon1 = getPlanetLongitude(body, time);
-  const later = new AstroTime(new Date(time.date.getTime() + 86_400_000));
-  const lon2 = getPlanetLongitude(body, later);
-  let delta = lon2 - lon1;
-  if (delta > 180) delta -= 360;
-  if (delta < -180) delta += 360;
-  return delta < 0;
-}
-
-/** Compute Ascendant (ASC) from local sidereal time and geographic latitude.
- *  Uses the standard formula: ASC = atan2(-cos(RAMC), sin(ε)·tan(φ) + cos(ε)·sin(RAMC))
- */
-function computeAscendant(lstDeg: number, latDeg: number, oblDeg: number): number {
-  const oblRad = (oblDeg * Math.PI) / 180;
-  const latRad = (latDeg * Math.PI) / 180;
-  const lstRad = (lstDeg * Math.PI) / 180;
-  let asc =
-    (Math.atan2(
-      -Math.cos(lstRad),
-      Math.sin(oblRad) * Math.tan(latRad) + Math.cos(oblRad) * Math.sin(lstRad),
-    ) *
-      180) /
-    Math.PI;
-  if (asc < 0) asc += 360;
-  return asc;
-}
-
-/** Compute Midheaven (MC). MC = atan2(sin(RAMC), cos(RAMC)·cos(ε)) */
-function computeMidheaven(lstDeg: number, oblDeg: number): number {
-  const oblRad = (oblDeg * Math.PI) / 180;
-  const lstRad = (lstDeg * Math.PI) / 180;
-  let mc = (Math.atan2(Math.sin(lstRad), Math.cos(lstRad) * Math.cos(oblRad)) * 180) / Math.PI;
-  if (mc < 0) mc += 360;
-  return mc;
-}
-
-/** Equal-house cusp calculation: house N cusp = ASC + (N-1)*30.  Returns undefined houseNumber
- *  for any body if birth time is unknown. */
-function houseForLongitude(lon: number, ascendant: number): number {
-  const diff = (((lon - ascendant) % 360) + 360) % 360;
-  return Math.floor(diff / 30) + 1;
-}
-
-function wholeSignHouseForLongitude(lon: number, ascendant: number): number {
-  const ascSignStart = Math.floor(ascendant / 30) * 30;
-  const diff = (((lon - ascSignStart) % 360) + 360) % 360;
-  return Math.floor(diff / 30) + 1;
-}
-
-/** Build aspects between the given positions using exact angular distances. */
-function buildAspects(positions: CalculatedPosition[]): CalculatedAspect[] {
-  const aspects: CalculatedAspect[] = [];
-
-  for (let i = 0; i < positions.length; i++) {
-    for (let j = i + 1; j < positions.length; j++) {
-      const a = positions[i];
-      const b = positions[j];
-      let angDiff = Math.abs(a.degreeDecimal - b.degreeDecimal);
-      if (angDiff > 180) angDiff = 360 - angDiff;
-
-      for (const [aspectKey, exact, maxOrb] of ASPECT_DEFS) {
-        const orb = Math.abs(angDiff - exact);
-        if (orb <= maxOrb) {
-          // "Applying" ≈ orb is still tightening. Simplified: applying if orb < maxOrb/2.
-          const applying = orb < maxOrb / 2;
-          aspects.push({
-            bodyA: a.bodyKey,
-            bodyB: b.bodyKey,
-            aspectKey,
-            orbDecimal: Number(orb.toFixed(4)),
-            applying,
-          });
-          break; // Only the tightest aspect per pair
-        }
-      }
-    }
+/** Resolve UTC hour (fractional) from birth data, applying timezone offset. */
+function resolveUtcHour(
+  input: BirthDataInput,
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  warnings: string[],
+): { utcHour: number; utcMinute: number } {
+  if (!input.timezone) {
+    return { utcHour: hour, utcMinute: minute };
   }
 
-  return aspects;
+  let tzValid = false;
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: input.timezone });
+    tzValid = true;
+  } catch {
+    warnings.push(
+      `Часовой пояс «${input.timezone}» не распознан — используйте формат IANA (например, Europe/Moscow). Время рождения обработано как UTC.`,
+    );
+  }
+
+  if (!tzValid) return { utcHour: hour, utcMinute: minute };
+
+  try {
+    const approxUtc = new Date(Date.UTC(year, month - 1, day, hour, minute));
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: input.timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    });
+    const parts = formatter.formatToParts(approxUtc);
+    const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+    const displayed = new Date(
+      Date.UTC(
+        get('year'),
+        get('month') - 1,
+        get('day'),
+        get('hour'),
+        get('minute'),
+        get('second'),
+      ),
+    );
+    const offsetMs = displayed.getTime() - approxUtc.getTime();
+    const actualUtc = new Date(approxUtc.getTime() - offsetMs);
+    return {
+      utcHour: actualUtc.getUTCHours(),
+      utcMinute: actualUtc.getUTCMinutes(),
+    };
+  } catch {
+    warnings.push(
+      'Не удалось определить смещение часового пояса — время рождения обработано как UTC.',
+    );
+    return { utcHour: hour, utcMinute: minute };
+  }
 }
 
 /* ---------- engine ---------- */
 
 class RealAstrologyEngine implements AstrologyEngine {
-  readonly providerKey = 'astronomy-engine-v1';
+  readonly providerKey = 'celestine-v1';
 
   async calculateNatalChart(input: BirthDataInput): Promise<ChartComputationResult> {
     const warnings: string[] = [];
-    const houseSystem = normalizeHouseSystem(input.houseSystem);
+    const houseSystem: HouseSystem = input.houseSystem;
+    const celestineHouseSystem = toCelestineHouseSystem(houseSystem);
 
-    // Build birth datetime in UTC
     const [year, month, day] = input.birthDate.split('-').map(Number);
-    let utcDate: Date;
+    let utcHour: number;
+    let utcMinute: number;
+    const hasTime = input.birthTimeKnown && input.birthTime;
+    const hasCoords = input.latitude != null && input.longitude != null;
 
-    if (input.birthTimeKnown && input.birthTime) {
-      const [hour, minute] = input.birthTime.split(':').map(Number);
-      // If timezone provided, attempt offset; otherwise treat as UTC
-      utcDate = new Date(Date.UTC(year, month - 1, day, hour, minute));
-      if (input.timezone) {
-        // Pre-validate the timezone string before using it
-        let tzValid = false;
-        try {
-          Intl.DateTimeFormat(undefined, { timeZone: input.timezone });
-          tzValid = true;
-        } catch {
-          warnings.push(
-            `Часовой пояс «${input.timezone}» не распознан — используйте формат IANA (например, Europe/Moscow). Время рождения обработано как UTC.`,
-          );
-        }
-
-        if (tzValid) {
-          try {
-            // Use Date.UTC to avoid server-local-timezone ambiguity.
-            // "Intl trick": treat birth time as UTC, format it in the target tz,
-            // measure the displayed offset, then subtract to get actual UTC.
-            const approxUtc = new Date(Date.UTC(year, month - 1, day, hour, minute));
-            const formatter = new Intl.DateTimeFormat('en-US', {
-              timeZone: input.timezone,
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hourCycle: 'h23', // avoids hour=24 midnight edge-case with hour12:false
-            });
-            const parts = formatter.formatToParts(approxUtc);
-            const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
-            // What local time does approxUtc correspond to in the target tz?
-            const displayed = new Date(
-              Date.UTC(
-                get('year'),
-                get('month') - 1,
-                get('day'),
-                get('hour'),
-                get('minute'),
-                get('second'),
-              ),
-            );
-            // offset = how far ahead/behind the tz is vs UTC
-            const offsetMs = displayed.getTime() - approxUtc.getTime();
-            // Actual UTC = birth local time − offset
-            utcDate = new Date(approxUtc.getTime() - offsetMs);
-          } catch {
-            warnings.push(
-              'Не удалось определить смещение часового пояса — время рождения обработано как UTC.',
-            );
-          }
-        }
-      }
+    if (hasTime) {
+      const [h, m] = input.birthTime!.split(':').map(Number);
+      ({ utcHour, utcMinute } = resolveUtcHour(input, year, month, day, h, m, warnings));
     } else {
-      // Unknown birth time → noon UTC as convention
-      utcDate = new Date(Date.UTC(year, month - 1, day, 12, 0));
+      utcHour = 12;
+      utcMinute = 0;
       warnings.push(
         'Время рождения не указано. Дома, асцендент и середина неба не рассчитаны. Для позиций планет используется полдень UTC.',
       );
     }
 
-    const time = new AstroTime(utcDate);
-
-    // Calculate planetary positions (ecliptic longitude)
-    const positions: CalculatedPosition[] = [];
-
-    for (const body of PLANET_BODIES) {
-      const lon = getPlanetLongitude(body, time);
-      const retro = isRetrograde(body, time);
-
-      positions.push({
-        bodyKey: body,
-        signKey: signForLongitude(lon),
-        degreeDecimal: Number(lon.toFixed(4)),
-        retrograde: retro,
-        houseNumber: undefined, // set below if birth time known + coords available
-      });
-    }
-
-    // Calculate ASC / MC / houses if birth time known AND lat/lng available
-    let ascendant: number | undefined;
-    let midheaven: number | undefined;
-
-    if (input.birthTimeKnown && input.latitude != null && input.longitude != null) {
-      const gmst = SiderealTime(time); // hours
-      const lstDeg = (gmst + input.longitude / 15) * 15; // local sidereal time in degrees
-
-      ascendant = computeAscendant(lstDeg, input.latitude, MEAN_OBLIQUITY_DEG);
-      midheaven = computeMidheaven(lstDeg, MEAN_OBLIQUITY_DEG);
-
-      // Add ASC / MC as positions
-      positions.push({
-        bodyKey: 'ascendant',
-        signKey: signForLongitude(ascendant),
-        degreeDecimal: Number(ascendant.toFixed(4)),
-        retrograde: false,
-        houseNumber: 1,
-      });
-      positions.push({
-        bodyKey: 'midheaven',
-        signKey: signForLongitude(midheaven),
-        degreeDecimal: Number(midheaven.toFixed(4)),
-        retrograde: false,
-        houseNumber: 10,
-      });
-
-      // Assign houses using the selected supported house system.
-      for (const pos of positions) {
-        if (pos.bodyKey !== 'ascendant' && pos.bodyKey !== 'midheaven') {
-          pos.houseNumber =
-            houseSystem === 'whole_sign'
-              ? wholeSignHouseForLongitude(pos.degreeDecimal, ascendant)
-              : houseForLongitude(pos.degreeDecimal, ascendant);
-        }
-      }
-    } else if (input.birthTimeKnown) {
+    if (hasTime && !hasCoords) {
       warnings.push(
         'Координаты не указаны. Дома и углы карты не могут быть рассчитаны без широты и долготы.',
       );
     }
 
-    // Calculate real aspects
-    const aspects = buildAspects(positions);
+    const canComputeHouses = hasTime && hasCoords;
+
+    const chart = calculateChart(
+      {
+        year,
+        month,
+        day,
+        hour: utcHour,
+        minute: utcMinute,
+        second: 0,
+        timezone: 0, // we already converted to UTC
+        latitude: input.latitude ?? 0,
+        longitude: input.longitude ?? 0,
+      },
+      {
+        houseSystem: celestineHouseSystem,
+        includeAsteroids: false,
+        includeChiron: false,
+        includeLilith: false,
+        includeNodes: false,
+        includeLots: false,
+      },
+    );
+
+    // Build positions from celestine planets
+    const positions: CalculatedPosition[] = [];
+
+    for (const planet of chart.planets) {
+      const bodyKey = bodyKeyFromName(planet.name);
+      positions.push({
+        bodyKey,
+        signKey: signForLongitude(planet.longitude),
+        degreeDecimal: Number(planet.longitude.toFixed(4)),
+        retrograde: planet.isRetrograde,
+        houseNumber: canComputeHouses ? planet.house : undefined,
+      });
+    }
+
+    // Add ASC / MC if houses are computable
+    if (canComputeHouses) {
+      const ascLon = chart.angles.ascendant.longitude;
+      const mcLon = chart.angles.midheaven.longitude;
+
+      positions.push({
+        bodyKey: 'ascendant',
+        signKey: signForLongitude(ascLon),
+        degreeDecimal: Number(ascLon.toFixed(4)),
+        retrograde: false,
+        houseNumber: 1,
+      });
+      positions.push({
+        bodyKey: 'midheaven',
+        signKey: signForLongitude(mcLon),
+        degreeDecimal: Number(mcLon.toFixed(4)),
+        retrograde: false,
+        houseNumber: 10,
+      });
+    }
+
+    // Build aspects from celestine
+    const aspects: CalculatedAspect[] = chart.aspects.all.map((a) => ({
+      bodyA: bodyKeyFromName(a.body1),
+      bodyB: bodyKeyFromName(a.body2),
+      aspectKey: a.type,
+      orbDecimal: Number(a.deviation.toFixed(4)),
+      applying: a.isApplying ?? undefined,
+    }));
 
     // Identify dominant signs and bodies
     const innerPlanets = positions.filter((p) =>

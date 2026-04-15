@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { normalizeHouseSystem } from '@/lib/astrology/constants';
+import { normalizeHouseSystem, type HouseSystem } from '@/lib/astrology/constants';
 import { chartsApi } from '@/services/charts-api';
 
 interface NominatimResult {
@@ -180,8 +180,13 @@ export function ChartIntakeForm({
   ] as const;
 
   const houseSystemOptions = [
-    { value: 'whole_sign', label: t('houseWholeSigns') },
+    { value: 'placidus', label: t('housePlacidus') },
+    { value: 'koch', label: t('houseKoch') },
     { value: 'equal', label: t('houseEqual') },
+    { value: 'whole_sign', label: t('houseWholeSigns') },
+    { value: 'porphyry', label: t('housePorphyry') },
+    { value: 'regiomontanus', label: t('houseRegiomontanus') },
+    { value: 'campanus', label: t('houseCampanus') },
   ] as const;
 
   const wizardSteps = [
@@ -364,7 +369,7 @@ export function ChartIntakeForm({
           timezone: form.timezone || undefined,
           latitude: form.latitude ? Number(form.latitude) : undefined,
           longitude: form.longitude ? Number(form.longitude) : undefined,
-          houseSystem: form.houseSystem as 'whole_sign' | 'equal',
+          houseSystem: form.houseSystem as HouseSystem,
           notes: form.notes || undefined,
         });
 

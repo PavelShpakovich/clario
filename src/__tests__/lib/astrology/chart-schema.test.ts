@@ -94,7 +94,7 @@ describe('chartCreateSchema', () => {
   });
 
   it('rejects an invalid houseSystem', () => {
-    const result = chartCreateSchema.safeParse({ ...VALID_CHART, houseSystem: 'regiomontanus' });
+    const result = chartCreateSchema.safeParse({ ...VALID_CHART, houseSystem: 'vedic' });
     expect(result.success).toBe(false);
   });
 
@@ -113,13 +113,13 @@ describe('chartCreateSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('defaults houseSystem to equal when omitted', () => {
+  it('defaults houseSystem to placidus when omitted', () => {
     const input = { ...VALID_CHART };
     delete (input as Partial<typeof VALID_CHART>).houseSystem;
     const result = chartCreateSchema.safeParse(input);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.houseSystem).toBe('equal');
+      expect(result.data.houseSystem).toBe('placidus');
     }
   });
 });

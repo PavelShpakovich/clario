@@ -30,10 +30,12 @@ interface WheelAspect {
   orbDecimal: number;
 }
 
+import type { HouseSystem } from '@/lib/astrology/constants';
+
 export interface ChartWheelProps {
   positions: WheelPosition[];
   aspects?: WheelAspect[];
-  houseSystem?: 'whole_sign' | 'equal';
+  houseSystem?: HouseSystem;
   ariaLabel?: string;
 }
 

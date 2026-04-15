@@ -1,10 +1,30 @@
 export const ASTROLOGY_SUPPORTED_LOCALES = ['ru'] as const;
 
-export const HOUSE_SYSTEMS = ['whole_sign', 'equal'] as const;
+export const HOUSE_SYSTEMS = [
+  'placidus',
+  'koch',
+  'equal',
+  'whole_sign',
+  'porphyry',
+  'regiomontanus',
+  'campanus',
+] as const;
 
-export function normalizeHouseSystem(value?: string | null): (typeof HOUSE_SYSTEMS)[number] {
-  if (value === 'whole_sign' || value === 'equal') return value;
-  return 'equal';
+export type HouseSystem = (typeof HOUSE_SYSTEMS)[number];
+
+const HOUSE_SYSTEM_SET: ReadonlySet<string> = new Set(HOUSE_SYSTEMS);
+
+export function normalizeHouseSystem(value?: string | null): HouseSystem {
+  if (value && HOUSE_SYSTEM_SET.has(value)) return value as HouseSystem;
+  return 'placidus';
+}
+
+/** Map our DB/internal house system key to celestine's expected string. */
+export function toCelestineHouseSystem(
+  hs: HouseSystem,
+): 'placidus' | 'koch' | 'equal' | 'whole-sign' | 'porphyry' | 'regiomontanus' | 'campanus' {
+  if (hs === 'whole_sign') return 'whole-sign';
+  return hs;
 }
 
 export const CHART_SUBJECT_TYPES = ['self', 'partner', 'child', 'client', 'other'] as const;

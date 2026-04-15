@@ -25,7 +25,7 @@ export const chartCreateSchema = z
       .regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
       .optional(),
     birthTimeKnown: z.boolean().default(true),
-    houseSystem: z.enum(HOUSE_SYSTEMS).default('equal'),
+    houseSystem: z.enum(HOUSE_SYSTEMS).default('placidus'),
     notes: z.string().trim().max(500).optional(),
     locale: z.enum(ASTROLOGY_SUPPORTED_LOCALES).default('ru'),
   })

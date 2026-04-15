@@ -1,3 +1,5 @@
+import type { HouseSystem } from '@/lib/astrology/constants';
+
 export type ChartRecord = {
   id: string;
   label: string;
@@ -27,7 +29,7 @@ export type ChartCreatePayload = {
   latitude?: number;
   longitude?: number;
   timezone?: string;
-  houseSystem: 'whole_sign' | 'equal';
+  houseSystem: HouseSystem;
   notes?: string;
   locale?: 'en' | 'ru';
 };

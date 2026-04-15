@@ -40,9 +40,9 @@ const MINSK_NO_COORDS: BirthDataInput = {
   longitude: undefined,
 };
 
-const MINSK_WHOLE_SIGN: BirthDataInput = {
+const MINSK_PLACIDUS: BirthDataInput = {
   ...MINSK_INPUT,
-  houseSystem: 'whole_sign',
+  houseSystem: 'placidus',
 };
 
 // ── engine factory ───────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ const MINSK_WHOLE_SIGN: BirthDataInput = {
 describe('getAstrologyEngine', () => {
   it('returns an engine with the correct providerKey', async () => {
     const engine = await getAstrologyEngine();
-    expect(engine.providerKey).toBe('astronomy-engine-v1');
+    expect(engine.providerKey).toBe('celestine-v1');
   });
 });
 
@@ -64,7 +64,7 @@ describe('calculateNatalChart', () => {
   });
 
   it('returns the correct provider key', () => {
-    expect(result.provider).toBe('astronomy-engine-v1');
+    expect(result.provider).toBe('celestine-v1');
   });
 
   it('returns snapshotVersion 1', () => {
@@ -233,7 +233,7 @@ describe('calculateNatalChart — unknown birth time', () => {
   });
 
   it('adds a noon-UTC warning', () => {
-    expect(result.warnings.some((w) => w.includes('Birth time is unknown'))).toBe(true);
+    expect(result.warnings.some((w) => w.includes('Время рождения не указано'))).toBe(true);
   });
 });
 
@@ -251,11 +251,7 @@ describe('calculateNatalChart — known time but no coordinates', () => {
   });
 
   it('warns about missing coordinates', () => {
-    expect(
-      result.warnings.some(
-        (w) => w.toLowerCase().includes('latitude') || w.toLowerCase().includes('coordinates'),
-      ),
-    ).toBe(true);
+    expect(result.warnings.some((w) => w.includes('Координаты не указаны'))).toBe(true);
   });
 });
 
@@ -274,21 +270,21 @@ describe('calculateNatalChart determinism', () => {
   });
 });
 
-describe('calculateNatalChart — whole sign houses', () => {
-  it('assigns houses differently from equal houses for at least one planet', async () => {
-    const [equalResult, wholeSignResult] = await Promise.all([
-      calculateNatalChart(MINSK_INPUT),
-      calculateNatalChart(MINSK_WHOLE_SIGN),
+describe('calculateNatalChart — placidus vs whole sign houses', () => {
+  it('assigns houses differently for at least one planet', async () => {
+    const [placidusResult, wholeSignResult] = await Promise.all([
+      calculateNatalChart(MINSK_PLACIDUS),
+      calculateNatalChart({ ...MINSK_INPUT, houseSystem: 'whole_sign' }),
     ]);
 
-    const comparableBodies = equalResult.positions
+    const comparableBodies = placidusResult.positions
       .filter((pos) => !['ascendant', 'midheaven'].includes(pos.bodyKey))
       .map((pos) => pos.bodyKey);
 
     const hasDifference = comparableBodies.some((bodyKey) => {
-      const equalPos = equalResult.positions.find((pos) => pos.bodyKey === bodyKey);
+      const placidusPos = placidusResult.positions.find((pos) => pos.bodyKey === bodyKey);
       const wholeSignPos = wholeSignResult.positions.find((pos) => pos.bodyKey === bodyKey);
-      return equalPos?.houseNumber !== wholeSignPos?.houseNumber;
+      return placidusPos?.houseNumber !== wholeSignPos?.houseNumber;
     });
 
     expect(hasDifference).toBe(true);

@@ -40,8 +40,13 @@ type ChartPositionRow = Tables<'chart_positions'>;
 type ChartAspectRow = Tables<'chart_aspects'>;
 
 const HOUSE_SYSTEM_LABEL_KEY: Record<string, string> = {
-  whole_sign: 'houseWholeSigns',
+  placidus: 'housePlacidus',
+  koch: 'houseKoch',
   equal: 'houseEqual',
+  whole_sign: 'houseWholeSigns',
+  porphyry: 'housePorphyry',
+  regiomontanus: 'houseRegiomontanus',
+  campanus: 'houseCampanus',
 };
 
 // ── Astrology classification maps ─────────────────────────────────────────────
@@ -136,8 +141,12 @@ const PLANET_ORDER = [
 /** Format ecliptic longitude within sign as "15°23'" */
 function formatDeg(degreeDecimal: number): string {
   const inSign = degreeDecimal % 30;
-  const deg = Math.floor(inSign);
-  const min = Math.round((inSign - deg) * 60);
+  let deg = Math.floor(inSign);
+  let min = Math.round((inSign - deg) * 60);
+  if (min === 60) {
+    deg += 1;
+    min = 0;
+  }
   return `${deg}°${String(min).padStart(2, '0')}'`;
 }
 
