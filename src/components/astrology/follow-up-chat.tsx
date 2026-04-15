@@ -67,7 +67,9 @@ export function FollowUpChat({
     : [t('starters.default.q0'), t('starters.default.q1'), t('starters.default.q2')];
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   // Auto-resize the textarea as content grows
@@ -183,7 +185,7 @@ export function FollowUpChat({
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-1 min-h-0 flex-col">
       {/* ── Header (pinned top) ── */}
       <div className="shrink-0 border-b bg-background/95 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
@@ -226,7 +228,7 @@ export function FollowUpChat({
       </div>
 
       {/* ── Messages (scrollable) ── */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
           {/* Starter questions — shown only before first message */}
           {messages.length === 0 && !isStreaming ? (

@@ -15,10 +15,8 @@ import {
   Orbit,
   ArrowRight,
   Sparkles,
-  Wand2,
   Star,
 } from 'lucide-react';
-import { READING_TYPES } from '@/lib/astrology/constants';
 import { ZodiacIcon } from '@/components/astrology/zodiac-icon';
 
 const SIGN_ELEMENT: Record<string, 'fire' | 'earth' | 'air' | 'water'> = {
@@ -142,13 +140,6 @@ export default async function DashboardPage() {
   const recentReadings = (readings ?? []).slice(0, 4);
   const totalCharts = (charts ?? []).length;
   const totalReadings = (readings ?? []).length;
-
-  // Reading types the user hasn't tried yet (only if they have a ready chart)
-  const readyChart = (charts ?? []).find((c) => c.status === 'ready');
-  const usedTypes = new Set((readings ?? []).map((r) => r.reading_type));
-  const suggestedTypes = readyChart
-    ? READING_TYPES.filter((t) => !usedTypes.has(t)).slice(0, 4)
-    : [];
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
@@ -397,32 +388,6 @@ export default async function DashboardPage() {
           </div>
         )}
       </section>
-      {/* Suggested readings */}
-      {suggestedTypes.length > 0 && readyChart ? (
-        <section>
-          <div className="mb-4 flex items-center gap-2">
-            <Wand2 className="size-4 text-primary" />
-            <h2 className="text-base font-semibold">{t('suggestedReadings')}</h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {suggestedTypes.map((type) => (
-              <Link key={type} href={`/charts/${readyChart.id}`} className="group block">
-                <div className="flex h-full flex-col gap-2 rounded-xl border bg-card px-4 py-3 transition-all group-hover:border-primary/50 group-hover:shadow-sm group-hover:-translate-y-0.5">
-                  <p className="text-sm font-medium group-hover:text-primary">
-                    {t(`readingTypes.${type}` as Parameters<typeof t>[0])}
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-snug flex-1">
-                    {t(`readingTypeDescs.${type}` as Parameters<typeof t>[0])}
-                  </p>
-                  <span className="text-xs font-medium text-primary flex items-center gap-1 mt-1">
-                    {t('suggestedCreate')} <ArrowRight className="size-3" />
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
     </main>
   );
 }

@@ -161,22 +161,22 @@ export default async function LandingPage() {
 
       {/* Stats strip */}
       <div className="border-y bg-muted/20">
-        <div className="mx-auto grid max-w-4xl grid-cols-1 divide-y px-4 py-8 text-center sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-6">
-          <div className="px-4">
-            <p className="text-3xl font-bold text-primary">10</p>
-            <p className="mt-1.5 text-xs text-muted-foreground uppercase tracking-wide">
+        <div className="mx-auto grid max-w-4xl grid-cols-3 divide-x px-4 py-6 text-center sm:px-6">
+          <div className="px-3 sm:px-6">
+            <p className="text-2xl font-bold text-primary sm:text-3xl">10</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground sm:mt-1.5 sm:text-xs">
               {t('statsPlanets')}
             </p>
           </div>
-          <div className="px-4">
-            <p className="text-3xl font-bold text-primary">8</p>
-            <p className="mt-1.5 text-xs text-muted-foreground uppercase tracking-wide">
+          <div className="px-3 sm:px-6">
+            <p className="text-2xl font-bold text-primary sm:text-3xl">8</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground sm:mt-1.5 sm:text-xs">
               {t('statsReadingTypes')}
             </p>
           </div>
-          <div className="px-4">
-            <p className="text-3xl font-bold text-primary">5</p>
-            <p className="mt-1.5 text-xs text-muted-foreground uppercase tracking-wide">
+          <div className="px-3 sm:px-6">
+            <p className="text-2xl font-bold text-primary sm:text-3xl">5</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground sm:mt-1.5 sm:text-xs">
               {t('statsFollowUps')}
             </p>
           </div>
