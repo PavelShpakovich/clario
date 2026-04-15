@@ -423,18 +423,6 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
           </div>
         </div>
 
-        <div className="flex gap-4 text-xs text-muted-foreground">
-          <span>
-            Разборов: <strong className="text-foreground">{user.totalReadings}</strong>
-            {user.readingsThisMonth > 0 && (
-              <span className="text-primary"> (+{user.readingsThisMonth} мес.)</span>
-            )}
-          </span>
-          <span>
-            Карт: <strong className="text-foreground">{user.totalCharts}</strong>
-          </span>
-        </div>
-
         <div className="flex flex-wrap items-center gap-2">
           {!isSelf && (
             <Button
@@ -525,18 +513,6 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
             month: '2-digit',
             year: '2-digit',
           })}
-        </td>
-        <td className="px-4 py-3 text-sm tabular-nums">
-          <p className="font-semibold">{user.totalReadings}</p>
-          {user.readingsThisMonth > 0 && (
-            <p className="text-xs text-primary">+{user.readingsThisMonth} мес.</p>
-          )}
-        </td>
-        <td className="px-4 py-3 text-sm tabular-nums">
-          <p className="font-semibold">{user.totalCharts}</p>
-          {user.chartsThisMonth > 0 && (
-            <p className="text-xs text-primary">+{user.chartsThisMonth} мес.</p>
-          )}
         </td>
         <td className="px-4 py-3">
           {isAdminState && (
@@ -649,8 +625,6 @@ function AdminTableContent() {
               <th className="px-4 py-3 text-left font-semibold">{t('colEmail')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colVerification')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colJoined')}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t('colReadings')}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t('colCharts')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colAdmin')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colActions')}</th>
             </tr>
