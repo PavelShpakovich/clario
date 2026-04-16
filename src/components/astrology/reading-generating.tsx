@@ -44,7 +44,7 @@ export function ReadingGenerating({ readingId }: ReadingGeneratingProps) {
         router.refresh();
       })
       .catch(() => {
-        setFailed(true);
+        /* poller will detect the error status */
       });
   }, [readingId, router]);
 
