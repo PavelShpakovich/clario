@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useStatusPoller } from '@/hooks/use-status-poller';
 
 interface HoroscopeGeneratingProps {
   forecastId: string;
@@ -16,8 +17,8 @@ export function HoroscopeGenerating({ forecastId }: HoroscopeGeneratingProps) {
   const t = useTranslations('horoscope');
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
-  const [failed, setFailed] = useState(false);
   const didFire = useRef(false);
+  const { failed } = useStatusPoller(`/api/forecasts/${forecastId}`);
 
   const STEP_LABELS = [
     t('generatingStep1'),
@@ -26,23 +27,27 @@ export function HoroscopeGenerating({ forecastId }: HoroscopeGeneratingProps) {
     t('generatingStep4'),
   ];
 
+  // Advance progress indicators independently of network.
   useEffect(() => {
-    if (didFire.current) return;
-    didFire.current = true;
-
     const timers = STEP_DELAYS.slice(1).map((delayMs, i) =>
       setTimeout(() => setStepIndex(i + 1), delayMs),
     );
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  // Fire generation exactly once (survives Strict Mode double-mount)
+  useEffect(() => {
+    if (didFire.current) return;
+    didFire.current = true;
 
     fetch(`/api/forecasts/${forecastId}/generate`, { method: 'POST' })
       .then((res) => {
         if (!res.ok) throw new Error('generation failed');
         router.refresh();
       })
-      .catch(() => setFailed(true))
-      .finally(() => timers.forEach(clearTimeout));
-
-    return () => timers.forEach(clearTimeout);
+      .catch(() => {
+        /* poller will detect the error status */
+      });
   }, [forecastId, router]);
 
   if (failed) {

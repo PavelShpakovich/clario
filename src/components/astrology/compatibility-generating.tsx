@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Loader2, Heart, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useStatusPoller } from '@/hooks/use-status-poller';
 
 interface CompatibilityGeneratingProps {
   reportId: string;
@@ -16,8 +17,8 @@ export function CompatibilityGenerating({ reportId }: CompatibilityGeneratingPro
   const t = useTranslations('compatibility');
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
-  const [failed, setFailed] = useState(false);
   const didFire = useRef(false);
+  const { failed } = useStatusPoller(`/api/compatibility/${reportId}`);
 
   const STEP_LABELS = [
     t('generatingStep1'),
@@ -45,7 +46,9 @@ export function CompatibilityGenerating({ reportId }: CompatibilityGeneratingPro
         if (!res.ok) throw new Error('generation failed');
         router.refresh();
       })
-      .catch(() => setFailed(true));
+      .catch(() => {
+        /* poller will detect the error status */
+      });
   }, [reportId, router]);
 
   if (failed) {
