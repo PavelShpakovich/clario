@@ -9,6 +9,7 @@ interface StructuredGenerationRequest<T> {
   userPrompt: string;
   schema: ZodType<T>;
   mockResponse: T;
+  maxTokens?: number;
 }
 
 export interface StructuredGenerationResult<T> {
@@ -33,7 +34,11 @@ export async function generateStructuredOutputWithUsage<T>(
     };
   }
 
-  const result = await generateStructuredText(request.systemPrompt, request.userPrompt);
+  const result = await generateStructuredText(
+    request.systemPrompt,
+    request.userPrompt,
+    request.maxTokens,
+  );
   return {
     content: parseStructuredJson(result.text, request.schema),
     usageTokens: result.usageTokens,
@@ -43,10 +48,11 @@ export async function generateStructuredOutputWithUsage<T>(
 async function generateStructuredText(
   systemPrompt: string,
   userPrompt: string,
+  maxTokens?: number,
 ): Promise<{ text: string; usageTokens: number | null }> {
   switch (env.LLM_PROVIDER) {
     case 'qwen':
-      return generateWithQwen(systemPrompt, userPrompt);
+      return generateWithQwen(systemPrompt, userPrompt, maxTokens);
     default:
       throw new LlmError({
         message: `Unsupported LLM_PROVIDER: ${String(env.LLM_PROVIDER)}`,
@@ -57,6 +63,7 @@ async function generateStructuredText(
 async function generateWithQwen(
   systemPrompt: string,
   userPrompt: string,
+  maxTokens = 4096,
 ): Promise<{ text: string; usageTokens: number | null }> {
   if (!env.QWEN_API_KEY) {
     throw new LlmError({ message: 'QWEN_API_KEY is required when LLM_PROVIDER=qwen' });
@@ -74,12 +81,22 @@ async function generateWithQwen(
       { role: 'user', content: userPrompt },
     ],
     temperature: 0.6,
+    max_tokens: maxTokens,
+    response_format: { type: 'json_object' },
     // @ts-expect-error QWEN-specific flag not in SDK types yet.
     enable_thinking: false,
   });
 
+  const choice = response.choices[0];
+  if (choice?.finish_reason === 'length') {
+    throw new LlmError({
+      message: 'LLM response was truncated (hit max_tokens limit)',
+      context: { model: env.QWEN_MODEL, usageTokens: response.usage?.total_tokens },
+    });
+  }
+
   return {
-    text: response.choices[0]?.message.content ?? '',
+    text: choice?.message.content ?? '',
     usageTokens: response.usage?.total_tokens ?? null,
   };
 }

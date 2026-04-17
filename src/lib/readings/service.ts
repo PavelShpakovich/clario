@@ -528,3 +528,17 @@ export async function generateReadingContent(readingId: string, userId: string):
     }
   }
 }
+
+/** Reset a failed reading to pending so it can be re-generated. */
+export async function resetReadingForRetry(readingId: string, userId: string) {
+  const { data: reading } = await db
+    .from('readings')
+    .select('id, status')
+    .eq('id', readingId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!reading) throw new NotFoundError({ message: 'Reading not found' });
+
+  await db.from('readings').update({ status: 'pending', error_message: null }).eq('id', readingId);
+}

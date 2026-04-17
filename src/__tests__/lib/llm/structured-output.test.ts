@@ -93,4 +93,24 @@ describe('parseStructuredJson', () => {
       expect((err as LlmError).message).toMatch(/JSON/i);
     }
   });
+
+  it('auto-fixes a truncated key name that is a prefix of the expected key', () => {
+    const ForecastSchema = z.object({
+      interpretation: z.string(),
+      keyTheme: z.string(),
+      advice: z.string(),
+    });
+    const raw = '{"interpret":"some text","keyTheme":"theme","advice":"do this"}';
+    const result = parseStructuredJson(raw, ForecastSchema);
+    expect(result).toEqual({
+      interpretation: 'some text',
+      keyTheme: 'theme',
+      advice: 'do this',
+    });
+  });
+
+  it('does not auto-fix when the key is not a prefix', () => {
+    const raw = '{"wrong":"some text","count":1}';
+    expect(() => parseStructuredJson(raw, SimpleSchema)).toThrow(LlmError);
+  });
 });

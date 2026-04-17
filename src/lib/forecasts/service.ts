@@ -65,13 +65,20 @@ function computeMoonPhaseRu(sunLon: number, moonLon: number): string {
 }
 
 // ── Transit-to-natal aspect computation ──────────────────────────────────────
+// Only tight orbs matter for day-specific forecasts.
+// Wide-orb slow-planet aspects are months-long backgrounds, not daily events.
 const ASPECTS = [
-  { name: 'соединение', angle: 0, orb: 8 },
-  { name: 'секстиль', angle: 60, orb: 6 },
-  { name: 'квадрат', angle: 90, orb: 7 },
-  { name: 'тригон', angle: 120, orb: 7 },
-  { name: 'оппозиция', angle: 180, orb: 8 },
+  { name: 'соединение', angle: 0, orb: 3 },
+  { name: 'секстиль', angle: 60, orb: 2 },
+  { name: 'квадрат', angle: 90, orb: 3 },
+  { name: 'тригон', angle: 120, orb: 3 },
+  { name: 'оппозиция', angle: 180, orb: 3 },
 ] as const;
+
+// Fast-moving planets produce genuine day-to-day transit events.
+// Slow planets (Jupiter+) move < 0.1°/day — their aspects last weeks/months,
+// so including them as "today's personal influence" is astrologically misleading.
+const FAST_PLANETS = ['sun', 'moon', 'mercury', 'venus', 'mars'] as const;
 
 interface TransitAspect {
   transitBody: string;
@@ -95,7 +102,10 @@ function computeTransitAspects(
 ): TransitAspect[] {
   const aspects: TransitAspect[] = [];
   const natalPlanets = natalPositions.filter((p) => PLANET_ORDER.includes(p.body_key));
-  const transitPlanets = transitPositions.filter((p) => PLANET_ORDER.includes(p.bodyKey));
+  // Only fast-moving transiting planets create genuine day-specific influences
+  const transitPlanets = transitPositions.filter((p) =>
+    (FAST_PLANETS as readonly string[]).includes(p.bodyKey),
+  );
 
   for (const transit of transitPlanets) {
     for (const natal of natalPlanets) {
@@ -104,11 +114,17 @@ function computeTransitAspects(
       for (const aspect of ASPECTS) {
         const orb = Math.abs(diff - aspect.angle);
         if (orb <= aspect.orb) {
-          // Applying = transit is closing in on exact aspect.
-          // For direct planets, if the transit longitude is before the exact point, it's applying.
-          // Retrograde reverses the direction.
-          const exactTarget = (natal.degree_decimal + aspect.angle) % 360;
-          const gap = signedAngularDiff(transit.degreeDecimal, exactTarget);
+          // Applying = transit is moving toward exact aspect.
+          // The exact longitude for the transit would be (natal + aspectAngle) mod 360,
+          // but the aspect is symmetric, so check the signed diff to the nearest exact point.
+          const exactA = (natal.degree_decimal + aspect.angle) % 360;
+          const exactB = (natal.degree_decimal - aspect.angle + 360) % 360;
+          const gapA = Math.abs(signedAngularDiff(transit.degreeDecimal, exactA));
+          const gapB = Math.abs(signedAngularDiff(transit.degreeDecimal, exactB));
+          const nearestExact = gapA <= gapB ? exactA : exactB;
+          const gap = signedAngularDiff(transit.degreeDecimal, nearestExact);
+          // Direct planet applies when it's before the exact point (gap > 0 in forward direction)
+          // Retrograde planet applies when moving backward toward it (gap < 0)
           const applying = transit.retrograde ? gap < 0 : gap > 0;
           aspects.push({
             transitBody: transit.bodyKey,
@@ -123,7 +139,13 @@ function computeTransitAspects(
     }
   }
 
-  return aspects.sort((a, b) => a.orb - b.orb).slice(0, 10);
+  // Prioritise: applying aspects first, then tightest orb. Cap at 6 most relevant.
+  return aspects
+    .sort((a, b) => {
+      if (a.applying !== b.applying) return a.applying ? -1 : 1;
+      return a.orb - b.orb;
+    })
+    .slice(0, 6);
 }
 
 /** Compute notable aspects between transiting planets themselves (general day tone). */
@@ -326,27 +348,64 @@ export async function generateDailyForecast(forecastId: string, userId: string) 
   // Transit-to-transit aspects (general day backdrop)
   const skyAspects = computeTransitToTransitAspects(transitPositions);
 
-  // Retrograde transits highlight
-  const retrogradeTransits = transitPositions.filter((p) => p.retrograde);
+  // ── Prompt data (human-readable, no raw degrees/orbs) ────────────────────
 
-  // ── Prompt data ────────────────────────────────────────────────────────────
-  const natalLines = (positions ?? [])
-    .filter((p) => PLANET_ORDER.includes(p.body_key))
+  // Life areas affected by each natal planet — used in aspect descriptions
+  const NATAL_BODY_AREA_RU: Record<string, string> = {
+    sun: 'самовыражение и жизненную силу',
+    moon: 'эмоции и интуицию',
+    mercury: 'мышление и общение',
+    venus: 'отношения и удовольствия',
+    mars: 'энергию и инициативу',
+    jupiter: 'рост и удачу',
+    saturn: 'дисциплину и карьеру',
+    uranus: 'стремление к переменам',
+    neptune: 'воображение и чувствительность',
+    pluto: 'глубинные трансформации',
+    ascendant: 'личность и первое впечатление',
+    midheaven: 'профессиональную реализацию',
+  };
+
+  // What a transiting planet activates
+  const TRANSIT_BODY_ENERGY_RU: Record<string, string> = {
+    sun: 'жизненная энергия и фокус',
+    moon: 'настроение и эмоциональный фон',
+    mercury: 'мышление, общение и планирование',
+    venus: 'отношения, красота и удовольствия',
+    mars: 'активность, смелость и желания',
+  };
+
+  const ASPECT_QUALITY: Record<string, { phrase: string; tone: '✦' | '△' | '•' }> = {
+    тригон: { phrase: 'поддерживает', tone: '✦' },
+    секстиль: { phrase: 'открывает возможности для', tone: '✦' },
+    соединение: { phrase: 'усиливает', tone: '•' },
+    квадрат: { phrase: 'создаёт напряжение вокруг', tone: '△' },
+    оппозиция: { phrase: 'требует баланса между двумя сторонами:', tone: '△' },
+  };
+
+  // Key natal planets for daily context (Sun, Moon, ASC are most personal)
+  const KEY_NATAL_BODIES = ['sun', 'moon', 'ascendant', 'mercury', 'venus', 'mars'];
+
+  const natalKeyLines = (positions ?? [])
+    .filter((p) => KEY_NATAL_BODIES.includes(p.body_key))
     .map((p) => {
       const bodyRu = BODY_RU[p.body_key] ?? p.body_key;
       const signRu = SIGN_RU[p.sign_key] ?? p.sign_key;
       const housePart = p.house_number ? `, дом ${p.house_number}` : '';
-      const retroPart = p.retrograde ? ' (ретро)' : '';
-      return `  - ${bodyRu} в ${signRu}${housePart}${retroPart}`;
+      return `  - ${bodyRu} в ${signRu}${housePart}`;
     })
     .join('\n');
 
   const transitLines = transitPositions
+    .filter((p) => (FAST_PLANETS as readonly string[]).includes(p.bodyKey))
     .map((p) => {
       const bodyRu = BODY_RU[p.bodyKey] ?? p.bodyKey;
       const signRu = SIGN_RU[p.signKey] ?? p.signKey;
-      const retroPart = p.retrograde ? ' ℞' : '';
-      return `  - ${bodyRu}: ${signRu} (${p.degreeDecimal.toFixed(1)}°)${retroPart}`;
+      const energy = TRANSIT_BODY_ENERGY_RU[p.bodyKey] ?? '';
+      const retroPart = p.retrograde
+        ? ' — обратное движение (внутренняя обработка, пересмотр)'
+        : '';
+      return `  - ${bodyRu} в ${signRu}${retroPart}${energy ? ` → ${energy}` : ''}`;
     })
     .join('\n');
 
@@ -354,13 +413,20 @@ export async function generateDailyForecast(forecastId: string, userId: string) 
     transitAspects.length > 0
       ? transitAspects
           .map((a) => {
-            const tRu = BODY_RU[a.transitBody] ?? a.transitBody;
-            const nRu = BODY_RU[a.natalBody] ?? a.natalBody;
-            const phase = a.applying ? 'сближение' : 'расхождение';
-            return `  - ${tRu} ${a.aspectName} натальный ${nRu} (орб ${a.orb.toFixed(1)}°, ${phase})`;
+            const tBodyRu = BODY_RU[a.transitBody] ?? a.transitBody;
+            const nArea = NATAL_BODY_AREA_RU[a.natalBody] ?? BODY_RU[a.natalBody] ?? a.natalBody;
+            const quality = ASPECT_QUALITY[a.aspectName];
+            const tone = quality?.tone ?? '•';
+            const phrase = quality?.phrase ?? a.aspectName;
+            const urgency = a.applying
+              ? a.orb < 1
+                ? ' — уже точно, пик сегодня'
+                : ' — нарастает'
+              : ' — уже прошёл пик, ослабевает';
+            return `  ${tone} ${tBodyRu} ${phrase} ${nArea}${urgency}`;
           })
           .join('\n')
-      : '  — активных аспектов нет';
+      : '  — сегодня нет плотных личных аспектов (нейтральный день)';
 
   const skyAspectLines =
     skyAspects.length > 0
@@ -368,47 +434,65 @@ export async function generateDailyForecast(forecastId: string, userId: string) 
           .map((a) => {
             const aRu = BODY_RU[a.bodyA] ?? a.bodyA;
             const bRu = BODY_RU[a.bodyB] ?? a.bodyB;
-            return `  - ${aRu} ${a.aspectName} ${bRu} (орб ${a.orb.toFixed(1)}°)`;
+            const quality = ASPECT_QUALITY[a.aspectName];
+            return `  - ${aRu} ${quality?.phrase ?? a.aspectName} ${bRu}`;
           })
           .join('\n')
       : '';
 
+  const retrogradeTransits = transitPositions.filter((p) => p.retrograde);
   const retroLines =
     retrogradeTransits.length > 0
-      ? retrogradeTransits.map((p) => `  - ${BODY_RU[p.bodyKey] ?? p.bodyKey}`).join('\n')
+      ? retrogradeTransits
+          .map((p) => {
+            const bodyRu = BODY_RU[p.bodyKey] ?? p.bodyKey;
+            const area = TRANSIT_BODY_ENERGY_RU[p.bodyKey];
+            return area
+              ? `  - ${bodyRu} (в обратном движении — тема: ${area} требует пересмотра)`
+              : `  - ${bodyRu} (в обратном движении)`;
+          })
+          .join('\n')
       : '';
 
-  const systemPrompt = `КРИТИЧЕСКИ ВАЖНО: Весь JSON-ответ ОБЯЗАТЕЛЬНО должен быть написан на русском языке.
+  const systemPrompt = `Весь JSON-ответ ОБЯЗАТЕЛЬНО должен быть написан на русском языке.
 
-Ты — опытный астролог, который пишет персональный ежедневный гороскоп. Тебе предоставлены ФАКТИЧЕСКИЕ астрологические данные, вычисленные по эфемеридам. Используй их точно — не изменяй и не противоречь указанным положениям планет.
+Ты пишешь персональный ежедневный гороскоп, основанный на реальных астрологических данных. Твоя задача — точно перевести астрологические влияния дня в конкретный, понятный прогноз для обычного человека.
 
-ПРАВИЛА ИНТЕРПРЕТАЦИИ:
-1. ПРИОРИТЕТ АСПЕКТОВ: Сближающиеся аспекты с малым орбом (< 2°) — самые сильные влияния дня. Расходящиеся аспекты — фоновые.
-2. РЕТРОГРАДНЫЕ ПЛАНЕТЫ: Ретроградный Меркурий — пересмотр, коммуникационные сбои. Ретроградная Венера — переоценка отношений. Ретроградный Марс — внутренняя переработка энергии. Если ретроградов нет — не упоминай ретроградность.
-3. ЛУННАЯ ФАЗА: Учитывай фазу луны как эмоциональный фон дня.
-4. ОБЩИЙ ФОН: Аспекты между транзитными планетами задают тон дня для всех людей. Аспекты к натальной карте — персональные.
+АСТРОЛОГИЧЕСКАЯ ЛОГИКА:
+- Транзитные аспекты к натальной карте — главный материал. Аспекты с пометкой "нарастает" и "пик сегодня" самые важные — они максимально активны именно сейчас.
+- Аспекты с пометкой "ослабевает" — уже уходящие фоновые влияния, упоминай кратко.
+- Знак зодиака и дом натальной планеты определяют, в какой СФЕРЕ ЖИЗНИ проявится влияние.
+- Если личных аспектов нет — опирайся на общий фон (аспекты транзитных планет между собой) и фазу луны.
+- Луна в натальной карте — ключ к эмоциональному отклику человека. Учитывай её знак.
+- Ретроградная планета: замедление, пересмотр, внутренняя работа в сфере этой планеты.
 
-Пиши тепло и по-человечески. Избегай сложных астрологических терминов в тексте (не используй слова "транзит", "оппозиция", "квадратура", "орб", "аспект", "куспид", "ретроградный"). Вместо этого выражай смысл простым языком.
-Прогноз должен быть конкретным, жизненным и полезным. Минимум общих фраз.
-Выведи ответ ТОЛЬКО как JSON без markdown-блоков.`;
+СТИЛЬ ТЕКСТА:
+- Пиши для широкой аудитории — без астрологических терминов в готовом тексте
+- Запрещены в тексте прогноза: "транзит", "аспект", "орб", "квадратура", "оппозиция", "секстиль", "тригон", "ретроградный", "натальный", "куспид"
+- Запрещены названия планет и знаков зодиака в тексте — только жизненные следствия
+- Тон: тёплый, дружелюбный, конкретный. Как умный друг, а не предсказатель судьбы
+- Разнообразие: охвати разные сферы (настроение, работа, общение, вечер)
+
+Выведи ответ ТОЛЬКО как JSON-объект с ровно тремя ключами: "interpretation", "keyTheme", "advice". Используй эти имена ключей точно как написано (латиницей). Никаких других ключей. Никаких markdown-блоков.`;
 
   const userPrompt = `Дата: ${today.toISOString().slice(0, 10)}
-Имя: ${chart.person_name}${moonPhase ? `\nЛунная фаза: ${moonPhase}` : ''}
+Имя: ${chart.person_name}${moonPhase ? `\nФаза луны: ${moonPhase}` : ''}
 
-Положение планет на небе СЕГОДНЯ (фактические данные по эфемеридам, ℞ = ретроградная):
-${transitLines || '  — нет данных'}${retroLines ? `\n\nРетроградные планеты сегодня:\n${retroLines}` : ''}${skyAspectLines ? `\n\nОбщий астрологический фон дня (аспекты между транзитными планетами):\n${skyAspectLines}` : ''}
+Ключевые планеты в натальной карте ${chart.person_name} (определяют личный контекст):
+${natalKeyLines || '  — нет данных'}
 
-Персональные влияния (аспекты транзитных планет к натальной карте ${chart.person_name}):
+Транзитные планеты сегодня (быстрые планеты — главные триггеры дня):
+${transitLines || '  — нет данных'}${retroLines ? `\n\nПланеты в ретроградном движении:\n${retroLines}` : ''}${skyAspectLines ? `\n\nОбщий астрологический фон дня (аспекты транзитных планет между собой):\n${skyAspectLines}` : ''}
+
+Персональные транзитные аспекты сегодня для ${chart.person_name}:
+(✦ = гармоничный, △ = напряжённый, • = нейтральный/усиливающий)
 ${aspectLines}
 
-Натальная карта ${chart.person_name}:
-${natalLines || '  — нет данных'}
-
-Напиши персональный гороскоп на сегодня. Опирайся прежде всего на персональные аспекты (особенно сближающиеся с малым орбом). Учти общий фон и фазу луны. Ответь JSON:
+Напиши персональный гороскоп на сегодня для ${chart.person_name}. Опирайся прежде всего на активные транзитные аспекты (особенно нарастающие). При интерпретации учитывай знак и дом натальной планеты, к которой идёт транзит. Ответь JSON:
 {
-  "interpretation": "2-3 абзаца (минимум 150 слов), разделённых двойным переносом строки. Что может происходить сегодня, на что обратить внимание, как использовать день.",
-  "keyTheme": "Одна ключевая тема дня, 2-4 слова (например: 'Время для общения', 'Фокус на себе', 'День решений')",
-  "advice": "Один практический совет, 1-2 предложения"
+  "interpretation": "3-4 абзаца, разделённых двойным переносом строки. Первый абзац — общее настроение и энергия дня. Далее — конкретные сферы жизни (отношения, работа, здоровье или творчество). Последний — вечер и завершение дня. Пиши живо и конкретно.",
+  "keyTheme": "Одна ключевая тема дня, 3-5 слов, разговорным языком (например: 'День для смелых решений', 'Время заботы о себе', 'Фокус на близких')",
+  "advice": "Один практический совет на день, 1-2 предложения. Конкретное действие, а не общая мудрость."
 }`;
 
   const modelName = env.LLM_PROVIDER === 'qwen' ? env.QWEN_MODEL : 'mock';
@@ -417,15 +501,17 @@ ${natalLines || '  — нет данных'}
   let result: DailyForecastContent;
 
   try {
-    const generation = await generateStructuredOutputWithUsage({
+    const generation = await generateStructuredOutputWithUsage<DailyForecastContent>({
       systemPrompt,
       userPrompt,
       schema: dailyForecastSchema,
+      maxTokens: 2000,
       mockResponse: {
         interpretation:
-          'Сегодня ощущается прилив ясности и желание двигаться вперёд. Если давно откладывали какое-то дело — сегодня хороший момент взяться за него: энергия благоприятствует активным шагам.\n\nОбратите внимание на общение с близкими — сегодня слова находят отклик особенно легко. Искренний разговор может прояснить то, что давно оставалось невысказанным.\n\nВечером стоит замедлиться и уделить время себе: небольшой отдых или прогулка помогут переработать впечатления дня и восстановить силы.',
-        keyTheme: 'Ясность и движение',
-        advice: 'Начните день с самого важного дела — сейчас для этого есть и силы, и настрой.',
+          'Сегодня день обещает быть продуктивным — голова свежая, мысли структурированные. Если есть задачи, которые требуют концентрации или важного разговора, первая половина дня для этого идеальна.\n\nВо второй половине дня может захотеться переключиться на что-то более лёгкое. Хорошее время позаботиться о деталях, написать кому-то, кому давно собирались, или просто навести порядок в делах.\n\nВечером стоит уделить время себе — почитать, прогуляться или провести время с теми, кто заряжает. Не перегружайте себя: завтра будет не менее насыщенным.',
+        keyTheme: 'День для чётких решений',
+        advice:
+          'Возьмитесь с утра за дело, которое давно откладывали — сегодня хватит и сил, и ясности, чтобы его завершить.',
       },
     });
     result = generation.content;
@@ -475,6 +561,20 @@ ${natalLines || '  — нет данных'}
             'forecast: failed to persist error generation log',
           );
       });
+
+    // Mark the forecast row so the status poller detects the failure
+    await db
+      .from('forecasts')
+      .update({
+        rendered_content_json: { status: 'error' } as Json,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', forecastId)
+      .then(({ error: markError }) => {
+        if (markError)
+          logger.warn({ error: markError, forecastId }, 'forecast: failed to mark as error');
+      });
+
     throw error;
   }
 

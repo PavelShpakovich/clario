@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CompatibilityGenerating } from '@/components/astrology/compatibility-generating';
+import { RetryCompatibilityButton } from '@/components/astrology/retry-compatibility-button';
 
 const db = supabaseAdmin;
 
@@ -434,9 +435,10 @@ export default async function CompatibilityReportPage({
 
       {/* Error */}
       {report.status === 'error' ? (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-10 text-center">
           <p className="text-sm font-semibold text-destructive">{t('errorBannerTitle')}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t('errorBannerDesc')}</p>
+          <RetryCompatibilityButton reportId={report.id} />
         </div>
       ) : null}
 

@@ -18,6 +18,7 @@ export function HoroscopeGenerating({ forecastId }: HoroscopeGeneratingProps) {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
   const didFire = useRef(false);
+  const [retrying, setRetrying] = useState(false);
   const { failed } = useStatusPoller(`/api/forecasts/${forecastId}`);
 
   const STEP_LABELS = [
@@ -50,6 +51,17 @@ export function HoroscopeGenerating({ forecastId }: HoroscopeGeneratingProps) {
       });
   }, [forecastId, router]);
 
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await fetch(`/api/forecasts/${forecastId}/regenerate`, { method: 'POST' });
+      // Hard reload to reset all client state (failed, didFire, poller)
+      window.location.reload();
+    } catch {
+      setRetrying(false);
+    }
+  };
+
   if (failed) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-10 text-center">
@@ -58,8 +70,8 @@ export function HoroscopeGenerating({ forecastId }: HoroscopeGeneratingProps) {
           <p className="font-semibold text-destructive">{t('generatingErrorTitle')}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t('generatingErrorDesc')}</p>
         </div>
-        <Button variant="outline" onClick={() => router.refresh()}>
-          {t('refresh')}
+        <Button variant="outline" onClick={handleRetry} disabled={retrying}>
+          {retrying ? t('regenerating') : t('generatingRetry')}
         </Button>
       </div>
     );

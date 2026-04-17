@@ -690,8 +690,10 @@
     "reviewing": "Шлифуем текст…",
     "finalizing": "Почти готово…",
     "errorTitle": "Не удалось создать разбор",
-    "errorDesc": "Что-то пошло не так при генерации. Попробуйте обновить страницу.",
-    "refreshButton": "Обновить"
+    "errorDesc": "Что-то пошло не так. Попробуйте ещё раз — обычно со второй попытки всё получается.",
+    "refreshButton": "Обновить",
+    "retryButton": "Попробовать снова",
+    "retrying": "Повтор…"
   },
   "readingDetail": {
     "backToReadings": "Назад к разборам",
@@ -813,7 +815,7 @@
     "primaryChart": "Первая карта",
     "secondaryChart": "Вторая карта",
     "errorBannerTitle": "Генерация не удалась",
-    "errorBannerDesc": "Попробуйте удалить и создать синастрию снова.",
+    "errorBannerDesc": "Попробуйте ещё раз — данные карт сохранены.",
     "harmonyIndex": "Индекс гармонии",
     "harmonyIndexAriaLabel": "Индекс гармонии: {score} из 100",
     "outOf100": "из 100",
@@ -860,8 +862,10 @@
     "generatingStep3": "Составляем синастрию…",
     "generatingStep4": "Почти готово…",
     "generatingErrorTitle": "Не удалось создать синастрию",
-    "generatingErrorDesc": "Что-то пошло не так. Попробуйте обновить страницу.",
-    "refresh": "Обновить"
+    "generatingErrorDesc": "Что-то пошло не так. Попробуйте ещё раз — обычно со второй попытки всё получается.",
+    "refresh": "Обновить",
+    "generatingRetry": "Попробовать снова",
+    "retrying": "Повтор…"
   },
   "horoscope": {
     "pageTitle": "Личный гороскоп",
@@ -875,8 +879,9 @@
     "generatingStep3": "Составляем гороскоп…",
     "generatingStep4": "Почти готово…",
     "generatingErrorTitle": "Не удалось создать гороскоп",
-    "generatingErrorDesc": "Что-то пошло не так. Попробуйте обновить страницу.",
+    "generatingErrorDesc": "Что-то пошло не так. Попробуйте ещё раз — обычно со второй попытки всё получается.",
     "refresh": "Обновить",
+    "generatingRetry": "Попробовать снова",
     "regenerate": "Обновить гороскоп",
     "regenerating": "Обновление…"
   },

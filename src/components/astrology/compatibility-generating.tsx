@@ -18,6 +18,7 @@ export function CompatibilityGenerating({ reportId }: CompatibilityGeneratingPro
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
   const didFire = useRef(false);
+  const [retrying, setRetrying] = useState(false);
   const { failed } = useStatusPoller(`/api/compatibility/${reportId}`);
 
   const STEP_LABELS = [
@@ -51,6 +52,17 @@ export function CompatibilityGenerating({ reportId }: CompatibilityGeneratingPro
       });
   }, [reportId, router]);
 
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await fetch(`/api/compatibility/${reportId}/retry`, { method: 'POST' });
+      // Hard reload to reset all client state (failed, didFire, poller)
+      window.location.reload();
+    } catch {
+      setRetrying(false);
+    }
+  };
+
   if (failed) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-10 text-center">
@@ -59,8 +71,8 @@ export function CompatibilityGenerating({ reportId }: CompatibilityGeneratingPro
           <p className="font-semibold text-destructive">{t('generatingErrorTitle')}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t('generatingErrorDesc')}</p>
         </div>
-        <Button variant="outline" onClick={() => router.refresh()}>
-          {t('refresh')}
+        <Button variant="outline" onClick={handleRetry} disabled={retrying}>
+          {retrying ? t('retrying') : t('generatingRetry')}
         </Button>
       </div>
     );

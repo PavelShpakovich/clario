@@ -353,3 +353,20 @@ Identify the most significant cross-aspects (inter-chart aspects) between them a
     })
     .eq('id', reportId);
 }
+
+/** Reset a failed compatibility report to pending so it can be re-generated. */
+export async function resetCompatibilityForRetry(reportId: string, userId: string) {
+  const { data: report } = await db
+    .from('compatibility_reports')
+    .select('id, status')
+    .eq('id', reportId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!report) throw new NotFoundError({ message: 'Compatibility report not found' });
+
+  await db
+    .from('compatibility_reports')
+    .update({ status: 'pending', rendered_content_json: null })
+    .eq('id', reportId);
+}

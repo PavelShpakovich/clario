@@ -23,6 +23,7 @@ export function ReadingGenerating({ readingId }: ReadingGeneratingProps) {
   const t = useTranslations('readingGenerating');
   const [stepIndex, setStepIndex] = useState(0);
   const didFire = useRef(false);
+  const [retrying, setRetrying] = useState(false);
   const { failed } = useStatusPoller(`/api/readings/${readingId}`);
 
   // Advance progress indicators independently of network.
@@ -48,6 +49,17 @@ export function ReadingGenerating({ readingId }: ReadingGeneratingProps) {
       });
   }, [readingId, router]);
 
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await fetch(`/api/readings/${readingId}/retry`, { method: 'POST' });
+      // Hard reload to reset all client state (failed, didFire, poller)
+      window.location.reload();
+    } catch {
+      setRetrying(false);
+    }
+  };
+
   if (failed) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-10 text-center">
@@ -56,8 +68,8 @@ export function ReadingGenerating({ readingId }: ReadingGeneratingProps) {
           <p className="font-semibold text-destructive">{t('errorTitle')}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t('errorDesc')}</p>
         </div>
-        <Button variant="outline" onClick={() => router.refresh()}>
-          {t('refreshButton')}
+        <Button variant="outline" onClick={handleRetry} disabled={retrying}>
+          {retrying ? t('retrying') : t('retryButton')}
         </Button>
       </div>
     );

@@ -79,6 +79,15 @@ export function parseStructuredJson<T>(raw: string, schema: ZodType<T>): T {
 
   const result = schema.safeParse(parsed);
   if (!result.success) {
+    // Attempt to fix common LLM key-name errors before failing.
+    // If every failed field is a prefix/substring mismatch with an extra key
+    // in the parsed object, remap and re-validate once.
+    const fixed = tryFixKeyNames(parsed, result.error.issues);
+    if (fixed) {
+      const retry = schema.safeParse(fixed);
+      if (retry.success) return retry.data;
+    }
+
     throw new LlmError({
       message: 'LLM output failed schema validation',
       context: {
@@ -89,4 +98,36 @@ export function parseStructuredJson<T>(raw: string, schema: ZodType<T>): T {
   }
 
   return result.data;
+}
+
+/**
+ * When Zod reports missing keys, check if the parsed object has a key that's
+ * a prefix of the expected key (e.g. "interpret" → "interpretation").
+ * Returns a shallow-copied object with remapped keys, or null if no fix applies.
+ */
+function tryFixKeyNames(
+  parsed: unknown,
+  issues: Array<{ code: string; path: (string | number)[] }>,
+): Record<string, unknown> | null {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+
+  const obj = parsed as Record<string, unknown>;
+  const objKeys = Object.keys(obj);
+  const copy = { ...obj };
+  let anyFixed = false;
+
+  for (const issue of issues) {
+    if (issue.code !== 'invalid_type' || issue.path.length !== 1) continue;
+    const expected = issue.path[0];
+    if (typeof expected !== 'string' || expected in copy) continue;
+
+    // Find a key that's a prefix of the expected key
+    const match = objKeys.find((k) => k !== expected && expected.startsWith(k));
+    if (!match) continue;
+
+    copy[expected] = copy[match];
+    anyFixed = true;
+  }
+
+  return anyFixed ? copy : null;
 }
