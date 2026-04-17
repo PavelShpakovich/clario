@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Pencil, Check, X } from 'lucide-react';
 import { revalidateProfileData } from '@/actions/profile';
+import { broadcastDisplayName } from '@/hooks/use-display-name';
 
 interface DisplayNameFormProps {
   initialName: string;
@@ -37,6 +38,7 @@ export function DisplayNameForm({ initialName }: DisplayNameFormProps) {
         setSaved(trimmed);
         setValue(trimmed);
         setEditing(false);
+        broadcastDisplayName(trimmed);
         await revalidateProfileData();
         toast.success(t('nameSaved'));
       } catch {
@@ -84,14 +86,9 @@ export function DisplayNameForm({ initialName }: DisplayNameFormProps) {
   }
 
   return (
-    <div className="flex items-center gap-2 group">
+    <div className="flex items-center gap-2">
       <span className="text-sm">{saved || '—'}</span>
-      <Button
-        size="icon"
-        variant="ghost"
-        className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={() => setEditing(true)}
-      >
+      <Button size="icon" variant="ghost" className="size-6" onClick={() => setEditing(true)}>
         <Pencil className="text-muted-foreground" />
       </Button>
     </div>

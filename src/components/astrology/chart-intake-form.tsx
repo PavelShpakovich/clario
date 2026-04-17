@@ -121,6 +121,42 @@ async function lookupTimezone(lat: number, lon: number): Promise<string | null> 
   }
 }
 
+/** Fallback timezone when geo-tz returns nothing (common for border-area coordinates). */
+const COUNTRY_TIMEZONE_FALLBACK: Record<string, string> = {
+  Беларусь: 'Europe/Minsk',
+  Belarus: 'Europe/Minsk',
+  Россия: 'Europe/Moscow',
+  Russia: 'Europe/Moscow',
+  Україна: 'Europe/Kyiv',
+  Ukraine: 'Europe/Kyiv',
+  Казахстан: 'Asia/Almaty',
+  Kazakhstan: 'Asia/Almaty',
+  Узбекистан: 'Asia/Tashkent',
+  Uzbekistan: 'Asia/Tashkent',
+  Грузия: 'Asia/Tbilisi',
+  Georgia: 'Asia/Tbilisi',
+  Армения: 'Asia/Yerevan',
+  Armenia: 'Asia/Yerevan',
+  Азербайджан: 'Asia/Baku',
+  Azerbaijan: 'Asia/Baku',
+  Молдова: 'Europe/Chisinau',
+  Moldova: 'Europe/Chisinau',
+  Литва: 'Europe/Vilnius',
+  Lithuania: 'Europe/Vilnius',
+  Латвия: 'Europe/Riga',
+  Latvia: 'Europe/Riga',
+  Эстония: 'Europe/Tallinn',
+  Estonia: 'Europe/Tallinn',
+  Польша: 'Europe/Warsaw',
+  Poland: 'Europe/Warsaw',
+  Кыргызстан: 'Asia/Bishkek',
+  Kyrgyzstan: 'Asia/Bishkek',
+  Таджикистан: 'Asia/Dushanbe',
+  Tajikistan: 'Asia/Dushanbe',
+  Туркменистан: 'Asia/Ashgabat',
+  Turkmenistan: 'Asia/Ashgabat',
+};
+
 function normalizeBirthTime(value?: string | null): string {
   if (!value) return '';
 
@@ -243,8 +279,9 @@ export function ChartIntakeForm({
     const timezone = await lookupTimezone(entry.lat, entry.lon);
     setTzAutoDetecting(false);
 
-    if (timezone) {
-      setForm((current) => ({ ...current, timezone }));
+    const resolved = timezone ?? COUNTRY_TIMEZONE_FALLBACK[entry.country] ?? null;
+    if (resolved) {
+      setForm((current) => ({ ...current, timezone: resolved }));
     }
   }, []);
 

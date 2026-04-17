@@ -10,7 +10,7 @@ import { getOrCreateDailyForecast } from '@/lib/forecasts/service';
 import { HoroscopeGenerating } from '@/components/astrology/horoscope-generating';
 import { HoroscopeRegenerate } from '@/components/astrology/horoscope-regenerate';
 import { Button } from '@/components/ui/button';
-import { Sparkles, CalendarDays } from 'lucide-react';
+import { Sparkles, CalendarDays, Home } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,14 +130,27 @@ export default async function HoroscopePage() {
       )}
 
       {/* Footer nav */}
-      <div className="flex items-center gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link href="/dashboard">{t('backToDashboard')}</Link>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-6">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="-ml-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <Link href="/dashboard">
+            <Home className="size-3.5" />
+            {t('backToDashboard')}
+          </Link>
         </Button>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/calendar">{t('calendarLink')}</Link>
-        </Button>
-        {isReady ? <HoroscopeRegenerate forecastId={forecast.id} /> : null}
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/calendar">
+              <CalendarDays className="size-3.5" />
+              {t('calendarLink')}
+            </Link>
+          </Button>
+          {isReady ? <HoroscopeRegenerate forecastId={forecast.id} /> : null}
+        </div>
       </div>
     </main>
   );
