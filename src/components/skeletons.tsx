@@ -217,9 +217,9 @@ export function DashboardSkeleton() {
         <Skeleton className="h-8 w-24 rounded-lg shrink-0" />
       </div>
 
-      {/* Stats strip — unified card split into 2 cols */}
-      <div className="grid grid-cols-2 divide-x rounded-xl border bg-card overflow-hidden">
-        {[0, 1].map((i) => (
+      {/* Stats strip — 3 cols matching page */}
+      <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0 rounded-xl border bg-card overflow-hidden">
+        {[0, 1, 2].map((i) => (
           <div key={i} className="flex items-center gap-3 px-5 py-4">
             <Skeleton className="size-9 rounded-lg shrink-0" />
             <div className="flex flex-col gap-1.5">
@@ -284,24 +284,6 @@ export function DashboardSkeleton() {
           ))}
         </div>
       </section>
-
-      {/* Suggested readings */}
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <Skeleton className="size-4 rounded shrink-0" />
-          <Skeleton className="h-4 w-28" />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-xl border bg-card px-4 py-3 flex flex-col gap-2">
-              <Skeleton className="h-3.5 w-28" />
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-4/5" />
-              <Skeleton className="h-3 w-16 mt-1" />
-            </div>
-          ))}
-        </div>
-      </section>
     </main>
   );
 }
@@ -316,6 +298,7 @@ export function ChartsPageSkeleton() {
       {/* Hero */}
       <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-1.5">
+          <Skeleton className="h-3 w-28" />
           <Skeleton className="h-9 w-72" />
           <Skeleton className="h-4 w-96 max-w-full" />
         </div>
@@ -447,10 +430,15 @@ export function ChartDetailSkeleton() {
               </div>
             </div>
           </div>
-          {/* Primary CTA + icon toolbar */}
-          <div className="flex shrink-0 flex-col items-end gap-2.5">
-            <Skeleton className="h-9 w-36 rounded-lg" />
-            <Skeleton className="h-8 w-28 rounded-lg" />
+          {/* Actions panel — 3 buttons in rounded panel */}
+          <div className="w-full shrink-0 sm:w-64">
+            <div className="rounded-2xl border bg-muted/30 p-2.5">
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-11 w-full rounded-xl" />
+                <Skeleton className="h-11 w-full rounded-xl" />
+                <Skeleton className="h-10 w-full rounded-xl" />
+              </div>
+            </div>
           </div>
         </div>
         <div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-3">
@@ -637,6 +625,12 @@ export function ReadingsPageSkeleton() {
         <Skeleton className="h-4 w-full max-w-lg" />
       </section>
 
+      {/* Search & filter bar */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Skeleton className="h-10 flex-1 rounded-lg" />
+        <Skeleton className="h-10 w-full sm:w-52 rounded-lg" />
+      </div>
+
       {/* Reading cards */}
       <div className="flex flex-col gap-3">
         {Array.from({ length: 5 }).map((_, i) => (
@@ -670,28 +664,30 @@ export function ReadingsPageSkeleton() {
 
 // ─── Reading detail ───────────────────────────────────────────────────────────
 // Mirrors: readings/[readingId]/page.tsx
-// Layout: header (type label + title + date + 4 action buttons) → summary → key takeaways → sections list
+// Layout: back link → title block → action row → summary → key takeaways → sections list
 
 export function ReadingDetailSkeleton() {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header */}
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-9 w-72 max-w-full" />
-          <div className="flex items-center gap-2 mt-1">
-            <Skeleton className="h-3.5 w-32" />
-            <Skeleton className="h-5 w-16 rounded-full" />
-          </div>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
-          <Skeleton className="h-9 w-32 rounded-lg" />
-          <Skeleton className="h-9 w-28 rounded-lg" />
-          <Skeleton className="h-9 w-32 rounded-lg" />
-          <Skeleton className="h-9 w-28 rounded-lg" />
+      {/* Back link */}
+      <Skeleton className="h-8 w-36 rounded-lg self-start" />
+
+      {/* Title block */}
+      <section className="flex flex-col gap-2">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-9 w-72 max-w-full" />
+        <div className="flex items-center gap-3 mt-1">
+          <Skeleton className="h-3.5 w-32" />
+          <Skeleton className="h-5 w-16 rounded-full" />
         </div>
       </section>
+
+      {/* Action buttons row */}
+      <div className="flex flex-wrap gap-2">
+        <Skeleton className="h-8 w-28 rounded-lg" />
+        <Skeleton className="h-8 w-32 rounded-lg" />
+        <Skeleton className="h-8 w-28 rounded-lg" />
+      </div>
 
       {/* Summary */}
       <div className="rounded-2xl border bg-primary/5 p-6 md:p-8">
@@ -778,9 +774,12 @@ export function HoroscopeSkeleton() {
       </div>
 
       {/* Footer nav */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-6">
         <Skeleton className="h-8 w-36 rounded-lg" />
-        <Skeleton className="h-8 w-28 rounded-lg" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-28 rounded-lg" />
+          <Skeleton className="h-8 w-28 rounded-lg" />
+        </div>
       </div>
     </main>
   );

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { RetryReadingButton } from '@/components/astrology/retry-reading-button';
 import { ReadingGenerating } from '@/components/astrology/reading-generating';
+import { ArrowLeft, Orbit, MessageSquare, Download } from 'lucide-react';
 import type { Tables } from '@/lib/supabase/types';
 
 const db = supabaseAdmin;
@@ -75,62 +76,79 @@ export default async function ReadingDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header */}
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            {readingTypeLabel}
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
-            {reading.title}
-          </h1>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {new Date(reading.created_at).toLocaleDateString(reading.locale ?? 'ru', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </span>
-            {reading.status !== 'ready' ? (
-              <Badge variant={reading.status === 'error' ? 'destructive' : 'secondary'}>
-                {reading.status === 'error'
-                  ? t('statusError')
-                  : reading.status === 'generating'
-                    ? t('statusGenerating')
-                    : t('statusPending')}
-              </Badge>
-            ) : null}
-          </div>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
-          <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link href="/readings">{t('backToReadings')}</Link>
-          </Button>
-          <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link href={`/charts/${reading.chart_id}`}>{t('viewChart')}</Link>
-          </Button>
-          {reading.status === 'ready' ? (
-            <Button asChild className="w-full sm:w-auto">
-              <Link href={`/chat/${reading.id}`}>{t('askFollowUp')}</Link>
-            </Button>
-          ) : null}
-          {reading.status === 'ready' ? (
-            <Button asChild variant="outline" className="w-full sm:w-auto">
-              <a href={`/api/readings/${reading.id}/pdf`} download>
-                {t('downloadPdf')}
-              </a>
-            </Button>
-          ) : null}
-          {reading.status === 'error' ? (
-            <RetryReadingButton
-              chartId={reading.chart_id}
-              readingType={reading.reading_type}
-              readingId={reading.id}
-            />
+      {/* Back link */}
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className="-ml-2 self-start text-muted-foreground hover:text-foreground"
+      >
+        <Link href="/readings">
+          <ArrowLeft className="size-3.5" />
+          {t('backToReadings')}
+        </Link>
+      </Button>
+
+      {/* Title block */}
+      <section className="flex flex-col gap-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          {readingTypeLabel}
+        </p>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
+          {reading.title}
+        </h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-sm text-muted-foreground">
+            {new Date(reading.created_at).toLocaleDateString(reading.locale ?? 'ru', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </span>
+          {reading.status !== 'ready' ? (
+            <Badge variant={reading.status === 'error' ? 'destructive' : 'secondary'}>
+              {reading.status === 'error'
+                ? t('statusError')
+                : reading.status === 'generating'
+                  ? t('statusGenerating')
+                  : t('statusPending')}
+            </Badge>
           ) : null}
         </div>
       </section>
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="outline" size="sm">
+          <Link href={`/charts/${reading.chart_id}`}>
+            <Orbit className="size-3.5" />
+            {t('viewChart')}
+          </Link>
+        </Button>
+        {reading.status === 'ready' ? (
+          <Button asChild size="sm">
+            <Link href={`/chat/${reading.id}`}>
+              <MessageSquare className="size-3.5" />
+              {t('askFollowUp')}
+            </Link>
+          </Button>
+        ) : null}
+        {reading.status === 'ready' ? (
+          <Button asChild variant="outline" size="sm">
+            <a href={`/api/readings/${reading.id}/pdf`} download>
+              <Download className="size-3.5" />
+              {t('downloadPdf')}
+            </a>
+          </Button>
+        ) : null}
+        {reading.status === 'error' ? (
+          <RetryReadingButton
+            chartId={reading.chart_id}
+            readingType={reading.reading_type}
+            readingId={reading.id}
+          />
+        ) : null}
+      </div>
 
       {/* Generating / pending — auto-triggers LLM and refreshes when done */}
       {reading.status === 'pending' || reading.status === 'generating' ? (
