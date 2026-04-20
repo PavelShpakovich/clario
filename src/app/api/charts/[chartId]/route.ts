@@ -4,6 +4,7 @@ import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import type { Database } from '@/lib/supabase/types';
 import { HOUSE_SYSTEMS, CHART_SUBJECT_TYPES } from '@/lib/astrology/constants';
 import { recalculateChart } from '@/lib/astrology/chart-service';
 import { clearDailyForecastsForChart } from '@/lib/forecasts/service';
@@ -107,7 +108,7 @@ export const PATCH = withApiHandler(async (req, ctx) => {
     .maybeSingle();
   if (!chart) throw new NotFoundError({ message: 'Chart not found' });
 
-  const updates: Record<string, unknown> = {};
+  const updates: Database['public']['Tables']['charts']['Update'] = {};
   const d = parsed.data;
   if (d.label !== undefined) updates.label = d.label;
   if (d.personName !== undefined) updates.person_name = d.personName;
