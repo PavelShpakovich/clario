@@ -1,8 +1,8 @@
 # Clario — AI Astrology Workspace
 
-An AI-powered astrology application built with **Next.js**, **Supabase**, and a structured reading pipeline that can run through **Qwen**, **Ollama**, or mock mode. Users work primarily in the web app, while the **Telegram Mini App** remains a companion surface for quick access.
+Clario is a web-first astrology application built with **Next.js**, **Supabase**, and a structured **Qwen** generation pipeline. Users can create natal charts, generate readings, compare chart compatibility, get daily forecasts, and ask follow-up questions in a reading-specific chat.
 
-The canonical rewrite and product documentation now lives in [docs/pivots/ai-astrology-pivot.md](docs/pivots/ai-astrology-pivot.md).
+The most accurate engineering overview currently lives in [docs/system-context.md](docs/system-context.md). Product-direction notes remain in [docs/pivots/ai-astrology-pivot.md](docs/pivots/ai-astrology-pivot.md).
 
 ---
 
@@ -13,10 +13,10 @@ The canonical rewrite and product documentation now lives in [docs/pivots/ai-ast
 | Framework       | Next.js 16, App Router, TypeScript strict              |
 | Database + Auth | Supabase (PostgreSQL, RLS, Auth)                       |
 | Session         | NextAuth.js (JWT cookie)                               |
-| LLM             | Qwen API, Ollama OpenAI-compatible endpoint, mock mode |
+| LLM             | Qwen API, mock mode                                    |
 | Validation      | Zod                                                    |
 | Ingestion       | Birth data intake, chart snapshots, structured prompts |
-| i18n            | next-intl (English + Russian)                          |
+| i18n            | next-intl (Russian-first)                              |
 | Logging         | pino                                                   |
 | Tests           | Jest + Testing Library                                 |
 | Deploy          | Vercel                                                 |
@@ -29,8 +29,7 @@ The canonical rewrite and product documentation now lives in [docs/pivots/ai-ast
 
 - Node.js 20+
 - A [Supabase](https://supabase.com) project
-- A Telegram bot (create via [@BotFather](https://t.me/BotFather))
-- A Qwen API key or a local Ollama instance
+- A Qwen API key
 
 ### 2. Install dependencies
 
@@ -40,7 +39,7 @@ npm install
 
 ### 3. Configure environment variables
 
-Copy `.env.example` to `.env.local` and fill in:
+Create `.env.local` and fill in:
 
 ```env
 # Supabase
@@ -49,24 +48,31 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_KEY=your-service-role-key
 
 # NextAuth
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXTAUTH_SECRET=replace-with-strong-random-secret
-
-# Telegram
-TELEGRAM_BOT_TOKEN=your-bot-token
-NEXT_PUBLIC_TELEGRAM_BOT_URL=https://t.me/your_bot
 
 # LLM
 LLM_PROVIDER=qwen
 QWEN_API_KEY=your-qwen-key
 QWEN_MODEL=qwen-plus
 
-# Or use Ollama instead
-# LLM_PROVIDER=ollama
-# OLLAMA_BASE_URL=http://127.0.0.1:11434/v1
-# OLLAMA_MODEL=llama3.1
+# Optional if using a custom compatible endpoint
+# QWEN_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+
+# Support / email
+SUPPORT_EMAIL=support@example.com
+RESEND_API_KEY=your-resend-key
+RESEND_FROM_EMAIL=no-reply@example.com
+
+# Admin / jobs
+ADMIN_EMAILS=admin@example.com
+CRON_SECRET=replace-with-random-secret
+
+# Maps
+NEXT_PUBLIC_YANDEX_MAPS_KEY=your-yandex-maps-key
 ```
 
-> `mock` remains available for deterministic local development and tests.
+`mock` remains available for deterministic local development and tests.
 
 ### 4. Apply database migrations
 
@@ -89,13 +95,14 @@ The repository now keeps a single destructive baseline migration for the astrolo
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Telegram remains available as a companion Mini App once the bot is configured.
+Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
 ## Documentation
 
-- [docs/pivots/ai-astrology-pivot.md](docs/pivots/ai-astrology-pivot.md) — single source of truth for rewrite status, product direction, backlog, architecture, and launch criteria
+- [docs/system-context.md](docs/system-context.md) — current engineering reference for implementation details and feature behavior
+- [docs/pivots/ai-astrology-pivot.md](docs/pivots/ai-astrology-pivot.md) — product-direction and rewrite-planning document
 
 ---
 
@@ -103,20 +110,19 @@ Open [http://localhost:3000](http://localhost:3000). Telegram remains available 
 
 ### Authentication
 
-The app is **web-first with Telegram as companion**.
-
-- Users can sign in on the web with email + password
-- `initData` from `window.Telegram.WebApp` is still HMAC-verified on the server (`/api/auth/telegram`)
-- Telegram accounts can be linked to existing web accounts from Settings
-- NextAuth issues a 30-day JWT cookie scoped to that user
+- Users sign in on the web with email + password
+- Sessions are handled through NextAuth JWT cookies
+- Email verification and password-reset flows are supported
+- Protected routes are enforced in middleware and server/API guards
 
 ### Core Flow
 
-1. **Open the web app** or launch the Telegram companion Mini App.
-2. **Enter birth data** and complete onboarding for a chart profile.
-3. **Build a chart snapshot** from structured birth details.
-4. **Generate a reading** with the Qwen-based structured interpretation pipeline.
-5. **Return to saved charts and readings** from the dashboard.
+1. Create an account and sign in.
+2. Enter birth data and create a natal chart.
+3. The server calculates chart snapshots, positions, and aspects.
+4. Generate a structured reading, compatibility report, or daily forecast.
+5. Ask follow-up questions in a chat tied to a specific reading.
+6. Return to saved charts and generated content from the dashboard.
 
 ---
 
@@ -144,24 +150,22 @@ npm run test:coverage # Jest with coverage report
 
 Set `LLM_PROVIDER` in `.env.local`.
 
-| `LLM_PROVIDER` | Required env var | Notes                                             |
-| -------------- | ---------------- | ------------------------------------------------- |
-| `qwen`         | `QWEN_API_KEY`   | Default hosted provider                           |
-| `ollama`       | `OLLAMA_MODEL`   | Local or self-hosted OpenAI-compatible endpoint   |
-| `mock`         | _(none)_         | Deterministic fake readings for tests & local dev |
+| `LLM_PROVIDER` | Required env var | Notes                                         |
+| -------------- | ---------------- | --------------------------------------------- |
+| `qwen`         | `QWEN_API_KEY`   | Production provider via OpenAI-compatible API |
+| `mock`         | _(none)_         | Deterministic fake outputs for tests and dev  |
 
 ---
 
-## Domain Model
+## Main Features
 
-The active product revolves around:
-
-- chart profiles
-- chart snapshots
-- positions and aspects
-- structured readings
-- user preferences
-- Telegram-linked access as a companion flow
+- natal chart creation and recalculation
+- structured readings for multiple reading types
+- compatibility reports (synastry)
+- daily personal forecasts
+- follow-up chat tied to a reading
+- calendar and dashboard views
+- admin user and analytics surfaces
 
 ---
 
@@ -185,31 +189,43 @@ src/
 ├── app/
 │   ├── api/
 │   │   ├── admin/            # Admin user management
-│   │   ├── auth/             # NextAuth + Telegram HMAC auth
+│   │   ├── auth/             # NextAuth and account flows
+│   │   ├── compatibility/    # Compatibility creation and generation
 │   │   ├── cron/             # Scheduled jobs
 │   │   ├── charts/           # Chart creation and retrieval
+│   │   ├── chat/             # Follow-up chat
+│   │   ├── forecasts/        # Daily forecasts
 │   │   ├── profile/          # Profile updates
 │   │   ├── readings/         # Structured reading generation
-│   │   ├── telegram/         # Telegram companion bot + webhook
-│   │   └── tg/               # Telegram entry surfaces
+│   │   └── timezone/         # Timezone-related helpers
 │   ├── admin/                # Admin panel
+│   ├── calendar/             # Planetary calendar
+│   ├── chat/                 # Reading follow-up chat
 │   ├── charts/               # Chart library and detail views
+│   ├── compatibility/        # Compatibility report views
 │   ├── dashboard/            # Main astrology workspace
-│   ├── onboarding/           # Birth data intake
+│   ├── horoscope/            # Daily forecast view
+│   ├── onboarding/           # Preference setup
 │   ├── readings/             # Reading library
 │   ├── settings/             # User settings
-│   ├── tg/                   # Telegram Mini App entry point
 │   └── page.tsx              # Landing page
 ├── components/
 ├── hooks/
-├── i18n/                     # next-intl messages (en, ru)
+├── i18n/                     # next-intl config and messages
 ├── lib/
 │   ├── supabase/             # Supabase clients + generated types
-│   ├── llm/                  # Qwen-based structured generation
 │   ├── astrology/            # Chart domain logic
+│   ├── compatibility/        # Compatibility generation
+│   ├── forecasts/            # Forecast generation
+│   ├── llm/                  # Structured generation and parsing
 │   ├── readings/             # Reading prompts and schemas
 │   └── env.ts                # Zod environment validation
 └── services/                 # Client-side API wrappers
 
 supabase/migrations/          # SQL baseline for the astrology product
 ```
+
+## Notes
+
+- The source of truth is the current codebase, not older product notes.
+- If README and implementation ever disagree, prefer the code and update the README.
