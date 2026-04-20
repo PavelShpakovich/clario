@@ -431,7 +431,7 @@ export function ChartDetailSkeleton() {
             </div>
           </div>
           {/* Actions panel — 3 buttons in rounded panel */}
-          <div className="w-full shrink-0 sm:w-64">
+          <div className="w-full shrink-0 sm:w-72">
             <div className="rounded-2xl border bg-muted/30 p-2.5">
               <div className="flex flex-col gap-2">
                 <Skeleton className="h-11 w-full rounded-xl" />

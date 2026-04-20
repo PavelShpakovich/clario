@@ -421,7 +421,7 @@ export default async function ChartDetailPage({
             </div>
           </div>
           {/* Actions */}
-          <div className="w-full shrink-0 sm:w-64">
+          <div className="w-full shrink-0 sm:w-72">
             <div className="rounded-2xl border border-border/60 bg-muted/30 p-2.5 shadow-sm shadow-black/5">
               <div className="flex flex-col gap-2">
                 <CreateReadingButton
