@@ -258,69 +258,58 @@ export default async function DashboardPage() {
 
       {/* Stats row */}
       <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0 rounded-xl border bg-card overflow-hidden">
-        <Link
-          href="/charts"
-          className="group flex items-center gap-3 px-5 py-4 hover:bg-muted/40 transition-colors"
-        >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <Orbit className="size-4 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold leading-none tabular-nums">{totalCharts}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{t('statsCharts')}</p>
-          </div>
-          <ArrowRight className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-        </Link>
-        <Link
-          href="/readings"
-          className="group flex items-center gap-3 px-5 py-4 hover:bg-muted/40 transition-colors"
-        >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <BookOpen className="size-4 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold leading-none tabular-nums">{totalReadings}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{t('statsReadings')}</p>
-          </div>
-          <ArrowRight className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-        </Link>
-        <Link
-          href="/compatibility"
-          className="group flex items-center gap-3 px-5 py-4 hover:bg-muted/40 transition-colors"
-        >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <Sparkles className="size-4 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold leading-none tabular-nums">{totalCompatibility ?? 0}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{t('statsCompatibility')}</p>
-          </div>
-          <ArrowRight className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-        </Link>
+        {(
+          [
+            { href: '/charts', icon: Orbit, value: totalCharts, label: t('statsCharts') },
+            { href: '/readings', icon: BookOpen, value: totalReadings, label: t('statsReadings') },
+            {
+              href: '/compatibility',
+              icon: Sparkles,
+              value: totalCompatibility ?? 0,
+              label: t('statsCompatibility'),
+            },
+          ] as const
+        ).map(({ href, icon: Icon, value, label }) => (
+          <Link
+            key={href}
+            href={href}
+            className="group flex items-center gap-3 px-5 py-4 hover:bg-muted/40 transition-colors"
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Icon className="size-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xl font-bold leading-none tabular-nums">{value}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
+            </div>
+            <ArrowRight className="size-3.5 shrink-0 text-muted-foreground transition-opacity sm:opacity-0 sm:group-hover:opacity-100" />
+          </Link>
+        ))}
       </div>
 
       {/* Quick actions */}
       <Card className="flex flex-col justify-center gap-3 px-6 py-5 border-border/60 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm font-medium shrink-0">{t('quickActions')}</p>
         <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
-          <Button asChild size="sm">
-            <Link href="/charts/new">
-              <Plus />
-              {t('createNewChart')}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/charts">
-              <Orbit />
-              {t('viewAllCharts')}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/readings">
-              <BookOpen />
-              {t('viewAllReadings')}
-            </Link>
-          </Button>
+          {(
+            [
+              { href: '/charts/new', icon: Plus, label: t('createNewChart'), variant: 'default' },
+              { href: '/charts', icon: Orbit, label: t('viewAllCharts'), variant: 'outline' },
+              {
+                href: '/readings',
+                icon: BookOpen,
+                label: t('viewAllReadings'),
+                variant: 'outline',
+              },
+            ] as const
+          ).map(({ href, icon: Icon, label, variant }) => (
+            <Button key={href} asChild size="sm" variant={variant}>
+              <Link href={href}>
+                <Icon />
+                {label}
+              </Link>
+            </Button>
+          ))}
         </div>
       </Card>
 
