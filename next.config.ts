@@ -34,11 +34,11 @@ const nextConfig: NextConfig = {
         key: 'Content-Security-Policy',
         value: [
           "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://api-maps.yandex.ru https://yastatic.net",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api-maps.yandex.ru https://yastatic.net https://mc.yandex.ru",
           "style-src 'self' 'unsafe-inline' https://yastatic.net",
           "img-src 'self' data: https:",
           "font-src 'self' data: https://yastatic.net",
-          "connect-src 'self' https://*.supabase.co https://api.telegram.org https://*.maps.yandex.net https://geocode-maps.yandex.ru https://api-maps.yandex.ru https://yastatic.net https://nominatim.openstreetmap.org",
+          "connect-src 'self' https://*.supabase.co https://*.maps.yandex.net https://geocode-maps.yandex.ru https://api-maps.yandex.ru https://yastatic.net https://nominatim.openstreetmap.org https://mc.yandex.ru",
           'worker-src blob:',
           "frame-ancestors 'none'", // overridden for /tg below
           "base-uri 'self'",
@@ -52,27 +52,6 @@ const nextConfig: NextConfig = {
         // Apply security headers to all routes
         source: '/(.*)',
         headers: securityHeaders,
-      },
-      {
-        // Telegram Mini App entry — must be embeddable in the web.telegram.org iframe.
-        // Override the frame-ancestors restriction set above.
-        source: '/tg',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://api.telegram.org",
-              'frame-ancestors https://web.telegram.org',
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join('; '),
-          },
-        ],
       },
       {
         // API routes must NEVER be cached — they return per-user,
