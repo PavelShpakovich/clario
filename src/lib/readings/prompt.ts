@@ -14,10 +14,7 @@ export interface ReadingPromptInput {
   contentFocusGrowth: boolean;
   chartLabel: string;
   personName: string;
-  birthDate: string;
   birthTimeKnown: boolean;
-  city: string;
-  country: string;
   houseSystem: string;
   positions: Array<{
     bodyKey: string;
@@ -134,7 +131,6 @@ function buildStyleInstructions(input: ReadingPromptInput): string {
 
 function serializeChartFacts(input: ReadingPromptInput): string {
   const positionsBlock = input.positions
-    .slice(0, 16)
     .map(
       (position) =>
         `- ${position.bodyKey} in ${position.signKey}, house ${position.houseNumber ?? 'unknown'}, ${position.degreeDecimal.toFixed(2)}°, retrograde=${position.retrograde}`,
@@ -142,7 +138,6 @@ function serializeChartFacts(input: ReadingPromptInput): string {
     .join('\n');
 
   const aspectsBlock = input.aspects
-    .slice(0, 16)
     .map(
       (aspect) =>
         `- ${aspect.bodyA} ${aspect.aspectKey} ${aspect.bodyB}, orb ${aspect.orbDecimal.toFixed(2)}°, applying=${aspect.applying ?? false}`,
@@ -157,7 +152,6 @@ function serializeChartFacts(input: ReadingPromptInput): string {
   let transitBlock = '';
   if (input.transitPositions && input.transitPositions.length > 0) {
     const transitLines = input.transitPositions
-      .slice(0, 12)
       .map(
         (p) =>
           `- ${p.bodyKey} in ${p.signKey}, house ${p.houseNumber ?? 'unknown'}, ${p.degreeDecimal.toFixed(2)}°, retrograde=${p.retrograde}`,
@@ -166,7 +160,7 @@ function serializeChartFacts(input: ReadingPromptInput): string {
     transitBlock = `\n\nCurrent sky (transiting positions as of today):\n${transitLines}`;
   }
 
-  return `Chart:\n- Label: ${input.chartLabel}\n- Person: ${input.personName}\n- Birth date: ${input.birthDate}\n- Birth time known: ${input.birthTimeKnown ? 'yes' : 'no'}\n- Place: ${input.city}, ${input.country}\n- House system: ${input.houseSystem}\n\nNatal positions:\n${positionsBlock}\n\nAspects:\n${aspectsBlock}\n\nWarnings:\n${warningsBlock}${transitBlock}`;
+  return `Chart:\n- Label: ${input.chartLabel}\n- Person: ${input.personName}\n- Birth time known: ${input.birthTimeKnown ? 'yes' : 'no'}\n- House system: ${input.houseSystem}\n\nNatal positions:\n${positionsBlock}\n\nAspects:\n${aspectsBlock}\n\nWarnings:\n${warningsBlock}${transitBlock}`;
 }
 
 export function buildReadingPlanPrompts(input: ReadingPromptInput): {

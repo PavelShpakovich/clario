@@ -359,10 +359,7 @@ export async function generateReadingContent(readingId: string, userId: string):
       contentFocusGrowth: preferences?.content_focus_growth ?? true,
       chartLabel: chart.label,
       personName: chart.person_name,
-      birthDate: chart.birth_date,
       birthTimeKnown: chart.birth_time_known,
-      city: chart.city,
-      country: chart.country,
       houseSystem: chart.house_system,
       positions: (positions ?? []).map((position: ChartPositionSource) => ({
         bodyKey: position.body_key,

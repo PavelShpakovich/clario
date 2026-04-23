@@ -76,9 +76,17 @@ const ASPECTS = [
 ] as const;
 
 // Fast-moving planets produce genuine day-to-day transit events.
-// Slow planets (Jupiter+) move < 0.1°/day — their aspects last weeks/months,
-// so including them as "today's personal influence" is astrologically misleading.
 const FAST_PLANETS = ['sun', 'moon', 'mercury', 'venus', 'mars'] as const;
+
+// Slow-moving planets create long-term background themes (weeks/months).
+// Use tighter orbs since their influence is gradual.
+const SLOW_PLANETS = ['jupiter', 'saturn'] as const;
+const SLOW_PLANET_ASPECTS = [
+  { name: 'соединение', angle: 0, orb: 2 },
+  { name: 'квадрат', angle: 90, orb: 2 },
+  { name: 'тригон', angle: 120, orb: 2 },
+  { name: 'оппозиция', angle: 180, orb: 2 },
+] as const;
 
 interface TransitAspect {
   transitBody: string;
@@ -174,6 +182,48 @@ function computeTransitToTransitAspects(
   }
 
   return results.sort((a, b) => a.orb - b.orb).slice(0, 5);
+}
+
+/** Compute slow-planet (Jupiter, Saturn) transit aspects to natal chart.
+ *  These are long-term background themes — included separately from fast daily transits. */
+export function computeSlowTransitAspects(
+  natalPositions: Array<{ body_key: string; degree_decimal: number }>,
+  transitPositions: Array<{ bodyKey: string; degreeDecimal: number; retrograde: boolean }>,
+): TransitAspect[] {
+  const aspects: TransitAspect[] = [];
+  const natalPlanets = natalPositions.filter((p) => PLANET_ORDER.includes(p.body_key));
+  const slowTransits = transitPositions.filter((p) =>
+    (SLOW_PLANETS as readonly string[]).includes(p.bodyKey),
+  );
+
+  for (const transit of slowTransits) {
+    for (const natal of natalPlanets) {
+      const raw = Math.abs(signedAngularDiff(transit.degreeDecimal, natal.degree_decimal));
+      const diff = raw > 180 ? 360 - raw : raw;
+      for (const aspect of SLOW_PLANET_ASPECTS) {
+        const orb = Math.abs(diff - aspect.angle);
+        if (orb <= aspect.orb) {
+          const exactA = (natal.degree_decimal + aspect.angle) % 360;
+          const exactB = (natal.degree_decimal - aspect.angle + 360) % 360;
+          const gapA = Math.abs(signedAngularDiff(transit.degreeDecimal, exactA));
+          const gapB = Math.abs(signedAngularDiff(transit.degreeDecimal, exactB));
+          const nearestExact = gapA <= gapB ? exactA : exactB;
+          const gap = signedAngularDiff(transit.degreeDecimal, nearestExact);
+          const applying = transit.retrograde ? gap < 0 : gap > 0;
+          aspects.push({
+            transitBody: transit.bodyKey,
+            natalBody: natal.body_key,
+            aspectName: aspect.name,
+            orb,
+            applying,
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  return aspects.sort((a, b) => a.orb - b.orb).slice(0, 4);
 }
 
 const db = supabaseAdmin;
@@ -380,6 +430,9 @@ export async function generateDailyForecast(
   // Transit-to-natal aspects
   const transitAspects = computeTransitAspects(natalWithDegree, transitPositions);
 
+  // Slow-planet transit aspects (Jupiter, Saturn — long-term background themes)
+  const slowTransitAspects = computeSlowTransitAspects(natalWithDegree, transitPositions);
+
   // Transit-to-transit aspects (general day backdrop)
   const skyAspects = computeTransitToTransitAspects(transitPositions);
 
@@ -500,6 +553,7 @@ export async function generateDailyForecast(
 АСТРОЛОГИЧЕСКАЯ ЛОГИКА:
 - Транзитные аспекты к натальной карте — главный материал. Аспекты с пометкой "нарастает" и "пик сегодня" самые важные — они максимально активны именно сейчас.
 - Аспекты с пометкой "ослабевает" — уже уходящие фоновые влияния, упоминай кратко.
+- Долгосрочные фоновые влияния (Юпитер, Сатурн) задают тему текущего периода жизни — упоминай их как контекст, а не как событие дня.
 - Знак зодиака натальной планеты определяет СТИЛЬ проявления, а дом (если указан) — СФЕРУ ЖИЗНИ.
 - Если личных аспектов нет — опирайся на общий фон (аспекты транзитных планет между собой) и фазу луны.
 - Луна в натальной карте — ключ к эмоциональному отклику человека. Учитывай её знак.
@@ -525,7 +579,20 @@ ${transitLines || '  — нет данных'}${retroLines ? `\n\nПланеты
 
 Персональные транзитные аспекты сегодня для ${chart.person_name}:
 (✦ = гармоничный, △ = напряжённый, • = нейтральный/усиливающий)
-${aspectLines}
+${aspectLines}${
+    slowTransitAspects.length > 0
+      ? `\n\nДолгосрочные фоновые влияния (Юпитер, Сатурн — тема текущего периода):\n${slowTransitAspects
+          .map((a) => {
+            const tBodyRu = BODY_RU[a.transitBody] ?? a.transitBody;
+            const nArea = NATAL_BODY_AREA_RU[a.natalBody] ?? BODY_RU[a.natalBody] ?? a.natalBody;
+            const quality = ASPECT_QUALITY[a.aspectName];
+            const tone = quality?.tone ?? '•';
+            const phrase = quality?.phrase ?? a.aspectName;
+            return `  ${tone} ${tBodyRu} ${phrase} ${nArea}`;
+          })
+          .join('\n')}`
+      : ''
+  }
 
 Напиши персональный гороскоп на сегодня для ${chart.person_name}. Опирайся прежде всего на активные транзитные аспекты (особенно нарастающие). При интерпретации учитывай знак натальной планеты${hasHouseData ? ' и дом' : ''}, к которой идёт транзит.${!hasHouseData ? ' Данные о домах недоступны (время рождения неизвестно) — опирайся только на знаки.' : ''} Ответь JSON:
 {

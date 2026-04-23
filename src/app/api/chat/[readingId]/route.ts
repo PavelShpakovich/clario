@@ -23,6 +23,11 @@ async function getReadingId(ctx: unknown): Promise<string | undefined> {
 function buildSystemPrompt(
   reading: { title: string; reading_type: string; summary: string | null },
   sections: Array<{ title: string; content: string }>,
+  chartPositions?: Array<{
+    body_key: string;
+    sign_key: string;
+    house_number: number | null;
+  }>,
 ): string {
   const lines: string[] = [
     'КРИТИЧЕСКИ ВАЖНО: Отвечай ТОЛЬКО на русском языке, независимо от языка вопроса пользователя.',
@@ -37,6 +42,14 @@ function buildSystemPrompt(
     lines.push('', 'Краткое содержание разбора:', reading.summary.slice(0, 600));
   }
 
+  if (chartPositions && chartPositions.length > 0) {
+    lines.push('', 'Натальная карта пользователя:');
+    for (const p of chartPositions) {
+      const housePart = p.house_number ? `, дом ${p.house_number}` : '';
+      lines.push(`  - ${p.body_key} в ${p.sign_key}${housePart}`);
+    }
+  }
+
   if (sections.length > 0) {
     lines.push('', 'Секции разбора:');
     for (const s of sections.slice(0, 5)) {
@@ -46,7 +59,8 @@ function buildSystemPrompt(
 
   lines.push(
     '',
-    'Отвечай на русском языке. Будь конкретным, опирайся на данные этого разбора.',
+    'Отвечай на русском языке. Будь конкретным, опирайся на данные этого разбора и натальную карту.',
+    'Если пользователь спрашивает о конкретных планетах или знаках, используй данные натальной карты.',
     'Не давай медицинских, юридических или финансовых советов как специалист.',
     'Представляй ответы как астрологическую интерпретацию.',
   );
@@ -161,11 +175,11 @@ export async function POST(req: Request, ctx: unknown) {
 
   const { message } = parsed.data;
 
-  // Fetch reading + sections for context
+  // Fetch reading + sections + chart positions for context
   const [{ data: reading }, { data: sections }] = await Promise.all([
     db
       .from('readings')
-      .select('id, title, reading_type, summary, chart_id')
+      .select('id, title, reading_type, summary, chart_id, chart_snapshot_id')
       .eq('id', readingId)
       .eq('user_id', user.id)
       .maybeSingle(),
@@ -181,6 +195,21 @@ export async function POST(req: Request, ctx: unknown) {
       status: 404,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  // Fetch chart positions for the reading's chart snapshot
+  let chartPositions: Array<{
+    body_key: string;
+    sign_key: string;
+    house_number: number | null;
+  }> = [];
+  if (reading.chart_snapshot_id) {
+    const { data: positions } = await db
+      .from('chart_positions')
+      .select('body_key, sign_key, house_number')
+      .eq('chart_snapshot_id', reading.chart_snapshot_id)
+      .order('degree_decimal', { ascending: true });
+    chartPositions = positions ?? [];
   }
 
   // Get or create thread
@@ -244,6 +273,7 @@ export async function POST(req: Request, ctx: unknown) {
   const systemPrompt = buildSystemPrompt(
     { title: reading.title, reading_type: reading.reading_type, summary: reading.summary },
     sections ?? [],
+    chartPositions,
   );
 
   const llmMessages: ChatMessage[] = [

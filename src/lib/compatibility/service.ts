@@ -38,25 +38,88 @@ function activeModelName() {
   }
 }
 
-function serializeChartForSynastry(
+export function serializeChartForSynastry(
   label: string,
   personName: string,
-  birthDate: string,
+  birthTimeKnown: boolean,
   positions: PositionRow[],
   aspects: AspectRow[],
 ): string {
   const posLines = positions
-    .slice(0, 14)
     .map(
       (p) =>
         `  - ${p.body_key} in ${p.sign_key}, house ${p.house_number ?? '?'}, ${p.degree_decimal.toFixed(2)}°${p.retrograde ? ' (R)' : ''}`,
     )
     .join('\n');
   const aspLines = aspects
-    .slice(0, 10)
-    .map((a) => `  - ${a.body_a} ${a.aspect_key} ${a.body_b}, orb ${a.orb_decimal.toFixed(2)}°`)
+    .map(
+      (a) =>
+        `  - ${a.body_a} ${a.aspect_key} ${a.body_b}, orb ${a.orb_decimal.toFixed(2)}°${a.applying != null ? `, applying=${a.applying}` : ''}`,
+    )
     .join('\n');
-  return `Chart: ${label} (${personName})\nBirth date: ${birthDate}\nPositions:\n${posLines}\nAspects:\n${aspLines}`;
+  return `Chart: ${label} (${personName})\nBirth time known: ${birthTimeKnown ? 'yes' : 'no'}\nPositions:\n${posLines}\nAspects:\n${aspLines}`;
+}
+
+const SYNASTRY_ASPECT_DEFS = [
+  { name: 'conjunction', angle: 0, orb: 8 },
+  { name: 'sextile', angle: 60, orb: 4 },
+  { name: 'square', angle: 90, orb: 7 },
+  { name: 'trine', angle: 120, orb: 7 },
+  { name: 'opposition', angle: 180, orb: 8 },
+] as const;
+
+const SYNASTRY_PLANETS = [
+  'sun',
+  'moon',
+  'mercury',
+  'venus',
+  'mars',
+  'jupiter',
+  'saturn',
+  'uranus',
+  'neptune',
+  'pluto',
+  'ascendant',
+  'midheaven',
+] as const;
+
+/** Compute inter-chart (cross) aspects between two sets of positions. */
+export function computeCrossAspects(
+  positionsA: PositionRow[],
+  nameA: string,
+  positionsB: PositionRow[],
+  nameB: string,
+): string {
+  const planetsA = positionsA.filter((p) =>
+    (SYNASTRY_PLANETS as readonly string[]).includes(p.body_key),
+  );
+  const planetsB = positionsB.filter((p) =>
+    (SYNASTRY_PLANETS as readonly string[]).includes(p.body_key),
+  );
+
+  const found: Array<{ line: string; orb: number }> = [];
+
+  for (const a of planetsA) {
+    for (const b of planetsB) {
+      const raw = Math.abs(a.degree_decimal - b.degree_decimal);
+      const diff = raw > 180 ? 360 - raw : raw;
+      for (const aspect of SYNASTRY_ASPECT_DEFS) {
+        const orb = Math.abs(diff - aspect.angle);
+        if (orb <= aspect.orb) {
+          found.push({
+            line: `  - ${nameA} ${a.body_key} ${aspect.name} ${nameB} ${b.body_key}, orb ${orb.toFixed(2)}°`,
+            orb,
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  return found
+    .sort((a, b) => a.orb - b.orb)
+    .map((f) => f.line)
+    .join('\n');
 }
 
 /** Fast: creates a pending compatibility record. */
@@ -122,12 +185,12 @@ export async function generateCompatibilityContent(
   const [{ data: primaryChart }, { data: secondaryChart }] = await Promise.all([
     db
       .from('charts')
-      .select('id, label, person_name, birth_date')
+      .select('id, label, person_name, birth_time_known')
       .eq('id', report.primary_chart_id)
       .maybeSingle(),
     db
       .from('charts')
-      .select('id, label, person_name, birth_date')
+      .select('id, label, person_name, birth_time_known')
       .eq('id', report.secondary_chart_id)
       .maybeSingle(),
   ]);
@@ -192,16 +255,23 @@ export async function generateCompatibilityContent(
   const primaryFacts = serializeChartForSynastry(
     primaryChart.label,
     primaryChart.person_name,
-    primaryChart.birth_date,
+    primaryChart.birth_time_known,
     primaryPositions ?? [],
     primaryAspects ?? [],
   );
   const secondaryFacts = serializeChartForSynastry(
     secondaryChart.label,
     secondaryChart.person_name,
-    secondaryChart.birth_date,
+    secondaryChart.birth_time_known,
     secondaryPositions ?? [],
     secondaryAspects ?? [],
+  );
+
+  const crossAspectLines = computeCrossAspects(
+    primaryPositions ?? [],
+    primaryChart.person_name,
+    secondaryPositions ?? [],
+    secondaryChart.person_name,
   );
 
   const systemPrompt = `КРИТИЧЕСКИ ВАЖНО: Весь JSON-ответ — каждое строковое поле — ОБЯЗАТЕЛЬНО должен быть написан на русском языке. Использование английского языка в любом поле недопустимо.
@@ -240,7 +310,10 @@ ${primaryFacts}
 
 ${secondaryFacts}
 
-Identify the most significant cross-aspects (inter-chart aspects) between them and produce a comprehensive synastry reading.`;
+Cross-aspects (inter-chart aspects, computed server-side — most significant):
+${crossAspectLines || '  — none found'}
+
+Use the pre-computed cross-aspects above as the primary material for your analysis. These are the actual inter-chart aspects between the two people.`;
 
   let content: StructuredReadingOutput;
   let status: 'ready' | 'error' = 'ready';
