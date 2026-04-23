@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ConfirmSpendDialog } from '@/components/common/confirm-spend-dialog';
 
 interface ChartOption {
   id: string;
@@ -23,6 +24,7 @@ interface ChartOption {
 
 export default function NewCompatibilityPage() {
   const t = useTranslations('compatibility');
+  const tCredits = useTranslations('credits');
   const tNav = useTranslations('navigation');
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,6 +34,27 @@ export default function NewCompatibilityPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [compatCost, setCompatCost] = useState<number>(1);
+  const [isFree, setIsFree] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/credits/pricing')
+      .then(
+        (r) =>
+          r.json() as Promise<{
+            costs?: { compatibility_report?: number };
+            freeProducts?: string[];
+          }>,
+      )
+      .then((data) => {
+        if (data.costs?.compatibility_report) setCompatCost(data.costs.compatibility_report);
+        if (data.freeProducts?.includes('compatibility_report')) setIsFree(true);
+      })
+      .catch(() => {
+        /* non-critical */
+      });
+  }, []);
 
   useEffect(() => {
     fetch('/api/charts')
@@ -60,7 +83,13 @@ export default function NewCompatibilityPage() {
         body: JSON.stringify({ primaryChartId: primaryId, secondaryChartId: secondaryId }),
       });
       const data = (await res.json()) as { report?: { id: string }; error?: string };
-      if (!res.ok || !data.report) throw new Error(data.error ?? t('createFailed'));
+      if (!res.ok || !data.report) {
+        const msg =
+          data.error === 'insufficient_credits'
+            ? tCredits('insufficientTitle')
+            : (data.error ?? t('createFailed'));
+        throw new Error(msg);
+      }
       router.push(`/compatibility/${data.report.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('createFailed'));
@@ -72,6 +101,15 @@ export default function NewCompatibilityPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-4 py-8 sm:px-6">
+      <ConfirmSpendDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        cost={compatCost}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          void handleSubmit();
+        }}
+      />
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="sm" className="-ml-2">
           <Link href="/compatibility">
@@ -143,7 +181,13 @@ export default function NewCompatibilityPage() {
               ) : null}
 
               <Button
-                onClick={() => void handleSubmit()}
+                onClick={() => {
+                  if (isFree) {
+                    void handleSubmit();
+                  } else {
+                    setConfirmOpen(true);
+                  }
+                }}
                 disabled={!primaryId || !secondaryId || primaryId === secondaryId || submitting}
                 className="w-full"
               >

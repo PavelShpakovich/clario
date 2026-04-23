@@ -96,6 +96,10 @@ export function RegisterForm() {
       });
 
       if (!response.ok) {
+        if (response.status === 429) {
+          toast.error(t('tooManyRequests'));
+          return;
+        }
         const data = (await response.json()) as { error?: string; message?: string };
         const msg = (data.error || data.message || '').toLowerCase();
         if (msg.includes('already exists')) {

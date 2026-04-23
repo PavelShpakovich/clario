@@ -19,6 +19,8 @@ import {
 } from '@/lib/readings/prompt';
 import type { ReadingCreateInput } from '@/lib/readings/reading-request-schema';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { refundCredits } from '@/lib/credits/service';
+import { getCreditCosts } from '@/lib/credits/pricing';
 import type { Json, TablesInsert } from '@/lib/supabase/types';
 import type { ZodType } from 'zod';
 
@@ -439,6 +441,21 @@ export async function generateReadingContent(readingId: string, userId: string):
   } catch (error) {
     status = 'error';
     errorMessage = error instanceof Error ? error.message : 'Reading generation failed';
+
+    // Refund credits on LLM failure
+    try {
+      const costs = await getCreditCosts();
+      await refundCredits(userId, costs.natal_report, 'refund_llm_failure', {
+        referenceType: 'reading',
+        referenceId: readingId,
+      });
+    } catch (refundErr) {
+      logger.error(
+        { err: refundErr, readingId },
+        'readings: failed to refund credits after LLM failure',
+      );
+    }
+
     content = {
       title: stableReadingTitle(readingType, chart.label, locale),
       summary:

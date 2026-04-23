@@ -37,20 +37,23 @@ export const GET = withApiHandler(async (req: Request) => {
 
     const userIds = usersData.users.map((u) => u.id);
 
-    const [{ data: profiles }, { data: allUsage }, { data: monthUsage }] = await Promise.all([
-      supabaseAdmin.from('profiles').select('id, display_name, is_admin').in('id', userIds),
-      supabaseAdmin
-        .from('usage_counters')
-        .select('user_id, readings_generated, charts_created, follow_up_messages_used')
-        .in('user_id', userIds),
-      supabaseAdmin
-        .from('usage_counters')
-        .select('user_id, readings_generated, charts_created')
-        .in('user_id', userIds)
-        .gte('period_start', monthStart),
-    ]);
+    const [{ data: profiles }, { data: allUsage }, { data: monthUsage }, { data: creditRows }] =
+      await Promise.all([
+        supabaseAdmin.from('profiles').select('id, display_name, is_admin').in('id', userIds),
+        supabaseAdmin
+          .from('usage_counters')
+          .select('user_id, readings_generated, charts_created, follow_up_messages_used')
+          .in('user_id', userIds),
+        supabaseAdmin
+          .from('usage_counters')
+          .select('user_id, readings_generated, charts_created')
+          .in('user_id', userIds)
+          .gte('period_start', monthStart),
+        supabaseAdmin.from('user_credits').select('user_id, balance').in('user_id', userIds),
+      ]);
 
     const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    const creditMap = new Map((creditRows ?? []).map((r) => [r.user_id, r.balance as number]));
 
     type UserTotals = {
       totalReadings: number;
@@ -105,6 +108,7 @@ export const GET = withApiHandler(async (req: Request) => {
         totalCharts: usage.totalCharts,
         readingsThisMonth: usage.readingsThisMonth,
         chartsThisMonth: usage.chartsThisMonth,
+        creditBalance: creditMap.get(authUser.id) ?? 0,
       };
     });
 

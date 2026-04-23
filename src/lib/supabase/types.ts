@@ -6,6 +6,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: '14.1';
   };
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
       account_identities: {
@@ -290,6 +315,78 @@ export type Database = {
           },
         ];
       };
+      credit_packs: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          credits: number;
+          currency: string;
+          id: string;
+          name: string;
+          price_minor: number | null;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          credits: number;
+          currency?: string;
+          id: string;
+          name: string;
+          price_minor?: number | null;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          credits?: number;
+          currency?: string;
+          id?: string;
+          name?: string;
+          price_minor?: number | null;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      credit_transactions: {
+        Row: {
+          amount: number;
+          balance_after: number;
+          created_at: string;
+          id: string;
+          note: string | null;
+          reason: string;
+          reference_id: string | null;
+          reference_type: string | null;
+          user_id: string;
+        };
+        Insert: {
+          amount: number;
+          balance_after: number;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          reason: string;
+          reference_id?: string | null;
+          reference_type?: string | null;
+          user_id: string;
+        };
+        Update: {
+          amount?: number;
+          balance_after?: number;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          reason?: string;
+          reference_id?: string | null;
+          reference_type?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       email_verification_tokens: {
         Row: {
           consumed_at: string | null;
@@ -366,6 +463,7 @@ export type Database = {
           chart_id: string | null;
           created_at: string;
           id: string;
+          message_limit: number;
           reading_id: string | null;
           title: string;
           updated_at: string;
@@ -375,6 +473,7 @@ export type Database = {
           chart_id?: string | null;
           created_at?: string;
           id?: string;
+          message_limit?: number;
           reading_id?: string | null;
           title: string;
           updated_at?: string;
@@ -384,6 +483,7 @@ export type Database = {
           chart_id?: string | null;
           created_at?: string;
           id?: string;
+          message_limit?: number;
           reading_id?: string | null;
           title?: string;
           updated_at?: string;
@@ -546,170 +646,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      report_entitlements: {
-        Row: {
-          consumed_at: string | null;
-          created_at: string;
-          entity_id: string | null;
-          entity_type: string;
-          expires_at: string | null;
-          id: string;
-          metadata_json: Json;
-          product_id: string;
-          purchase_id: string | null;
-          reading_type: string | null;
-          status: string;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          consumed_at?: string | null;
-          created_at?: string;
-          entity_id?: string | null;
-          entity_type: string;
-          expires_at?: string | null;
-          id?: string;
-          metadata_json?: Json;
-          product_id: string;
-          purchase_id?: string | null;
-          reading_type?: string | null;
-          status?: string;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          consumed_at?: string | null;
-          created_at?: string;
-          entity_id?: string | null;
-          entity_type?: string;
-          expires_at?: string | null;
-          id?: string;
-          metadata_json?: Json;
-          product_id?: string;
-          purchase_id?: string | null;
-          reading_type?: string | null;
-          status?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'report_entitlements_product_id_fkey';
-            columns: ['product_id'];
-            isOneToOne: false;
-            referencedRelation: 'report_products';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'report_entitlements_purchase_id_fkey';
-            columns: ['purchase_id'];
-            isOneToOne: false;
-            referencedRelation: 'report_purchases';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      report_products: {
-        Row: {
-          active: boolean;
-          created_at: string;
-          currency: string;
-          description: string | null;
-          id: string;
-          kind: string;
-          metadata_json: Json;
-          price_minor: number | null;
-          title: string;
-          updated_at: string;
-        };
-        Insert: {
-          active?: boolean;
-          created_at?: string;
-          currency?: string;
-          description?: string | null;
-          id: string;
-          kind: string;
-          metadata_json?: Json;
-          price_minor?: number | null;
-          title: string;
-          updated_at?: string;
-        };
-        Update: {
-          active?: boolean;
-          created_at?: string;
-          currency?: string;
-          description?: string | null;
-          id?: string;
-          kind?: string;
-          metadata_json?: Json;
-          price_minor?: number | null;
-          title?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-      report_purchases: {
-        Row: {
-          amount_minor: number | null;
-          created_at: string;
-          currency: string;
-          entity_id: string | null;
-          entity_type: string | null;
-          external_order_id: string | null;
-          external_payment_id: string | null;
-          id: string;
-          metadata_json: Json;
-          paid_at: string | null;
-          product_id: string;
-          provider: string;
-          status: string;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          amount_minor?: number | null;
-          created_at?: string;
-          currency?: string;
-          entity_id?: string | null;
-          entity_type?: string | null;
-          external_order_id?: string | null;
-          external_payment_id?: string | null;
-          id?: string;
-          metadata_json?: Json;
-          paid_at?: string | null;
-          product_id: string;
-          provider: string;
-          status?: string;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          amount_minor?: number | null;
-          created_at?: string;
-          currency?: string;
-          entity_id?: string | null;
-          entity_type?: string | null;
-          external_order_id?: string | null;
-          external_payment_id?: string | null;
-          id?: string;
-          metadata_json?: Json;
-          paid_at?: string | null;
-          product_id?: string;
-          provider?: string;
-          status?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'report_purchases_product_id_fkey';
-            columns: ['product_id'];
-            isOneToOne: false;
-            referencedRelation: 'report_products';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       reading_sections: {
         Row: {
           content: string;
@@ -826,6 +762,176 @@ export type Database = {
           },
         ];
       };
+      report_entitlements: {
+        Row: {
+          consumed_at: string | null;
+          created_at: string;
+          entity_id: string | null;
+          entity_type: string;
+          expires_at: string | null;
+          id: string;
+          metadata_json: Json;
+          product_id: string;
+          purchase_id: string | null;
+          reading_type: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          consumed_at?: string | null;
+          created_at?: string;
+          entity_id?: string | null;
+          entity_type: string;
+          expires_at?: string | null;
+          id?: string;
+          metadata_json?: Json;
+          product_id: string;
+          purchase_id?: string | null;
+          reading_type?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          consumed_at?: string | null;
+          created_at?: string;
+          entity_id?: string | null;
+          entity_type?: string;
+          expires_at?: string | null;
+          id?: string;
+          metadata_json?: Json;
+          product_id?: string;
+          purchase_id?: string | null;
+          reading_type?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'report_entitlements_product_id_fkey';
+            columns: ['product_id'];
+            isOneToOne: false;
+            referencedRelation: 'report_products';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'report_entitlements_purchase_id_fkey';
+            columns: ['purchase_id'];
+            isOneToOne: false;
+            referencedRelation: 'report_purchases';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      report_products: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          credit_cost: number | null;
+          currency: string;
+          description: string | null;
+          free: boolean;
+          id: string;
+          kind: string;
+          metadata_json: Json;
+          price_minor: number | null;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          credit_cost?: number | null;
+          currency?: string;
+          description?: string | null;
+          free?: boolean;
+          id: string;
+          kind: string;
+          metadata_json?: Json;
+          price_minor?: number | null;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          credit_cost?: number | null;
+          currency?: string;
+          description?: string | null;
+          free?: boolean;
+          id?: string;
+          kind?: string;
+          metadata_json?: Json;
+          price_minor?: number | null;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      report_purchases: {
+        Row: {
+          amount_minor: number | null;
+          created_at: string;
+          currency: string;
+          entity_id: string | null;
+          entity_type: string | null;
+          external_order_id: string | null;
+          external_payment_id: string | null;
+          id: string;
+          metadata_json: Json;
+          paid_at: string | null;
+          product_id: string;
+          provider: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          amount_minor?: number | null;
+          created_at?: string;
+          currency?: string;
+          entity_id?: string | null;
+          entity_type?: string | null;
+          external_order_id?: string | null;
+          external_payment_id?: string | null;
+          id?: string;
+          metadata_json?: Json;
+          paid_at?: string | null;
+          product_id: string;
+          provider: string;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          amount_minor?: number | null;
+          created_at?: string;
+          currency?: string;
+          entity_id?: string | null;
+          entity_type?: string | null;
+          external_order_id?: string | null;
+          external_payment_id?: string | null;
+          id?: string;
+          metadata_json?: Json;
+          paid_at?: string | null;
+          product_id?: string;
+          provider?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'report_purchases_product_id_fkey';
+            columns: ['product_id'];
+            isOneToOne: false;
+            referencedRelation: 'report_products';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       usage_counters: {
         Row: {
           charts_created: number;
@@ -863,6 +969,33 @@ export type Database = {
           period_end?: string;
           period_start?: string;
           readings_generated?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      user_credits: {
+        Row: {
+          balance: number;
+          created_at: string;
+          forecast_access_until: string | null;
+          id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          balance?: number;
+          created_at?: string;
+          forecast_access_until?: string | null;
+          id?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          balance?: number;
+          created_at?: string;
+          forecast_access_until?: string | null;
+          id?: string;
           updated_at?: string;
           user_id?: string;
         };
@@ -909,7 +1042,35 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      add_credits: {
+        Args: {
+          p_amount: number;
+          p_note?: string;
+          p_reason: string;
+          p_reference_id?: string;
+          p_reference_type?: string;
+          p_user_id: string;
+        };
+        Returns: {
+          new_balance: number;
+          transaction_id: string;
+        }[];
+      };
+      deduct_credits_atomic: {
+        Args: {
+          p_amount: number;
+          p_note?: string;
+          p_reason: string;
+          p_reference_id?: string;
+          p_reference_type?: string;
+          p_user_id: string;
+        };
+        Returns: {
+          new_balance: number;
+          transaction_id: string;
+        }[];
+      };
+      get_free_product_kinds: { Args: never; Returns: string[] };
     };
     Enums: {
       [_ in never]: never;
@@ -1036,6 +1197,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

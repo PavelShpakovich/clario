@@ -2,26 +2,14 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
-import { NotFoundError, ValidationError } from '@/lib/errors';
+import { NotFoundError, ValidationError, InsufficientCreditsError } from '@/lib/errors';
 import { clearDailyForecastContent } from '@/lib/forecasts/service';
-import { checkRateLimit, rateLimitHeaders } from '@/lib/rate-limit';
+import { hasForecastAccess, chargeForProduct } from '@/lib/credits/service';
 
 const uuidSchema = z.string().uuid();
 
-// Allow max 5 regenerations per user per hour
-const REGEN_LIMIT = 5;
-const REGEN_WINDOW_MS = 60 * 60 * 1000;
-
 export const POST = withApiHandler(async (_req, ctx) => {
   const { user } = await requireAuth();
-
-  const rl = checkRateLimit(`forecast-regen:${user.id}`, REGEN_LIMIT, REGEN_WINDOW_MS);
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many regeneration requests. Please try again later.' },
-      { status: 429, headers: rateLimitHeaders(rl) },
-    );
-  }
 
   const routeContext = ctx as { params?: Promise<{ forecastId: string }> } | undefined;
   const forecastId = routeContext?.params ? (await routeContext.params).forecastId : undefined;
@@ -30,7 +18,29 @@ export const POST = withApiHandler(async (_req, ctx) => {
   if (!uuidSchema.safeParse(forecastId).success)
     throw new ValidationError({ message: 'Invalid forecast ID' });
 
+  const hasAccess = await hasForecastAccess(user.id);
+  if (!hasAccess) {
+    return NextResponse.json({ error: 'forecast_access_required' }, { status: 403 });
+  }
+
+  let charge;
+  try {
+    charge = await chargeForProduct(user.id, 'forecast_report');
+  } catch (err) {
+    if (err instanceof InsufficientCreditsError) {
+      return NextResponse.json(
+        {
+          error: 'insufficient_credits',
+          required: (err.context.required as number) ?? 0,
+          balance: (err.context.balance as number) ?? 0,
+        },
+        { status: 402 },
+      );
+    }
+    throw err;
+  }
+
   await clearDailyForecastContent(forecastId, user.id);
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, newBalance: charge.newBalance, free: charge.free });
 });

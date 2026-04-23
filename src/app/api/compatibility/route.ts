@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
-import { ValidationError } from '@/lib/errors';
+import { ValidationError, InsufficientCreditsError } from '@/lib/errors';
 import { createPendingCompatibility } from '@/lib/compatibility/service';
+import { chargeForProduct } from '@/lib/credits/service';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const db = supabaseAdmin;
@@ -38,6 +39,23 @@ export const POST = withApiHandler(async (req) => {
   const { primaryChartId, secondaryChartId } = parsed.data;
   if (primaryChartId === secondaryChartId) {
     throw new ValidationError({ message: 'Primary and secondary charts must be different' });
+  }
+
+  // Charge credits (respects free-product flag)
+  try {
+    await chargeForProduct(user.id, 'compatibility_report');
+  } catch (err) {
+    if (err instanceof InsufficientCreditsError) {
+      return NextResponse.json(
+        {
+          error: 'insufficient_credits',
+          required: (err.context.required as number) ?? 0,
+          balance: (err.context.balance as number) ?? 0,
+        },
+        { status: 402 },
+      );
+    }
+    throw err;
   }
 
   const report = await createPendingCompatibility(user.id, primaryChartId, secondaryChartId);

@@ -2,7 +2,7 @@ import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/auth';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 import { sendEmail } from '@/lib/email/resend';
 
 const FEEDBACK_TO = 'pavelekname@gmail.com';
@@ -17,9 +17,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { allowed } = checkRateLimit(`feedback:${session.user.id}`, 5, 60 * 60 * 1000);
-  if (!allowed) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  const rl = checkRateLimit(`feedback:${session.user.id}`, 5, 60 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
   }
 
   const body = await req.json().catch(() => null);

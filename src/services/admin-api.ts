@@ -14,6 +14,7 @@ export interface AdminUser {
   totalCharts: number;
   readingsThisMonth: number;
   chartsThisMonth: number;
+  creditBalance: number;
 }
 
 interface ListUsersResponse {
@@ -68,6 +69,98 @@ class AdminApi {
     const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Не удалось удалить пользователя');
+    return data;
+  }
+
+  // ── Credits management ──────────────────────────────────────────────────
+
+  async grantCredits(
+    userId: string,
+    amount: number,
+    note?: string,
+  ): Promise<{ success: boolean; newBalance: number; transactionId: string }> {
+    const res = await fetch('/api/admin/credits/grant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, amount, note }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Не удалось начислить кредиты');
+    return data;
+  }
+
+  async revokeCredits(
+    userId: string,
+    amount: number,
+    note?: string,
+  ): Promise<{ success: boolean; newBalance: number; transactionId: string }> {
+    const res = await fetch('/api/admin/credits/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, amount, note }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Не удалось списать кредиты');
+    return data;
+  }
+
+  async getUserCreditHistory(
+    userId: string,
+    page = 1,
+    pageSize = 50,
+  ): Promise<{
+    balance: number;
+    forecastAccessUntil: string | null;
+    transactions: Array<{
+      id: string;
+      amount: number;
+      balance_after: number;
+      reason: string;
+      reference_type: string | null;
+      reference_id: string | null;
+      note: string | null;
+      created_at: string;
+    }>;
+    total: number;
+  }> {
+    const res = await fetch(
+      `/api/admin/credits/history/${userId}?page=${page}&pageSize=${pageSize}`,
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Не удалось загрузить историю кредитов');
+    return data;
+  }
+
+  // ── Pricing management ──────────────────────────────────────────────────
+
+  async updateProductPricing(
+    productId: string,
+    updates: { creditCost?: number; free?: boolean },
+  ): Promise<{
+    success: boolean;
+    product: { id: string; kind: string; title: string; credit_cost: number; free: boolean };
+  }> {
+    const res = await fetch('/api/admin/pricing/products', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId, ...updates }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Не удалось обновить стоимость продукта');
+    return data;
+  }
+
+  async updateCreditPack(
+    packId: string,
+    updates: { credits?: number; priceminor?: number | null; currency?: string; active?: boolean },
+  ): Promise<{ success: boolean; pack: Record<string, unknown> }> {
+    const res = await fetch('/api/admin/pricing/packs', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ packId, ...updates }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Не удалось обновить пакет кредитов');
     return data;
   }
 }

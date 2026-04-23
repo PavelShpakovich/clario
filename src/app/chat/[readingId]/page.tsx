@@ -5,7 +5,8 @@ import { auth } from '@/auth';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { FollowUpChat } from '@/components/astrology/follow-up-chat';
 import type { ChatMessageItem } from '@/components/astrology/follow-up-chat';
-import { FOLLOW_UP_LIMIT } from '@/lib/astrology/constants';
+
+export const dynamic = 'force-dynamic';
 
 const db = supabaseAdmin;
 
@@ -42,26 +43,19 @@ export default async function ChatPage({ params }: { params: Promise<{ readingId
   if (!reading) redirect('/readings');
 
   // Get or create thread
-  let { data: thread } = await db
+  const { data: thread } = await db
     .from('follow_up_threads')
-    .select('id')
-    .eq('reading_id', readingId)
-    .eq('user_id', session.user.id)
-    .maybeSingle();
-
-  if (!thread) {
-    const { data: newThread } = await db
-      .from('follow_up_threads')
-      .insert({
+    .upsert(
+      {
         user_id: session.user.id,
         reading_id: readingId,
         chart_id: reading.chart_id,
         title: reading.title,
-      })
-      .select('id')
-      .single();
-    thread = newThread;
-  }
+      },
+      { onConflict: 'reading_id,user_id' },
+    )
+    .select('id, message_limit')
+    .single();
 
   if (!thread) redirect('/readings');
 
@@ -73,6 +67,7 @@ export default async function ChatPage({ params }: { params: Promise<{ readingId
 
   const msgs = (messages ?? []) as ChatMessageItem[];
   const used = msgs.filter((m) => m.role === 'user').length;
+  const threadLimit = (thread.message_limit as number) ?? 5;
 
   return (
     <main className="fixed inset-x-0 top-16 bottom-0 z-30 flex flex-col overflow-hidden bg-background">
@@ -82,7 +77,7 @@ export default async function ChatPage({ params }: { params: Promise<{ readingId
         readingType={reading.reading_type}
         initialMessages={msgs}
         initialUsed={used}
-        limit={FOLLOW_UP_LIMIT}
+        limit={threadLimit}
       />
     </main>
   );

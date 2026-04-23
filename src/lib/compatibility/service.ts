@@ -3,6 +3,8 @@ import { env } from '@/lib/env';
 import { generateStructuredOutputWithUsage } from '@/lib/llm/structured-generation';
 import { logger } from '@/lib/logger';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { refundCredits } from '@/lib/credits/service';
+import { getCreditCosts } from '@/lib/credits/pricing';
 import {
   structuredReadingSchema,
   type StructuredReadingOutput,
@@ -390,6 +392,21 @@ Use the pre-computed cross-aspects above as the primary material for your analys
       });
   } catch (err) {
     status = 'error';
+
+    // Refund credits on LLM failure
+    try {
+      const costs = await getCreditCosts();
+      await refundCredits(userId, costs.compatibility_report, 'refund_llm_failure', {
+        referenceType: 'compatibility_report',
+        referenceId: reportId,
+      });
+    } catch (refundErr) {
+      logger.error(
+        { err: refundErr, reportId },
+        'compatibility: failed to refund credits after LLM failure',
+      );
+    }
+
     await db
       .from('generation_logs')
       .insert({

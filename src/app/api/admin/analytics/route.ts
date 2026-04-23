@@ -19,6 +19,7 @@ export interface AdminAnalytics {
   aiErrors: number;
   totalFollowUpMessages: number;
   totalTokensUsed: number;
+  totalCreditsSpent: number;
   readingsByType: Record<string, number>;
 }
 
@@ -35,6 +36,7 @@ const FALLBACK: AdminAnalytics = {
   aiErrors: 0,
   totalFollowUpMessages: 0,
   totalTokensUsed: 0,
+  totalCreditsSpent: 0,
   readingsByType: {},
 };
 
@@ -74,6 +76,7 @@ export const GET = withApiHandler(async () => {
     generationTokensRes,
     usageCountersRes,
     readingTypesRes,
+    creditsSpentRes,
   } = results;
 
   const supabaseErrors = [
@@ -90,6 +93,7 @@ export const GET = withApiHandler(async () => {
     generationTokensRes.error,
     usageCountersRes.error,
     readingTypesRes.error,
+    creditsSpentRes.error,
   ].filter(Boolean);
   if (supabaseErrors.length > 0) {
     logger.warn({ supabaseErrors }, 'Some analytics queries returned errors');
@@ -104,6 +108,11 @@ export const GET = withApiHandler(async () => {
     0,
   );
   const totalTokensUsed = followUpTokensUsed + generationTokensUsed;
+
+  const totalCreditsSpent = (creditsSpentRes.data ?? []).reduce(
+    (sum: number, row: { amount: number | null }) => sum + Math.abs(row.amount ?? 0),
+    0,
+  );
 
   const usageRows = usageCountersRes.data ?? [];
   const chartsThisMonth = usageRows.reduce(
@@ -135,6 +144,7 @@ export const GET = withApiHandler(async () => {
     aiErrors: aiErrorsRes.count ?? 0,
     totalFollowUpMessages: followUpCountRes.count ?? 0,
     totalTokensUsed,
+    totalCreditsSpent,
     readingsByType,
   };
 
@@ -156,6 +166,7 @@ async function runQueries(monthStart: string) {
     generationTokensRes,
     usageCountersRes,
     readingTypesRes,
+    creditsSpentRes,
   ] = await Promise.all([
     db.from('profiles').select('*', { count: 'exact', head: true }),
     db.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
@@ -181,6 +192,8 @@ async function runQueries(monthStart: string) {
       .select('readings_generated, charts_created')
       .gte('period_start', monthStart),
     db.from('readings').select('reading_type'),
+    // Sum of all debits (negative amounts) in credit_transactions
+    db.from('credit_transactions').select('amount').lt('amount', 0),
   ]);
 
   return {
@@ -197,5 +210,6 @@ async function runQueries(monthStart: string) {
     generationTokensRes,
     usageCountersRes,
     readingTypesRes,
+    creditsSpentRes,
   };
 }

@@ -7,6 +7,7 @@ export type AppErrorCode =
   | 'AUTH_ERROR'
   | 'FORBIDDEN'
   | 'RATE_LIMIT_ERROR'
+  | 'INSUFFICIENT_CREDITS'
   | 'INTERNAL_ERROR';
 
 interface AppErrorOptions {
@@ -68,6 +69,12 @@ export class ForbiddenError extends AppError {
   }
 }
 
+export class InsufficientCreditsError extends AppError {
+  constructor(opts: AppErrorOptions) {
+    super('INSUFFICIENT_CREDITS', opts);
+  }
+}
+
 // ─── HTTP status mapping ──────────────────────────────────────────────────────
 
 export function httpStatusForError(error: AppError): number {
@@ -82,6 +89,8 @@ export function httpStatusForError(error: AppError): number {
       return 403;
     case 'RATE_LIMIT_ERROR':
       return 429;
+    case 'INSUFFICIENT_CREDITS':
+      return 402;
     case 'LLM_ERROR':
     case 'INTERNAL_ERROR':
       return 500;

@@ -47,6 +47,11 @@ export function FeedbackButton() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
       });
+      if (res.status === 429) {
+        setError(t('rateLimit'));
+        setFormState('idle');
+        return;
+      }
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error ?? t('errorFallback'));

@@ -6,7 +6,6 @@ import { NotFoundError, ValidationError } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { streamChatResponse, type ChatMessage } from '@/lib/llm/structured-generation';
 import { env } from '@/lib/env';
-import { FOLLOW_UP_LIMIT } from '@/lib/astrology/constants';
 
 const db = supabaseAdmin;
 
@@ -89,31 +88,26 @@ export const GET = withApiHandler(async (_req, ctx) => {
     throw new NotFoundError({ message: 'Reading not found' });
   }
 
-  // Get or create thread
-  let { data: thread } = await db
+  // Get or create thread (upsert with unique constraint on reading_id + user_id)
+  const { data: thread } = await db
     .from('follow_up_threads')
-    .select('id')
-    .eq('reading_id', readingId)
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!thread) {
-    const { data: newThread } = await db
-      .from('follow_up_threads')
-      .insert({
+    .upsert(
+      {
         user_id: user.id,
         reading_id: readingId,
         chart_id: reading.chart_id,
         title: reading.title,
-      })
-      .select('id')
-      .single();
-    thread = newThread;
-  }
+      },
+      { onConflict: 'reading_id,user_id' },
+    )
+    .select('id, message_limit')
+    .single();
 
   if (!thread) {
     throw new Error('Failed to get or create thread');
   }
+
+  const threadLimit = thread.message_limit as number;
 
   const { data: messages } = await db
     .from('follow_up_messages')
@@ -127,7 +121,7 @@ export const GET = withApiHandler(async (_req, ctx) => {
     threadId: thread.id,
     messages: messages ?? [],
     messagesUsed: userMsgCount,
-    messagesLimit: FOLLOW_UP_LIMIT,
+    messagesLimit: threadLimit,
   });
 });
 
@@ -212,27 +206,20 @@ export async function POST(req: Request, ctx: unknown) {
     chartPositions = positions ?? [];
   }
 
-  // Get or create thread
-  let { data: thread } = await db
+  // Get or create thread (upsert with unique constraint on reading_id + user_id)
+  const { data: thread } = await db
     .from('follow_up_threads')
-    .select('id')
-    .eq('reading_id', readingId)
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!thread) {
-    const { data: newThread } = await db
-      .from('follow_up_threads')
-      .insert({
+    .upsert(
+      {
         user_id: user.id,
         reading_id: readingId,
         chart_id: reading.chart_id,
         title: reading.title,
-      })
-      .select('id')
-      .single();
-    thread = newThread;
-  }
+      },
+      { onConflict: 'reading_id,user_id' },
+    )
+    .select('id, message_limit')
+    .single();
 
   if (!thread) {
     return new Response(JSON.stringify({ error: 'Failed to create thread' }), {
@@ -241,6 +228,8 @@ export async function POST(req: Request, ctx: unknown) {
     });
   }
 
+  const threadLimit = thread.message_limit as number;
+
   // Check limit
   const { count: userMsgCount } = await db
     .from('follow_up_messages')
@@ -248,8 +237,8 @@ export async function POST(req: Request, ctx: unknown) {
     .eq('thread_id', thread.id)
     .eq('role', 'user');
 
-  if ((userMsgCount ?? 0) >= FOLLOW_UP_LIMIT) {
-    return new Response(JSON.stringify({ error: `Limit of ${FOLLOW_UP_LIMIT} messages reached` }), {
+  if ((userMsgCount ?? 0) >= threadLimit) {
+    return new Response(JSON.stringify({ error: 'limit_reached', messagesLimit: threadLimit }), {
       status: 429,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -263,11 +252,18 @@ export async function POST(req: Request, ctx: unknown) {
     .order('created_at', { ascending: true });
 
   // Insert user message
-  await db.from('follow_up_messages').insert({
+  const { error: insertError } = await db.from('follow_up_messages').insert({
     thread_id: thread.id,
     role: 'user',
     content: message,
   });
+
+  if (insertError) {
+    return new Response(JSON.stringify({ error: 'Failed to save message' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   // Build LLM messages
   const systemPrompt = buildSystemPrompt(
@@ -307,7 +303,7 @@ export async function POST(req: Request, ctx: unknown) {
       'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'no-cache',
       'X-Messages-Used': String(newUsed),
-      'X-Messages-Limit': String(FOLLOW_UP_LIMIT),
+      'X-Messages-Limit': String(threadLimit),
     },
   });
 }

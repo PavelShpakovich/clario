@@ -563,10 +563,11 @@ export async function generateDailyForecast(
 - Пиши для широкой аудитории — без астрологических терминов в готовом тексте
 - Запрещены в тексте прогноза: "транзит", "аспект", "орб", "квадратура", "оппозиция", "секстиль", "тригон", "ретроградный", "натальный", "куспид"
 - Запрещены названия планет и знаков зодиака в тексте — только жизненные следствия
+- ЗАПРЕЩЕНО использование иностранных слов, английских вставок и транслитерации — только русский язык
 - Тон: тёплый, дружелюбный, конкретный. Как умный друг, а не предсказатель судьбы
 - Разнообразие: охвати разные сферы (настроение, работа, общение, вечер)
 
-Выведи ответ ТОЛЬКО как JSON-объект с ровно тремя ключами: "interpretation", "keyTheme", "advice". Используй эти имена ключей точно как написано (латиницей). Никаких других ключей. Никаких markdown-блоков.`;
+Выведи ответ ТОЛЬКО как JSON-объект с ровно тремя ключами: "interpretation", "keyTheme", "advice". Используй эти имена ключей точно как написано (латиницей). Никаких других ключей. Никаких markdown-блоков. Весь текст в значениях ключей — исключительно на русском языке.`;
 
   const userPrompt = `Дата: ${transitDate}
 Имя: ${chart.person_name}${moonPhase ? `\nФаза луны: ${moonPhase}` : ''}
@@ -599,7 +600,8 @@ ${aspectLines}${
   "interpretation": "3-4 абзаца, разделённых двойным переносом строки. Первый абзац — общее настроение и энергия дня. Далее — конкретные сферы жизни (отношения, работа, здоровье или творчество). Последний — вечер и завершение дня. Пиши живо и конкретно.",
   "keyTheme": "Одна ключевая тема дня, 3-5 слов, разговорным языком (например: 'День для смелых решений', 'Время заботы о себе', 'Фокус на близких')",
   "advice": "Один практический совет на день, 1-2 предложения. Конкретное действие, а не общая мудрость."
-}`;
+}
+Весь ответ — только на русском языке. Никаких иностранных слов.`;
 
   const modelName = env.LLM_PROVIDER === 'qwen' ? env.QWEN_MODEL : 'mock';
   const startMs = Date.now();
@@ -695,6 +697,18 @@ ${aspectLines}${
 
   if (updateError) {
     logger.error({ updateError, forecastId }, 'Failed to save forecast content to DB');
+    // Best-effort: mark as error so the status poller unblocks the UI
+    await db
+      .from('forecasts')
+      .update({
+        rendered_content_json: { status: 'error' } as Json,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', forecastId)
+      .then(({ error: markErr }) => {
+        if (markErr)
+          logger.warn({ error: markErr, forecastId }, 'forecast: failed to mark save-error');
+      });
     throw new Error(`Failed to save forecast: ${updateError.message}`);
   }
 

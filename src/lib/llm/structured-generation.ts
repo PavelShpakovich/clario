@@ -222,7 +222,19 @@ export function streamChatResponse(
         controller.close();
         await onComplete(fullContent, tokensUsed);
       } catch (err) {
-        controller.error(err);
+        // Save partial response so it's not lost on disconnect/error
+        if (fullContent) {
+          try {
+            await onComplete(fullContent, tokensUsed);
+          } catch {
+            /* best-effort save */
+          }
+        }
+        try {
+          controller.error(err);
+        } catch {
+          /* stream already closed/errored */
+        }
       }
     },
   });

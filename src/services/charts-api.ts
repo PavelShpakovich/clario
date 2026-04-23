@@ -48,6 +48,9 @@ class ChartsApi {
       message?: string;
     };
 
+    if (response.status === 429) {
+      throw new Error('rate_limit');
+    }
     if (!response.ok || !data.chart) {
       throw new Error(data.error || data.message || 'Failed to create chart');
     }

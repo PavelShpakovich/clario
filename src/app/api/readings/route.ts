@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
-import { ValidationError, RateLimitError } from '@/lib/errors';
+import { ValidationError, RateLimitError, InsufficientCreditsError } from '@/lib/errors';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { readingCreateSchema } from '@/lib/readings/reading-request-schema';
 import { createPendingReading } from '@/lib/readings/service';
+import { chargeForProduct } from '@/lib/credits/service';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const db = supabaseAdmin;
@@ -43,6 +44,26 @@ export const POST = withApiHandler(async (req) => {
     throw new ValidationError({
       message: parsed.error.issues.map((issue) => issue.message).join(', '),
     });
+  }
+
+  // Charge credits (skip for retry of failed reading)
+  const isRetry = !!parsed.data.replaceReadingId;
+  if (!isRetry) {
+    try {
+      await chargeForProduct(user.id, 'natal_report');
+    } catch (err) {
+      if (err instanceof InsufficientCreditsError) {
+        return NextResponse.json(
+          {
+            error: 'insufficient_credits',
+            required: (err.context.required as number) ?? 0,
+            balance: (err.context.balance as number) ?? 0,
+          },
+          { status: 402 },
+        );
+      }
+      throw err;
+    }
   }
 
   const reading = await createPendingReading(user.id, parsed.data);

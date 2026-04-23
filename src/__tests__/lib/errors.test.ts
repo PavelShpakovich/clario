@@ -4,6 +4,8 @@ import {
   LlmError,
   AuthError,
   RateLimitError,
+  InsufficientCreditsError,
+  ForbiddenError,
   httpStatusForError,
 } from '@/lib/errors';
 
@@ -38,5 +40,22 @@ describe('AppError subclasses', () => {
   it('preserves context', () => {
     const err = new ValidationError({ message: 'Bad', context: { field: 'email' } });
     expect(err.context).toEqual({ field: 'email' });
+  });
+
+  it('InsufficientCreditsError maps to 402', () => {
+    const err = new InsufficientCreditsError({
+      message: 'Not enough credits',
+      context: { balance: 1, required: 3, userId: 'u1' },
+    });
+    expect(err.code).toBe('INSUFFICIENT_CREDITS');
+    expect(httpStatusForError(err)).toBe(402);
+    expect(err.context.balance).toBe(1);
+    expect(err.context.required).toBe(3);
+  });
+
+  it('ForbiddenError maps to 403', () => {
+    const err = new ForbiddenError({ message: 'Access denied' });
+    expect(err.code).toBe('FORBIDDEN');
+    expect(httpStatusForError(err)).toBe(403);
   });
 });

@@ -32,8 +32,10 @@ import {
   Orbit,
   Heart,
   CalendarDays,
+  Sparkles,
 } from 'lucide-react';
 import { FeedbackButton } from '@/components/common/feedback-widget';
+import { CreditBalance } from '@/components/layout/credit-balance';
 
 // ─── Shared constants ────────────────────────────────────────────────────────
 const HEADER_CLASS =
@@ -219,6 +221,7 @@ export function Header() {
 
         {/* Right controls */}
         <div className="flex items-center gap-1">
+          <CreditBalance />
           <FeedbackButton />
           <ThemeToggle theme={theme} resolvedTheme={resolvedTheme} setTheme={setTheme} t={t} />
 
@@ -279,6 +282,12 @@ export function Header() {
                 <Link href="/calendar" className="flex items-center gap-2">
                   <CalendarDays className="size-4" />
                   {t('navigation.calendar')}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/store" className="flex items-center gap-2">
+                  <Sparkles className="size-4" />
+                  {t('credits.store')}
                 </Link>
               </DropdownMenuItem>
 

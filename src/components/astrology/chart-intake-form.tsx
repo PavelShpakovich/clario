@@ -394,7 +394,11 @@ export function ChartIntakeForm({
         toast.success(t('successToast'));
         router.push(`/charts/${chart.id}`);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('errorToast'));
+        if (error instanceof Error && error.message === 'rate_limit') {
+          toast.error(t('rateLimitToast'));
+        } else {
+          toast.error(error instanceof Error ? error.message : t('errorToast'));
+        }
       }
     });
   };

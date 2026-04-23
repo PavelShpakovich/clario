@@ -6,7 +6,10 @@ import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Send, Loader2, Square } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Square, Lock } from 'lucide-react';
+import { toast } from 'sonner';
+import { refreshCreditBalance } from '@/components/layout/credit-balance';
+import { ConfirmSpendDialog } from '@/components/common/confirm-spend-dialog';
 
 export interface ChatMessageItem {
   id: string;
@@ -42,20 +45,44 @@ export function FollowUpChat({
   readingType,
   initialMessages,
   initialUsed,
-  limit,
+  limit: initialLimit,
 }: FollowUpChatProps) {
   const t = useTranslations('chat');
+  const tCredits = useTranslations('credits');
   const [messages, setMessages] = useState<ChatMessageItem[]>(initialMessages);
   const [used, setUsed] = useState(initialUsed);
+  const [currentLimit, setCurrentLimit] = useState(initialLimit);
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [confirmUnlockOpen, setConfirmUnlockOpen] = useState(false);
+  const [unlockCost, setUnlockCost] = useState<number>(1);
+  const [isUnlockFree, setIsUnlockFree] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const limitReached = used >= limit;
-  const remaining = Math.max(0, limit - used);
+  useEffect(() => {
+    fetch('/api/credits/pricing')
+      .then(
+        (r) =>
+          r.json() as Promise<{
+            costs?: { follow_up_pack?: number };
+            freeProducts?: string[];
+          }>,
+      )
+      .then((data) => {
+        if (data.costs?.follow_up_pack) setUnlockCost(data.costs.follow_up_pack);
+        if (data.freeProducts?.includes('follow_up_pack')) setIsUnlockFree(true);
+      })
+      .catch(() => {
+        /* non-critical */
+      });
+  }, []);
+
+  const limitReached = used >= currentLimit;
+  const remaining = Math.max(0, currentLimit - used);
 
   const typeKey =
     readingType && (STARTER_KEYS as readonly string[]).includes(readingType)
@@ -157,10 +184,8 @@ export function FollowUpChat({
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
         setError(t('errorSending'));
-        setMessages((prev) =>
-          prev.filter((m) => m.id !== optimisticUser.id && m.id !== streamingId),
-        );
-        setUsed((prev) => Math.max(0, prev - 1));
+        // Remove only the streaming placeholder — user message is already saved server-side
+        setMessages((prev) => prev.filter((m) => m.id !== streamingId));
       } finally {
         setIsStreaming(false);
         abortRef.current = null;
@@ -184,6 +209,43 @@ export function FollowUpChat({
     await sendMessage(question);
   }
 
+  async function handleUnlock() {
+    setIsUnlocking(true);
+    try {
+      const res = await fetch(`/api/chat/${readingId}/unlock`, { method: 'POST' });
+      const data = (await res.json()) as {
+        messagesLimit?: number;
+        addedMessages?: number;
+        error?: string;
+        required?: number;
+        balance?: number;
+        newBalance?: number;
+      };
+      if (!res.ok) {
+        if (data.error === 'insufficient_credits') {
+          toast.error(
+            tCredits('insufficientDescription', {
+              required: data.required ?? '?',
+              balance: data.balance ?? 0,
+            }),
+          );
+        } else {
+          toast.error(data.error ?? t('unlockFailed'));
+        }
+        return;
+      }
+      if (data.messagesLimit) {
+        setCurrentLimit(data.messagesLimit);
+      }
+      refreshCreditBalance();
+      toast.success(t('unlockSuccess', { count: data.addedMessages ?? 5 }));
+    } catch {
+      toast.error(t('unlockFailed'));
+    } finally {
+      setIsUnlocking(false);
+    }
+  }
+
   return (
     <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       {/* ── Header (pinned top) ── */}
@@ -205,7 +267,7 @@ export function FollowUpChat({
           {/* Visual limit dots */}
           <div className="flex shrink-0 flex-col items-end gap-1">
             <div className="flex gap-1.5">
-              {Array.from({ length: limit }).map((_, i) => (
+              {Array.from({ length: currentLimit }).map((_, i) => (
                 <span
                   key={i}
                   className={`h-2 w-2 rounded-full transition-colors ${
@@ -299,8 +361,37 @@ export function FollowUpChat({
           ) : null}
 
           {limitReached ? (
-            <div className="rounded-2xl border bg-muted/40 px-4 py-4 text-center text-sm text-muted-foreground">
-              {t('limitReached')}
+            <div className="flex flex-col items-center gap-3 rounded-2xl border bg-muted/40 px-4 py-4">
+              <p className="text-sm text-muted-foreground">{t('limitReached')}</p>
+              <ConfirmSpendDialog
+                open={confirmUnlockOpen}
+                onOpenChange={setConfirmUnlockOpen}
+                cost={unlockCost}
+                onConfirm={() => {
+                  setConfirmUnlockOpen(false);
+                  void handleUnlock();
+                }}
+              />
+              <Button
+                onClick={() => {
+                  if (isUnlockFree) {
+                    void handleUnlock();
+                  } else {
+                    setConfirmUnlockOpen(true);
+                  }
+                }}
+                disabled={isUnlocking}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                {isUnlocking ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Lock className="size-3.5" />
+                )}
+                {isUnlocking ? t('unlocking') : t('unlockMore', { count: 5 })}
+              </Button>
             </div>
           ) : (
             <div className="flex items-end gap-2 rounded-2xl border bg-card p-2">

@@ -8,6 +8,9 @@ import { ensureSupabaseIdentityLink } from '@/lib/auth/account-identities';
 import { findAuthUserByEmail } from '@/lib/auth/user-accounts';
 import { sendVerificationEmail } from '@/lib/email/send-verification';
 import { checkRateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
+import { addCredits } from '@/lib/credits/service';
+import { INITIAL_CREDIT_GRANT } from '@/lib/usage-policy';
+import { logger } from '@/lib/logger';
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -71,6 +74,15 @@ export const POST = withApiHandler(async (req) => {
 
   if (profileError) {
     throw profileError;
+  }
+
+  // Grant welcome credits — best-effort, never fail registration
+  try {
+    await addCredits(data.user.id, INITIAL_CREDIT_GRANT, 'welcome_bonus', {
+      note: 'Welcome bonus on registration',
+    });
+  } catch (err) {
+    logger.error({ error: err, userId: data.user.id }, 'Failed to grant welcome credits');
   }
 
   await sendVerificationEmail({ userId: data.user.id, email });

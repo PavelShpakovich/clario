@@ -1,0 +1,214 @@
+/**
+ * Tests for credits/pricing.
+ * Supabase admin client is mocked so no real DB connection is needed.
+ */
+
+const mockOrder = jest.fn();
+
+function makeSelectMock(resolvedData: unknown) {
+  const chain = {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    not: jest.fn().mockReturnThis(),
+    order: mockOrder,
+  };
+  mockOrder.mockResolvedValue({ data: resolvedData, error: null });
+  return chain;
+}
+
+jest.mock('@/lib/supabase/admin', () => ({
+  supabaseAdmin: {
+    from: jest.fn(),
+  },
+}));
+
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import {
+  getCreditCosts,
+  getCreditPacks,
+  getAllCreditPacks,
+  invalidatePricingCache,
+} from '@/lib/credits/pricing';
+
+const mockFrom = supabaseAdmin.from as jest.Mock;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  invalidatePricingCache();
+});
+
+// ── getCreditCosts ─────────────────────────────────────────────────────────
+
+describe('getCreditCosts', () => {
+  it('loads credit costs from DB', async () => {
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      not: jest.fn().mockResolvedValue({
+        data: [
+          { kind: 'natal_report', credit_cost: 4 },
+          { kind: 'compatibility_report', credit_cost: 5 },
+          { kind: 'forecast_report', credit_cost: 3 },
+          { kind: 'follow_up_pack', credit_cost: 2 },
+        ],
+        error: null,
+      }),
+    });
+
+    const costs = await getCreditCosts();
+
+    expect(costs.natal_report).toBe(4);
+    expect(costs.compatibility_report).toBe(5);
+    expect(costs.forecast_report).toBe(3);
+    expect(costs.follow_up_pack).toBe(2);
+  });
+
+  it('uses cached value on second call', async () => {
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      not: jest.fn().mockResolvedValue({
+        data: [{ kind: 'natal_report', credit_cost: 10 }],
+        error: null,
+      }),
+    });
+
+    await getCreditCosts();
+    await getCreditCosts();
+
+    // from() should only be called once due to caching
+    expect(mockFrom).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns fallback defaults on DB error', async () => {
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      not: jest.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'connection refused' },
+      }),
+    });
+
+    const costs = await getCreditCosts();
+
+    // Should return hardcoded defaults
+    expect(costs.natal_report).toBe(2);
+    expect(costs.compatibility_report).toBe(3);
+    expect(costs.forecast_report).toBe(2);
+    expect(costs.follow_up_pack).toBe(1);
+  });
+
+  it('re-fetches after invalidatePricingCache()', async () => {
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      not: jest.fn().mockResolvedValue({
+        data: [{ kind: 'natal_report', credit_cost: 4 }],
+        error: null,
+      }),
+    });
+
+    await getCreditCosts();
+    invalidatePricingCache();
+
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      not: jest.fn().mockResolvedValue({
+        data: [{ kind: 'natal_report', credit_cost: 8 }],
+        error: null,
+      }),
+    });
+
+    const costs = await getCreditCosts();
+
+    expect(costs.natal_report).toBe(8);
+    expect(mockFrom).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ── getCreditPacks ─────────────────────────────────────────────────────────
+
+describe('getCreditPacks', () => {
+  it('loads active packs from DB ordered by sort_order', async () => {
+    mockFrom.mockReturnValue(
+      makeSelectMock([
+        {
+          id: 'starter',
+          name: 'Starter',
+          credits: 3,
+          price_minor: null,
+          currency: 'BYN',
+          active: true,
+          sort_order: 1,
+        },
+        {
+          id: 'standard',
+          name: 'Standard',
+          credits: 7,
+          price_minor: 1990,
+          currency: 'BYN',
+          active: true,
+          sort_order: 2,
+        },
+      ]),
+    );
+
+    const packs = await getCreditPacks();
+
+    expect(packs).toHaveLength(2);
+    expect(packs[0].id).toBe('starter');
+    expect(packs[0].credits).toBe(3);
+    expect(packs[0].priceminor).toBeNull();
+    expect(packs[1].priceminor).toBe(1990);
+  });
+
+  it('returns empty array on DB error', async () => {
+    mockFrom.mockReturnValue(makeSelectMock(null));
+    mockOrder.mockResolvedValue({ data: null, error: { message: 'fail' } });
+
+    const packs = await getCreditPacks();
+
+    expect(packs).toEqual([]);
+  });
+});
+
+// ── getAllCreditPacks ──────────────────────────────────────────────────────
+
+describe('getAllCreditPacks', () => {
+  it('returns all packs including inactive ones', async () => {
+    mockFrom.mockReturnValue(
+      makeSelectMock([
+        {
+          id: 'starter',
+          name: 'Starter',
+          credits: 3,
+          price_minor: null,
+          currency: 'BYN',
+          active: true,
+          sort_order: 1,
+        },
+        {
+          id: 'archived',
+          name: 'Archived',
+          credits: 5,
+          price_minor: 500,
+          currency: 'BYN',
+          active: false,
+          sort_order: 99,
+        },
+      ]),
+    );
+
+    const packs = await getAllCreditPacks();
+
+    expect(packs).toHaveLength(2);
+    expect(packs[1].id).toBe('archived');
+    expect(packs[1].active).toBe(false);
+  });
+
+  it('returns empty array on DB error', async () => {
+    mockFrom.mockReturnValue(makeSelectMock(null));
+    mockOrder.mockResolvedValue({ data: null, error: { message: 'fail' } });
+
+    const packs = await getAllCreditPacks();
+
+    expect(packs).toEqual([]);
+  });
+});

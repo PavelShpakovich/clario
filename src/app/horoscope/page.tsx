@@ -7,10 +7,13 @@ import { auth } from '@/auth';
 export const metadata: Metadata = { robots: { index: false } };
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getOrCreateDailyForecast } from '@/lib/forecasts/service';
+import { hasForecastAccess } from '@/lib/credits/service';
+import { getFreeProducts } from '@/lib/credits/pricing';
 import { HoroscopeGenerating } from '@/components/astrology/horoscope-generating';
 import { HoroscopeRegenerate } from '@/components/astrology/horoscope-regenerate';
+import { ForecastUnlockButton } from '@/components/astrology/forecast-unlock-button';
 import { Button } from '@/components/ui/button';
-import { Sparkles, CalendarDays, Home } from 'lucide-react';
+import { Sparkles, CalendarDays, Home, Lock } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +65,9 @@ export default async function HoroscopePage() {
   const forecast = await getOrCreateDailyForecast(session.user.id, chart.id, userTz);
   const content = forecast.rendered_content_json as ForecastContent | null;
   const isReady = content && typeof content.interpretation === 'string';
+  const hasAccess = await hasForecastAccess(session.user.id);
+  const freeProducts = await getFreeProducts();
+  const forecastIsFree = freeProducts.has('forecast_report');
 
   // Use the forecast's target date to ensure header matches the forecast data
   const forecastDate = forecast.target_start_date
@@ -92,6 +98,31 @@ export default async function HoroscopePage() {
       {/* Generating state */}
       {!isReady ? (
         <HoroscopeGenerating forecastId={forecast.id} />
+      ) : !hasAccess && !forecastIsFree ? (
+        <>
+          {/* Key theme chip — visible to all */}
+          {content.keyTheme ? (
+            <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <Sparkles className="size-4 text-primary shrink-0" />
+              <p className="text-sm font-semibold text-primary">{content.keyTheme}</p>
+            </div>
+          ) : null}
+
+          {/* Preview — first paragraph only, blurred fade-out */}
+          <div className="relative rounded-2xl border bg-card p-6 md:p-8 overflow-hidden">
+            <p className="text-[15px] leading-[1.8]">
+              {content.interpretation?.split('\n\n')[0] ?? ''}
+            </p>
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-card to-transparent" />
+          </div>
+
+          {/* Unlock CTA */}
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center">
+            <Lock className="size-5 text-primary" />
+            <p className="text-sm text-muted-foreground">{t('previewNote')}</p>
+            <ForecastUnlockButton />
+          </div>
+        </>
       ) : (
         <>
           {/* Key theme chip */}
@@ -153,7 +184,9 @@ export default async function HoroscopePage() {
               {t('calendarLink')}
             </Link>
           </Button>
-          {isReady ? <HoroscopeRegenerate forecastId={forecast.id} /> : null}
+          {isReady && (hasAccess || forecastIsFree) ? (
+            <HoroscopeRegenerate forecastId={forecast.id} />
+          ) : null}
         </div>
       </div>
     </main>

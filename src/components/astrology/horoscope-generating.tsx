@@ -19,6 +19,7 @@ export function HoroscopeGenerating({ forecastId }: HoroscopeGeneratingProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const didFire = useRef(false);
   const [retrying, setRetrying] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
   const { failed } = useStatusPoller(`/api/forecasts/${forecastId}`);
 
   const STEP_LABELS = [
@@ -34,6 +35,12 @@ export function HoroscopeGenerating({ forecastId }: HoroscopeGeneratingProps) {
       setTimeout(() => setStepIndex(i + 1), delayMs),
     );
     return () => timers.forEach(clearTimeout);
+  }, []);
+
+  // Fallback timeout: if after 60s there is still no result, show error UI
+  useEffect(() => {
+    const id = setTimeout(() => setTimedOut(true), 60_000);
+    return () => clearTimeout(id);
   }, []);
 
   // Fire generation exactly once (survives Strict Mode double-mount)
@@ -62,7 +69,7 @@ export function HoroscopeGenerating({ forecastId }: HoroscopeGeneratingProps) {
     }
   };
 
-  if (failed) {
+  if (failed || timedOut) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-10 text-center">
         <AlertCircle className="size-8 text-destructive" />

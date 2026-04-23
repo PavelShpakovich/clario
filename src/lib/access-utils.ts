@@ -1,5 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getUsagePolicy } from '@/lib/usage-policy';
+import { getBalance } from '@/lib/credits/service';
+import { getCreditCosts, type ProductKind } from '@/lib/credits/pricing';
 
 /**
  * Workspace access helpers for the current non-subscription product model.
@@ -14,6 +16,8 @@ export interface WorkspaceAccessStatus {
   chartsRemaining: number;
   hasPaidAccess: boolean;
   canCreateCharts: boolean;
+  creditBalance: number;
+  forecastAccessUntil: Date | null;
   usage: {
     chartsCreated: number;
     chartsLimit: number;
@@ -27,7 +31,7 @@ export interface WorkspaceAccessStatus {
 
 export async function getWorkspaceAccessStatus(userId: string): Promise<WorkspaceAccessStatus> {
   const now = new Date();
-  const policy = await getUsagePolicy();
+  const [policy, creditInfo] = await Promise.all([getUsagePolicy(), getBalance(userId)]);
 
   const { data: usage } = await db
     .from('usage_counters')
@@ -45,8 +49,10 @@ export async function getWorkspaceAccessStatus(userId: string): Promise<Workspac
     chartsLimit: policy.chartsPerPeriod,
     chartsCreated,
     chartsRemaining,
-    hasPaidAccess: false,
+    hasPaidAccess: creditInfo.balance > 0,
     canCreateCharts: chartsRemaining > 0,
+    creditBalance: creditInfo.balance,
+    forecastAccessUntil: creditInfo.forecastAccessUntil,
     usage: {
       chartsCreated,
       chartsLimit: policy.chartsPerPeriod,
@@ -56,6 +62,22 @@ export async function getWorkspaceAccessStatus(userId: string): Promise<Workspac
       chartsPerPeriod: policy.chartsPerPeriod,
       savedChartsLimit: policy.savedChartsLimit,
     },
+  };
+}
+
+/**
+ * Check whether the user has enough credits to generate a specific product type.
+ */
+export async function canGenerate(
+  userId: string,
+  kind: ProductKind,
+): Promise<{ allowed: boolean; balance: number; cost: number }> {
+  const [creditInfo, costs] = await Promise.all([getBalance(userId), getCreditCosts()]);
+  const cost = costs[kind];
+  return {
+    allowed: creditInfo.balance >= cost,
+    balance: creditInfo.balance,
+    cost,
   };
 }
 

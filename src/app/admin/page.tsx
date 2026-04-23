@@ -22,6 +22,8 @@ import {
   AlertTriangle,
   MessageSquare,
   Coins,
+  Plus,
+  Minus,
 } from 'lucide-react';
 import { BackLink } from '@/components/common/back-link';
 import { useTranslations } from 'next-intl';
@@ -29,6 +31,104 @@ import { toast } from 'sonner';
 import { AdminTableSkeleton } from '@/components/skeletons';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { adminApi, type AdminUser, type AdminAnalytics } from '@/services/admin-api';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+// ---------------------------------------------------------------------------
+// Credit Grant/Revoke Dialog
+// ---------------------------------------------------------------------------
+function CreditActionDialog({
+  open,
+  onOpenChange,
+  userName,
+  mode,
+  onDone,
+  userId,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  userId: string;
+  userName: string;
+  mode: 'grant' | 'revoke';
+  onDone: () => void;
+}) {
+  const t = useTranslations('adminCredits');
+  const tc = useTranslations('common');
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    const numAmount = parseInt(amount, 10);
+    if (!numAmount || numAmount <= 0) return;
+    setLoading(true);
+    try {
+      if (mode === 'grant') {
+        await adminApi.grantCredits(userId, numAmount, note || undefined);
+        toast.success(t('grantSuccess'));
+      } else {
+        await adminApi.revokeCredits(userId, numAmount, note || undefined);
+        toast.success(t('revokeSuccess'));
+      }
+      onDone();
+      onOpenChange(false);
+      setAmount('');
+      setNote('');
+    } catch {
+      toast.error(mode === 'grant' ? t('grantFailed') : t('revokeFailed'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{mode === 'grant' ? t('grantCredits') : t('revokeCredits')}</DialogTitle>
+          <DialogDescription>{userName}</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 py-2">
+          <div>
+            <label className="text-sm font-medium">{t('amount')}</label>
+            <input
+              type="number"
+              min="1"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">{t('note')}</label>
+            <input
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              disabled={loading}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+            {tc('cancel')}
+          </Button>
+          <Button onClick={() => void handleSubmit()} disabled={loading}>
+            {mode === 'grant' ? t('grantCredits') : t('revokeCredits')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Reading type label map
@@ -115,8 +215,25 @@ function AnalyticsSection() {
   }, [t]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+    adminApi.getAnalytics().then(
+      (result) => {
+        if (!cancelled) {
+          setData(result);
+          setLoading(false);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          toast.error(t('analyticsLoadFailed'));
+          setLoading(false);
+        }
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
 
   return (
     <Card className="p-6 flex flex-col gap-5">
@@ -169,7 +286,7 @@ function AnalyticsSection() {
             {/* AI stats */}
             <div className="rounded-xl border bg-muted/20 p-4 flex flex-col gap-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                AI-активность
+                {t('analyticsAiActivity')}
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <StatTile
@@ -196,6 +313,11 @@ function AnalyticsSection() {
                   value={data.totalTokensUsed > 0 ? data.totalTokensUsed.toLocaleString() : '—'}
                   icon={Coins}
                   accent="purple"
+                />
+                <StatTile
+                  label={t('analyticsCreditsSpent')}
+                  value={data.totalCreditsSpent > 0 ? data.totalCreditsSpent.toLocaleString() : '—'}
+                  icon={Coins}
                 />
               </div>
             </div>
@@ -267,6 +389,7 @@ function VerificationBadge({ user }: { user: AdminUser }) {
 }
 
 type PendingAction = 'toggleAdmin' | 'deleteUser' | null;
+type CreditAction = 'grant' | 'revoke' | null;
 
 interface UserRowProps {
   user: AdminUser;
@@ -279,6 +402,7 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
   const [loading, setLoading] = useState(false);
   const [isAdminState, setIsAdminState] = useState(user.isAdmin);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [creditAction, setCreditAction] = useState<CreditAction>(null);
 
   const executeToggleAdmin = async () => {
     setLoading(true);
@@ -338,6 +462,10 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
     confirmLabel,
     closeDialog: () => setPendingAction(null),
     executeConfirmed,
+    creditAction,
+    openCreditGrant: () => setCreditAction('grant'),
+    openCreditRevoke: () => setCreditAction('revoke'),
+    closeCreditAction: () => setCreditAction(null),
   };
 }
 
@@ -357,6 +485,10 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
     confirmLabel,
     closeDialog,
     executeConfirmed,
+    creditAction,
+    openCreditGrant,
+    openCreditRevoke,
+    closeCreditAction,
   } = useUserActions(user, onRefresh);
   const isSelf = user.id === currentUserId;
 
@@ -373,6 +505,18 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
         confirmLabel={confirmLabel}
         cancelLabel={t('cancel')}
       />
+      {creditAction && (
+        <CreditActionDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) closeCreditAction();
+          }}
+          userId={user.id}
+          userName={formatUserIdentifier(user)}
+          mode={creditAction}
+          onDone={onRefresh}
+        />
+      )}
       <div className="border rounded-lg p-4 flex flex-col gap-3 bg-card">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -397,6 +541,12 @@ function UserMobileCard({ user, onRefresh, currentUserId }: UserRowProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" onClick={openCreditGrant} disabled={loading}>
+            <Plus className="size-3.5 mr-1" />
+          </Button>
+          <Button size="sm" variant="outline" onClick={openCreditRevoke} disabled={loading}>
+            <Minus className="size-3.5 mr-1" />
+          </Button>
           {!isSelf && (
             <Button
               size="sm"
@@ -441,6 +591,10 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
     confirmLabel,
     closeDialog,
     executeConfirmed,
+    creditAction,
+    openCreditGrant,
+    openCreditRevoke,
+    closeCreditAction,
   } = useUserActions(user, onRefresh);
   const isSelf = user.id === currentUserId;
 
@@ -457,6 +611,18 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
         confirmLabel={confirmLabel}
         cancelLabel={t('cancel')}
       />
+      {creditAction && (
+        <CreditActionDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) closeCreditAction();
+          }}
+          userId={user.id}
+          userName={formatUserIdentifier(user)}
+          mode={creditAction}
+          onDone={onRefresh}
+        />
+      )}
       <tr className="border-b hover:bg-muted/30 transition-colors">
         <td className="px-4 py-3">
           <div>
@@ -483,8 +649,31 @@ function UserRow({ user, onRefresh, currentUserId }: UserRowProps) {
             </Badge>
           )}
         </td>
+        <td className="px-4 py-3 text-right text-sm font-medium tabular-nums">
+          {user.creditBalance ?? 0}
+        </td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-1.5">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={openCreditGrant}
+              disabled={loading}
+              title="Grant credits"
+              className="size-8"
+            >
+              <Plus className="size-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={openCreditRevoke}
+              disabled={loading}
+              title="Revoke credits"
+              className="size-8"
+            >
+              <Minus className="size-3.5" />
+            </Button>
             {!isSelf && (
               <Button
                 size="sm"
@@ -544,8 +733,25 @@ function AdminTableContent() {
   }, [page, perPage, t]);
 
   useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+    let cancelled = false;
+    adminApi.listUsers(page, perPage).then(
+      (result) => {
+        if (!cancelled) {
+          setData(result);
+          setLoading(false);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setError(t('failedLoadUsers'));
+          setLoading(false);
+        }
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [page, perPage, t]);
 
   if (loading) return <AdminTableSkeleton />;
   if (error) return <div className="text-center py-8 text-red-600">{error}</div>;
@@ -578,6 +784,7 @@ function AdminTableContent() {
               <th className="px-4 py-3 text-left font-semibold">{t('colVerification')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colJoined')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colAdmin')}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t('colCredits')}</th>
               <th className="px-4 py-3 text-left font-semibold">{t('colActions')}</th>
             </tr>
           </thead>
@@ -629,6 +836,300 @@ function AdminTableContent() {
 }
 
 // ---------------------------------------------------------------------------
+// Pricing Management Section
+// ---------------------------------------------------------------------------
+interface ProductRow {
+  id: string;
+  kind: string;
+  title: string;
+  credit_cost: number;
+  free: boolean;
+}
+
+interface PackRow {
+  id: string;
+  name: string;
+  credits: number;
+  priceminor: number | null;
+  currency: string;
+  active: boolean;
+}
+
+function PricingSection() {
+  const t = useTranslations('adminCredits');
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [packs, setPacks] = useState<PackRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Local draft state for edits (tracks uncommitted changes)
+  const [draftProducts, setDraftProducts] = useState<Record<string, number>>({});
+  const [draftProductsFree, setDraftProductsFree] = useState<Record<string, boolean>>({});
+  const [draftPacks, setDraftPacks] = useState<
+    Record<string, { credits?: number; active?: boolean }>
+  >({});
+
+  const hasChanges =
+    Object.keys(draftProducts).length > 0 ||
+    Object.keys(draftProductsFree).length > 0 ||
+    Object.keys(draftPacks).length > 0;
+
+  function productLabel(row: ProductRow): string {
+    // Try translating by id, then by kind
+    const byId = t.has(`productName_${row.id}`)
+      ? t(`productName_${row.id}` as Parameters<typeof t>[0])
+      : null;
+    if (byId) return byId;
+    const byKind = t.has(`productName_${row.kind}`)
+      ? t(`productName_${row.kind}` as Parameters<typeof t>[0])
+      : null;
+    if (byKind) return byKind;
+    return row.title || row.kind;
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetch('/api/credits/pricing').then((r) => r.json()),
+      fetch('/api/credits/packs?includeInactive=true').then((r) => r.json()),
+      fetch('/api/admin/pricing/products').then((r) => (r.ok ? r.json() : null)),
+    ]).then(
+      ([pricingData, packsData, prodData]) => {
+        if (cancelled) return;
+        if (prodData?.products) {
+          setProducts(prodData.products as ProductRow[]);
+        } else {
+          const costs = (pricingData.costs ?? {}) as Record<string, number>;
+          setProducts(
+            Object.entries(costs).map(([kind, cost]) => ({
+              id: kind,
+              kind,
+              title: kind,
+              credit_cost: cost,
+              free: false,
+            })),
+          );
+        }
+        setPacks(packsData.packs ?? []);
+        setLoading(false);
+      },
+      () => {
+        if (!cancelled) {
+          toast.error(t('pricingFailed'));
+          setLoading(false);
+        }
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
+  const saveAll = async () => {
+    setSaving(true);
+    try {
+      const productUpdates = products
+        .filter((p) => draftProducts[p.id] != null || draftProductsFree[p.id] != null)
+        .map((p) =>
+          adminApi.updateProductPricing(p.id, {
+            ...(draftProducts[p.id] != null ? { creditCost: draftProducts[p.id] } : {}),
+            ...(draftProductsFree[p.id] != null ? { free: draftProductsFree[p.id] } : {}),
+          }),
+        );
+      const packUpdates = Object.entries(draftPacks).map(([id, updates]) =>
+        adminApi.updateCreditPack(id, updates),
+      );
+      await Promise.all([...productUpdates, ...packUpdates]);
+      toast.success(t('pricingSaved'));
+
+      // Apply drafts to local state
+      setProducts((prev) =>
+        prev.map((p) => ({
+          ...p,
+          ...(draftProducts[p.id] != null ? { credit_cost: draftProducts[p.id] } : {}),
+          ...(draftProductsFree[p.id] != null ? { free: draftProductsFree[p.id] } : {}),
+        })),
+      );
+      setPacks((prev) =>
+        prev.map((pk) => {
+          const d = draftPacks[pk.id];
+          if (!d) return pk;
+          return {
+            ...pk,
+            credits: d.credits ?? pk.credits,
+            active: d.active ?? pk.active,
+          };
+        }),
+      );
+      setDraftProducts({});
+      setDraftProductsFree({});
+      setDraftPacks({});
+    } catch {
+      toast.error(t('pricingFailed'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="p-6 flex flex-col gap-4">
+        <Skeleton className="h-6 w-48" />
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 rounded-lg" />
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-6 flex flex-col gap-6">
+      <h2 className="text-lg font-semibold flex items-center gap-2">
+        <Coins className="size-5" />
+        {t('pricingTitle')}
+      </h2>
+
+      {/* Product costs */}
+      <div className="flex flex-col gap-2">
+        <h3 className="text-sm font-semibold text-muted-foreground">{t('productPricing')}</h3>
+        {products.map((product) => (
+          <div
+            key={product.id}
+            className="flex items-center justify-between rounded-lg border px-4 py-3"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm">{productLabel(product)}</span>
+              <Badge
+                variant={(draftProductsFree[product.id] ?? product.free) ? 'default' : 'secondary'}
+                className="text-xs cursor-pointer"
+                onClick={() => {
+                  const currentFree = draftProductsFree[product.id] ?? product.free;
+                  const newFree = !currentFree;
+                  setDraftProductsFree((prev) => {
+                    if (newFree === product.free) {
+                      const next = { ...prev };
+                      delete next[product.id];
+                      return next;
+                    }
+                    return { ...prev, [product.id]: newFree };
+                  });
+                }}
+              >
+                {(draftProductsFree[product.id] ?? product.free)
+                  ? t('productFree')
+                  : t('productPaid')}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                value={draftProducts[product.id] ?? product.credit_cost}
+                className="w-16 rounded-md border border-input bg-background px-2 py-1 text-sm text-right disabled:opacity-40"
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val) && val > 0) {
+                    setDraftProducts((prev) => {
+                      if (val === product.credit_cost) {
+                        const next = { ...prev };
+                        delete next[product.id];
+                        return next;
+                      }
+                      return { ...prev, [product.id]: val };
+                    });
+                  }
+                }}
+                disabled={saving || (draftProductsFree[product.id] ?? product.free)}
+              />
+              <span className="text-xs text-muted-foreground">кр.</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Credit packs */}
+      <div className="flex flex-col gap-2">
+        <h3 className="text-sm font-semibold text-muted-foreground">{t('packPricing')}</h3>
+        {packs.map((pack) => (
+          <div
+            key={pack.id}
+            className="flex items-center justify-between rounded-lg border px-4 py-3"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">{pack.name}</span>
+              <Badge
+                variant={(draftPacks[pack.id]?.active ?? pack.active) ? 'default' : 'secondary'}
+                className="text-xs cursor-pointer"
+                onClick={() => {
+                  const currentActive = draftPacks[pack.id]?.active ?? pack.active;
+                  const newActive = !currentActive;
+                  setDraftPacks((prev) => {
+                    const existing = prev[pack.id] ?? {};
+                    const updated = { ...existing, active: newActive };
+                    // Remove from draft if it matches original
+                    if (
+                      newActive === pack.active &&
+                      (updated.credits == null || updated.credits === pack.credits)
+                    ) {
+                      const next = { ...prev };
+                      delete next[pack.id];
+                      return next;
+                    }
+                    return { ...prev, [pack.id]: updated };
+                  });
+                }}
+              >
+                {(draftPacks[pack.id]?.active ?? pack.active) ? t('active') : t('inactive')}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                value={draftPacks[pack.id]?.credits ?? pack.credits}
+                className="w-16 rounded-md border border-input bg-background px-2 py-1 text-sm text-right"
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val) && val > 0) {
+                    setDraftPacks((prev) => {
+                      const existing = prev[pack.id] ?? {};
+                      const updated = { ...existing, credits: val };
+                      // Remove from draft if it matches original
+                      if (
+                        val === pack.credits &&
+                        (updated.active == null || updated.active === pack.active)
+                      ) {
+                        const next = { ...prev };
+                        delete next[pack.id];
+                        return next;
+                      }
+                      return { ...prev, [pack.id]: updated };
+                    });
+                  }
+                }}
+                disabled={saving}
+              />
+              <span className="text-xs text-muted-foreground">кр.</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Batch save button */}
+      <Button
+        onClick={() => void saveAll()}
+        disabled={!hasChanges || saving}
+        className="ml-auto w-fit"
+      >
+        {saving ? t('savePricing') + '…' : t('savePricing')}
+      </Button>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 export default function AdminPage() {
@@ -655,6 +1156,8 @@ export default function AdminPage() {
           <AdminTableContent />
         </Suspense>
       </Card>
+
+      <PricingSection />
     </main>
   );
 }
