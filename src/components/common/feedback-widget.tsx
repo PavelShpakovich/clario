@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl';
 import { MessageSquarePlus, Send, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ApiClientError } from '@/services/api-client';
+import { feedbackApi } from '@/services/feedback-api';
 
 type FormState = 'idle' | 'submitting' | 'success';
 
@@ -42,23 +44,14 @@ export function FeedbackButton() {
     setError(null);
     setFormState('submitting');
     try {
-      const res = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
-      });
-      if (res.status === 429) {
-        setError(t('rateLimit'));
-        setFormState('idle');
-        return;
-      }
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error ?? t('errorFallback'));
-      }
+      await feedbackApi.submitFeedback(text);
       setFormState('success');
     } catch (err) {
-      setError((err as Error).message ?? t('errorFallback'));
+      if (err instanceof ApiClientError && err.status === 429) {
+        setError(t('rateLimit'));
+      } else {
+        setError((err as Error).message ?? t('errorFallback'));
+      }
       setFormState('idle');
     }
   }

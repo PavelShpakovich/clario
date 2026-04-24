@@ -1,4 +1,17 @@
+import { fetchJson } from '@/services/api-client';
+
 class AuthApi {
+  async register(
+    email: string,
+    password: string,
+  ): Promise<{ success: true; needsVerification: boolean }> {
+    return fetchJson<{ success: true; needsVerification: boolean }>('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
   async resendVerificationEmail(email: string): Promise<void> {
     await fetch('/api/auth/resend-verification', {
       method: 'POST',
@@ -21,6 +34,14 @@ class AuthApi {
       const data = (await response.json()) as { error?: string };
       throw new Error(data.error ?? 'Failed to confirm password reset');
     }
+  }
+
+  async requestPasswordReset(email: string): Promise<void> {
+    await fetchJson<{ success: true }>('/api/auth/password/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
   }
 }
 

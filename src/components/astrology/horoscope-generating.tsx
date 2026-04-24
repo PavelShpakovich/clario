@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStatusPoller } from '@/hooks/use-status-poller';
+import { forecastsApi } from '@/services/forecasts-api';
 
 interface HoroscopeGeneratingProps {
   forecastId: string;
@@ -48,9 +49,9 @@ export function HoroscopeGenerating({ forecastId }: HoroscopeGeneratingProps) {
     if (didFire.current) return;
     didFire.current = true;
 
-    fetch(`/api/forecasts/${forecastId}/generate`, { method: 'POST' })
-      .then((res) => {
-        if (!res.ok) throw new Error('generation failed');
+    forecastsApi
+      .startGeneration(forecastId)
+      .then(() => {
         router.refresh();
       })
       .catch(() => {
@@ -61,7 +62,7 @@ export function HoroscopeGenerating({ forecastId }: HoroscopeGeneratingProps) {
   const handleRetry = async () => {
     setRetrying(true);
     try {
-      await fetch(`/api/forecasts/${forecastId}/regenerate`, { method: 'POST' });
+      await forecastsApi.regenerateForecast(forecastId);
       // Hard reload to reset all client state (failed, didFire, poller)
       window.location.reload();
     } catch {

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { Heart, Plus, Trash2 } from 'lucide-react';
+import { compatibilityApi } from '@/services/compatibility-api';
 
 export interface CompatibilityReportRecord {
   id: string;
@@ -64,8 +65,7 @@ export function CompatibilityOverview({
     if (!deleteId) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/compatibility/${deleteId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Delete failed');
+      await compatibilityApi.deleteReport(deleteId);
       setReports((prev) => prev.filter((r) => r.id !== deleteId));
       toast.success(t('deleteSuccess'));
       router.refresh();

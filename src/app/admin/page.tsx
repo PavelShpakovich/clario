@@ -30,6 +30,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '@/components/skeletons';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
+import { useCredits } from '@/components/providers/credits-provider';
 import { adminApi, type AdminUser, type AdminAnalytics } from '@/services/admin-api';
 import {
   Dialog,
@@ -60,6 +61,8 @@ function CreditActionDialog({
 }) {
   const t = useTranslations('adminCredits');
   const tc = useTranslations('common');
+  const { data: session } = useSession();
+  const { syncCredits, refreshCredits } = useCredits();
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
@@ -69,13 +72,20 @@ function CreditActionDialog({
     if (!numAmount || numAmount <= 0) return;
     setLoading(true);
     try {
+      let result: { success: boolean; newBalance: number; transactionId: string };
       if (mode === 'grant') {
-        await adminApi.grantCredits(userId, numAmount, note || undefined);
+        result = await adminApi.grantCredits(userId, numAmount, note || undefined);
         toast.success(t('grantSuccess'));
       } else {
-        await adminApi.revokeCredits(userId, numAmount, note || undefined);
+        result = await adminApi.revokeCredits(userId, numAmount, note || undefined);
         toast.success(t('revokeSuccess'));
       }
+
+      if (session?.user?.id === userId) {
+        syncCredits({ newBalance: result.newBalance });
+        void refreshCredits();
+      }
+
       onDone();
       onOpenChange(false);
       setAmount('');
@@ -889,17 +899,13 @@ function PricingSection() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      fetch('/api/credits/pricing').then((r) => r.json()),
-      fetch('/api/credits/packs?includeInactive=true').then((r) => r.json()),
-      fetch('/api/admin/pricing/products').then((r) => (r.ok ? r.json() : null)),
-    ]).then(
-      ([pricingData, packsData, prodData]) => {
+    adminApi.getPricingDashboard().then(
+      ({ pricing, packs: packRows, products: productRows }) => {
         if (cancelled) return;
-        if (prodData?.products) {
-          setProducts(prodData.products as ProductRow[]);
+        if (productRows.length > 0) {
+          setProducts(productRows as ProductRow[]);
         } else {
-          const costs = (pricingData.costs ?? {}) as Record<string, number>;
+          const costs = pricing.costs as Record<string, number>;
           setProducts(
             Object.entries(costs).map(([kind, cost]) => ({
               id: kind,
@@ -910,7 +916,7 @@ function PricingSection() {
             })),
           );
         }
-        setPacks(packsData.packs ?? []);
+        setPacks(packRows as PackRow[]);
         setLoading(false);
       },
       () => {

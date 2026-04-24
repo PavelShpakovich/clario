@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStatusPoller } from '@/hooks/use-status-poller';
+import { readingsApi } from '@/services/readings-api';
 
 interface ReadingGeneratingProps {
   readingId: string;
@@ -39,9 +40,9 @@ export function ReadingGenerating({ readingId }: ReadingGeneratingProps) {
     if (didFire.current) return;
     didFire.current = true;
 
-    fetch(`/api/readings/${readingId}/generate`, { method: 'POST' })
-      .then((res) => {
-        if (!res.ok) throw new Error('generation failed');
+    readingsApi
+      .startGeneration(readingId)
+      .then(() => {
         router.refresh();
       })
       .catch(() => {
@@ -52,7 +53,7 @@ export function ReadingGenerating({ readingId }: ReadingGeneratingProps) {
   const handleRetry = async () => {
     setRetrying(true);
     try {
-      await fetch(`/api/readings/${readingId}/retry`, { method: 'POST' });
+      await readingsApi.resetForRetry(readingId);
       // Hard reload to reset all client state (failed, didFire, poller)
       window.location.reload();
     } catch {

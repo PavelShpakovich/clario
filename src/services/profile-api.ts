@@ -1,5 +1,6 @@
 type ProfileResponse = {
   display_name: string | null;
+  timezone?: string | null;
 };
 
 class ProfileApi {
@@ -17,10 +18,18 @@ class ProfileApi {
   }
 
   async updateDisplayName(displayName: string): Promise<ProfileResponse> {
+    return this.updateProfile({ displayName });
+  }
+
+  async updateProfile(updates: {
+    displayName?: string;
+    timezone?: string | null;
+    onboardingCompleted?: boolean;
+  }): Promise<ProfileResponse> {
     const response = await fetch('/api/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName }),
+      body: JSON.stringify(updates),
     });
 
     if (!response.ok) {

@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Loader2, Heart, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStatusPoller } from '@/hooks/use-status-poller';
+import { compatibilityApi } from '@/services/compatibility-api';
 
 interface CompatibilityGeneratingProps {
   reportId: string;
@@ -42,9 +43,9 @@ export function CompatibilityGenerating({ reportId }: CompatibilityGeneratingPro
     if (didFire.current) return;
     didFire.current = true;
 
-    fetch(`/api/compatibility/${reportId}/generate`, { method: 'POST' })
-      .then((res) => {
-        if (!res.ok) throw new Error('generation failed');
+    compatibilityApi
+      .startGeneration(reportId)
+      .then(() => {
         router.refresh();
       })
       .catch(() => {
@@ -55,7 +56,7 @@ export function CompatibilityGenerating({ reportId }: CompatibilityGeneratingPro
   const handleRetry = async () => {
     setRetrying(true);
     try {
-      await fetch(`/api/compatibility/${reportId}/retry`, { method: 'POST' });
+      await compatibilityApi.resetForRetry(reportId);
       // Hard reload to reset all client state (failed, didFire, poller)
       window.location.reload();
     } catch {

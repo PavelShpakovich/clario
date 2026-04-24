@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthShell } from '@/components/auth/auth-shell';
+import { authApi } from '@/services/auth-api';
 
 export function ForgotPasswordForm() {
   const t = useTranslations('auth');
@@ -26,17 +27,7 @@ export function ForgotPasswordForm() {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/auth/password/reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!response.ok) {
-        const data = (await response.json()) as { error?: string; message?: string };
-        throw new Error(data.error || data.message || t('error'));
-      }
-
+      await authApi.requestPasswordReset(email);
       setIsSent(true);
       toast.success(t('forgotPasswordSentTitle'));
     } catch (error) {

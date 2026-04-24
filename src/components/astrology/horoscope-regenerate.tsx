@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useCredits } from '@/components/providers/credits-provider';
 import { Button } from '@/components/ui/button';
 import { ConfirmSpendDialog } from '@/components/common/confirm-spend-dialog';
-import { refreshCreditBalance } from '@/components/layout/credit-balance';
+import { ApiClientError } from '@/services/api-client';
+import { forecastsApi } from '@/services/forecasts-api';
 
 interface HoroscopeRegenerateProps {
   forecastId: string;
@@ -17,49 +19,31 @@ export function HoroscopeRegenerate({ forecastId }: HoroscopeRegenerateProps) {
   const t = useTranslations('horoscope');
   const tCredits = useTranslations('credits');
   const router = useRouter();
+  const { getCost, isFreeProduct, syncCredits } = useCredits();
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [cost, setCost] = useState<number>(1);
-  const [isFree, setIsFree] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/credits/pricing')
-      .then(
-        (r) =>
-          r.json() as Promise<{
-            costs?: { forecast_report?: number };
-            freeProducts?: string[];
-          }>,
-      )
-      .then((data) => {
-        if (data.costs?.forecast_report) setCost(data.costs.forecast_report);
-        if (data.freeProducts?.includes('forecast_report')) setIsFree(true);
-      })
-      .catch(() => {
-        /* non-critical */
-      });
-  }, []);
+  const cost = getCost('forecast_report');
+  const isFree = isFreeProduct('forecast_report');
 
   async function handleRegenerate() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/forecasts/${forecastId}/regenerate`, { method: 'POST' });
-      if (res.status === 402) {
-        const data = (await res.json()) as { required?: number; balance?: number };
-        toast.error(
-          tCredits('insufficientDescription', {
-            required: data.required ?? cost,
-            balance: data.balance ?? 0,
-          }),
-        );
-        return;
-      }
-      if (!res.ok) throw new Error('regeneration failed');
-      refreshCreditBalance();
+      const data = await forecastsApi.regenerateForecast(forecastId);
+      syncCredits({ newBalance: data.newBalance });
       // Server will see null content → render HoroscopeGenerating
       router.refresh();
-    } catch {
-      toast.error(t('regenerateFailed'));
+    } catch (error) {
+      if (error instanceof ApiClientError && error.code === 'insufficient_credits') {
+        const details = (error.data ?? {}) as { required?: number; balance?: number };
+        toast.error(
+          tCredits('insufficientDescription', {
+            required: details.required ?? cost,
+            balance: details.balance ?? 0,
+          }),
+        );
+      } else {
+        toast.error(t('regenerateFailed'));
+      }
     } finally {
       setLoading(false);
     }

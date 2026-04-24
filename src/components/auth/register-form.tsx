@@ -7,6 +7,7 @@ import { Link } from '@/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { ApiClientError } from '@/services/api-client';
 import { authApi } from '@/services/auth-api';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { FormField } from '@/components/auth/form-field';
@@ -89,19 +90,16 @@ export function RegisterForm() {
     try {
       setIsSubmitting(true);
 
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 429) {
+      await authApi.register(email.trim(), password);
+      setNeedsVerification(true);
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        if (error.status === 429) {
           toast.error(t('tooManyRequests'));
           return;
         }
-        const data = (await response.json()) as { error?: string; message?: string };
-        const msg = (data.error || data.message || '').toLowerCase();
+
+        const msg = error.message.toLowerCase();
         if (msg.includes('already exists')) {
           toast.error(t('emailAlreadyExists'));
         } else if (msg.includes('password')) {
@@ -111,12 +109,9 @@ export function RegisterForm() {
         } else {
           toast.error(t('error'));
         }
-        return;
+      } else {
+        toast.error(t('error'));
       }
-
-      setNeedsVerification(true);
-    } catch {
-      toast.error(t('error'));
     } finally {
       setIsSubmitting(false);
     }

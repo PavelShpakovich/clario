@@ -30,6 +30,7 @@ import { DisplayNameForm } from '@/components/settings/display-name-form';
 import { TimezoneSelect } from '@/components/ui/timezone-select';
 import { ShieldCheck, User, Sparkles, Trash2 } from 'lucide-react';
 import { profileApi } from '@/services/profile-api';
+import { preferencesApi } from '@/services/preferences-api';
 
 export interface SettingsFormData {
   email: string;
@@ -89,27 +90,17 @@ export function SettingsForm({ data }: { data: SettingsFormData }) {
   ];
 
   async function saveProfile(updates: Record<string, unknown>) {
-    const res = await fetch('/api/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    if (!res.ok) throw new Error('Profile save failed');
+    await profileApi.updateProfile(updates);
   }
 
   async function savePreferences() {
-    const res = await fetch('/api/preferences', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        toneStyle,
-        allowSpiritualTone: spiritualTone,
-        contentFocusLove: focusLove,
-        contentFocusCareer: focusCareer,
-        contentFocusGrowth: focusGrowth,
-      }),
+    await preferencesApi.updatePreferences({
+      toneStyle,
+      allowSpiritualTone: spiritualTone,
+      contentFocusLove: focusLove,
+      contentFocusCareer: focusCareer,
+      contentFocusGrowth: focusGrowth,
     });
-    if (!res.ok) throw new Error('Preferences save failed');
   }
 
   function handleTimezoneChange(value: string) {

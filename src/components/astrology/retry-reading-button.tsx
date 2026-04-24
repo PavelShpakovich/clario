@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { readingsApi } from '@/services/readings-api';
 
 interface RetryReadingButtonProps {
   chartId: string;
@@ -22,17 +23,11 @@ export function RetryReadingButton({ chartId, readingType, readingId }: RetryRea
   const handleRetry = () => {
     startTransition(async () => {
       try {
-        const response = await fetch('/api/readings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chartId, readingType, replaceReadingId: readingId }),
+        const data = await readingsApi.createReading({
+          chartId,
+          readingType,
+          replaceReadingId: readingId,
         });
-
-        const data = (await response.json()) as { error?: string; reading?: { id: string } };
-
-        if (!response.ok || !data.reading) {
-          throw new Error(data.error ?? t('retryError'));
-        }
 
         setDone(true);
         toast.success(t('retrySuccess'));

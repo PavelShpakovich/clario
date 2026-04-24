@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { compatibilityApi } from '@/services/compatibility-api';
 
 interface RetryCompatibilityButtonProps {
   reportId: string;
@@ -17,9 +18,11 @@ export function RetryCompatibilityButton({ reportId }: RetryCompatibilityButtonP
 
   const handleRetry = () => {
     startTransition(async () => {
-      const res = await fetch(`/api/compatibility/${reportId}/retry`, { method: 'POST' });
-      if (res.ok) {
+      try {
+        await compatibilityApi.resetForRetry(reportId);
         router.refresh();
+      } catch {
+        // Leave the current error UI in place.
       }
     });
   };

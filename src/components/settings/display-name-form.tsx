@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Pencil, Check, X } from 'lucide-react';
 import { revalidateProfileData } from '@/actions/profile';
 import { broadcastDisplayName } from '@/hooks/use-display-name';
+import { profileApi } from '@/services/profile-api';
 
 interface DisplayNameFormProps {
   initialName: string;
@@ -29,12 +30,7 @@ export function DisplayNameForm({ initialName }: DisplayNameFormProps) {
 
     startTransition(async () => {
       try {
-        const res = await fetch('/api/profile', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ displayName: trimmed }),
-        });
-        if (!res.ok) throw new Error('Save failed');
+        await profileApi.updateDisplayName(trimmed);
         setSaved(trimmed);
         setValue(trimmed);
         setEditing(false);

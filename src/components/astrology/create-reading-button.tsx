@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useTransition, useRef, useEffect } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { useCredits } from '@/components/providers/credits-provider';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +15,8 @@ import {
 import { ConfirmSpendDialog } from '@/components/common/confirm-spend-dialog';
 import { READING_TYPES } from '@/lib/astrology/constants';
 import type { ReadingType } from '@/lib/astrology/types';
+import { ApiClientError } from '@/services/api-client';
+import { readingsApi } from '@/services/readings-api';
 
 interface CreateReadingButtonProps {
   chartId: string;
@@ -26,31 +29,14 @@ export function CreateReadingButton({ chartId, chartStatus, className }: CreateR
   const t = useTranslations('createReading');
   const tCredits = useTranslations('credits');
   const tDetail = useTranslations('chartDetail');
+  const { getCost, isFreeProduct, refreshCredits } = useCredits();
   const [isPending, startTransition] = useTransition();
   const [activeType, setActiveType] = useState<ReadingType | null>(null);
   const [pendingType, setPendingType] = useState<ReadingType | null>(null);
-  const [natalCost, setNatalCost] = useState<number>(1);
-  const [isFree, setIsFree] = useState(false);
   const isSubmittingRef = useRef(false);
   const chartNotReady = chartStatus !== undefined && chartStatus !== 'ready';
-
-  useEffect(() => {
-    fetch('/api/credits/pricing')
-      .then(
-        (r) =>
-          r.json() as Promise<{
-            costs?: { natal_report?: number };
-            freeProducts?: string[];
-          }>,
-      )
-      .then((data) => {
-        if (data.costs?.natal_report) setNatalCost(data.costs.natal_report);
-        if (data.freeProducts?.includes('natal_report')) setIsFree(true);
-      })
-      .catch(() => {
-        /* non-critical */
-      });
-  }, []);
+  const natalCost = getCost('natal_report');
+  const isFree = isFreeProduct('natal_report');
 
   const createReading = (readingType: ReadingType) => {
     if (isSubmittingRef.current) return;
@@ -58,24 +44,15 @@ export function CreateReadingButton({ chartId, chartStatus, className }: CreateR
     setActiveType(readingType);
     startTransition(async () => {
       try {
-        const response = await fetch('/api/readings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chartId, readingType }),
-        });
-
-        const data = (await response.json()) as { error?: string; reading?: { id: string } };
-
-        if (!response.ok || !data.reading) {
-          const msg =
-            data.error === 'insufficient_credits'
-              ? tCredits('insufficientTitle')
-              : data.error || t('error');
-          throw new Error(msg);
-        }
-
+        const data = await readingsApi.createReading({ chartId, readingType });
+        void refreshCredits();
         router.push(`/readings/${data.reading.id}`);
       } catch (error) {
+        if (error instanceof ApiClientError && error.code === 'insufficient_credits') {
+          toast.error(tCredits('insufficientTitle'));
+          return;
+        }
+
         toast.error(error instanceof Error ? error.message : t('error'));
       } finally {
         setActiveType(null);

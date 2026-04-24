@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useCredits } from '@/components/providers/credits-provider';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Send, Loader2, Square, Lock } from 'lucide-react';
 import { toast } from 'sonner';
-import { refreshCreditBalance } from '@/components/layout/credit-balance';
 import { ConfirmSpendDialog } from '@/components/common/confirm-spend-dialog';
+import { ApiClientError } from '@/services/api-client';
+import { chatApi } from '@/services/chat-api';
 
 export interface ChatMessageItem {
   id: string;
@@ -49,6 +51,7 @@ export function FollowUpChat({
 }: FollowUpChatProps) {
   const t = useTranslations('chat');
   const tCredits = useTranslations('credits');
+  const { getCost, isFreeProduct, syncCredits } = useCredits();
   const [messages, setMessages] = useState<ChatMessageItem[]>(initialMessages);
   const [used, setUsed] = useState(initialUsed);
   const [currentLimit, setCurrentLimit] = useState(initialLimit);
@@ -57,29 +60,11 @@ export function FollowUpChat({
   const [isStreaming, setIsStreaming] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [confirmUnlockOpen, setConfirmUnlockOpen] = useState(false);
-  const [unlockCost, setUnlockCost] = useState<number>(1);
-  const [isUnlockFree, setIsUnlockFree] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    fetch('/api/credits/pricing')
-      .then(
-        (r) =>
-          r.json() as Promise<{
-            costs?: { follow_up_pack?: number };
-            freeProducts?: string[];
-          }>,
-      )
-      .then((data) => {
-        if (data.costs?.follow_up_pack) setUnlockCost(data.costs.follow_up_pack);
-        if (data.freeProducts?.includes('follow_up_pack')) setIsUnlockFree(true);
-      })
-      .catch(() => {
-        /* non-critical */
-      });
-  }, []);
+  const unlockCost = getCost('follow_up_pack');
+  const isUnlockFree = isFreeProduct('follow_up_pack');
 
   const limitReached = used >= currentLimit;
   const remaining = Math.max(0, currentLimit - used);
@@ -152,31 +137,17 @@ export function FollowUpChat({
       abortRef.current = abort;
 
       try {
-        const res = await fetch(`/api/chat/${readingId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text }),
+        await chatApi.streamAssistantReply({
+          readingId,
+          message: text,
           signal: abort.signal,
+          onChunk: (accumulated) => {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === streamingId ? { ...m, content: accumulated } : m)),
+            );
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+          },
         });
-
-        if (!res.ok || !res.body) {
-          const data = (await res.json()) as { error?: string };
-          throw new Error(data.error ?? 'Error');
-        }
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let accumulated = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          accumulated += decoder.decode(value, { stream: true });
-          setMessages((prev) =>
-            prev.map((m) => (m.id === streamingId ? { ...m, content: accumulated } : m)),
-          );
-          bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }
 
         setMessages((prev) =>
           prev.map((m) => (m.id === streamingId ? { ...m, id: `final-${Date.now()}` } : m)),
@@ -212,35 +183,22 @@ export function FollowUpChat({
   async function handleUnlock() {
     setIsUnlocking(true);
     try {
-      const res = await fetch(`/api/chat/${readingId}/unlock`, { method: 'POST' });
-      const data = (await res.json()) as {
-        messagesLimit?: number;
-        addedMessages?: number;
-        error?: string;
-        required?: number;
-        balance?: number;
-        newBalance?: number;
-      };
-      if (!res.ok) {
-        if (data.error === 'insufficient_credits') {
-          toast.error(
-            tCredits('insufficientDescription', {
-              required: data.required ?? '?',
-              balance: data.balance ?? 0,
-            }),
-          );
-        } else {
-          toast.error(data.error ?? t('unlockFailed'));
-        }
-        return;
-      }
-      if (data.messagesLimit) {
-        setCurrentLimit(data.messagesLimit);
-      }
-      refreshCreditBalance();
+      const data = await chatApi.unlockFollowUp(readingId);
+      setCurrentLimit(data.messagesLimit);
+      syncCredits({ newBalance: data.newBalance });
       toast.success(t('unlockSuccess', { count: data.addedMessages ?? 5 }));
-    } catch {
-      toast.error(t('unlockFailed'));
+    } catch (error) {
+      if (error instanceof ApiClientError && error.code === 'insufficient_credits') {
+        const details = (error.data ?? {}) as { required?: number; balance?: number };
+        toast.error(
+          tCredits('insufficientDescription', {
+            required: details.required ?? unlockCost,
+            balance: details.balance ?? 0,
+          }),
+        );
+      } else {
+        toast.error(t('unlockFailed'));
+      }
     } finally {
       setIsUnlocking(false);
     }

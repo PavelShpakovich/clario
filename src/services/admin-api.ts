@@ -1,4 +1,6 @@
 import type { AdminAnalytics } from '@/app/api/admin/analytics/route';
+import { creditsApi, type CreditCosts, type CreditPack } from '@/services/credits-api';
+import { fetchJson } from '@/services/api-client';
 
 export type { AdminAnalytics };
 
@@ -39,6 +41,14 @@ interface DeleteUserResponse {
   userId: string;
 }
 
+export interface AdminPricingProduct {
+  id: string;
+  kind: string;
+  title: string;
+  credit_cost: number;
+  free: boolean;
+}
+
 class AdminApi {
   async listUsers(page: number = 1, perPage: number = 20): Promise<ListUsersResponse> {
     const res = await fetch(`/api/admin/users?page=${page}&perPage=${perPage}`);
@@ -52,6 +62,26 @@ class AdminApi {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Не удалось загрузить аналитику');
     return data as AdminAnalytics;
+  }
+
+  async getPricingDashboard(): Promise<{
+    pricing: { costs: CreditCosts; freeProducts: string[] };
+    packs: CreditPack[];
+    products: AdminPricingProduct[];
+  }> {
+    const [pricing, packs, products] = await Promise.all([
+      creditsApi.getPricing(true),
+      creditsApi.getPacks({ includeInactive: true, noCache: true }),
+      fetchJson<{ products: AdminPricingProduct[] }>('/api/admin/pricing/products', {
+        cache: 'no-store',
+      }),
+    ]);
+
+    return {
+      pricing,
+      packs: packs.packs,
+      products: products.products ?? [],
+    };
   }
 
   async toggleAdmin(userId: string, isAdmin: boolean): Promise<ToggleAdminResponse> {

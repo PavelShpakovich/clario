@@ -20,30 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { TimezoneSelect } from '@/components/ui/timezone-select';
 import { normalizeHouseSystem, type HouseSystem } from '@/lib/astrology/constants';
 import { chartsApi } from '@/services/charts-api';
-
-interface NominatimResult {
-  place_id: number;
-  display_name: string;
-  name: string;
-  address: {
-    city?: string;
-    town?: string;
-    village?: string;
-    county?: string;
-    country?: string;
-    country_code?: string;
-  };
-  lat: string;
-  lon: string;
-}
-
-interface CityOption {
-  city: string;
-  country: string;
-  lat: number;
-  lon: number;
-  displayName: string;
-}
+import { locationsApi, type CityOption } from '@/services/locations-api';
 
 export interface ChartFormDefaults {
   personName?: string;
@@ -79,47 +56,6 @@ interface ChartIntakeFormProps {
 }
 
 type ChartWizardStep = 0 | 1 | 2;
-
-async function searchCitiesNominatim(query: string): Promise<CityOption[]> {
-  if (query.length < 2) return [];
-
-  try {
-    const url = new URL('https://nominatim.openstreetmap.org/search');
-    url.searchParams.set('q', query);
-    url.searchParams.set('format', 'json');
-    url.searchParams.set('limit', '6');
-    url.searchParams.set('addressdetails', '1');
-    url.searchParams.set('featuretype', 'settlement');
-
-    const res = await fetch(url.toString(), {
-      headers: { 'Accept-Language': 'ru,en', 'User-Agent': 'Clario/1.0' },
-    });
-    if (!res.ok) return [];
-
-    const results = (await res.json()) as NominatimResult[];
-    return results.map((result) => ({
-      city: result.address.city ?? result.address.town ?? result.address.village ?? result.name,
-      country: result.address.country ?? '',
-      lat: parseFloat(result.lat),
-      lon: parseFloat(result.lon),
-      displayName: result.display_name,
-    }));
-  } catch {
-    return [];
-  }
-}
-
-async function lookupTimezone(lat: number, lon: number): Promise<string | null> {
-  try {
-    const res = await fetch(`/api/timezone?lat=${lat}&lon=${lon}`);
-    if (!res.ok) return null;
-
-    const data = (await res.json()) as { timezone?: string | null };
-    return data.timezone ?? null;
-  } catch {
-    return null;
-  }
-}
 
 /** Fallback timezone when geo-tz returns nothing (common for border-area coordinates). */
 const COUNTRY_TIMEZONE_FALLBACK: Record<string, string> = {
@@ -255,7 +191,7 @@ export function ChartIntakeForm({
 
       setCitySearching(true);
       debounceRef.current = setTimeout(async () => {
-        const results = await searchCitiesNominatim(value);
+        const results = await locationsApi.searchCities(value);
         setCitySuggestions(results);
         setShowSuggestions(results.length > 0);
         setCitySearching(false);
@@ -276,7 +212,7 @@ export function ChartIntakeForm({
     setShowSuggestions(false);
     setTzAutoDetecting(true);
 
-    const timezone = await lookupTimezone(entry.lat, entry.lon);
+    const timezone = await locationsApi.lookupTimezone(entry.lat, entry.lon);
     setTzAutoDetecting(false);
 
     const resolved = timezone ?? COUNTRY_TIMEZONE_FALLBACK[entry.country] ?? null;
@@ -347,27 +283,21 @@ export function ChartIntakeForm({
     startTransition(async () => {
       try {
         if (mode === 'edit' && chartId) {
-          const res = await fetch(`/api/charts/${chartId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              label: form.label,
-              personName: form.personName,
-              subjectType: form.subjectType,
-              birthDate: form.birthDate,
-              birthTime: birthTimeKnown ? normalizedBirthTime : null,
-              birthTimeKnown,
-              city: form.city,
-              country: form.country,
-              timezone: form.timezone || null,
-              latitude: form.latitude ? Number(form.latitude) : null,
-              longitude: form.longitude ? Number(form.longitude) : null,
-              houseSystem: form.houseSystem,
-              notes: form.notes || null,
-            }),
+          await chartsApi.updateChart(chartId, {
+            label: form.label,
+            personName: form.personName,
+            subjectType: form.subjectType as 'self' | 'partner' | 'child' | 'client' | 'other',
+            birthDate: form.birthDate,
+            birthTime: birthTimeKnown ? normalizedBirthTime : null,
+            birthTimeKnown,
+            city: form.city,
+            country: form.country,
+            timezone: form.timezone || null,
+            latitude: form.latitude ? Number(form.latitude) : null,
+            longitude: form.longitude ? Number(form.longitude) : null,
+            houseSystem: form.houseSystem as HouseSystem,
+            notes: form.notes || null,
           });
-          const data = (await res.json()) as { error?: string };
-          if (!res.ok) throw new Error(data.error ?? t('errorToastEdit'));
 
           toast.success(t('successToastEdit'));
           router.push(`/charts/${chartId}`);
@@ -606,7 +536,7 @@ export function ChartIntakeForm({
                             <li key={`${entry.displayName}-${index}`}>
                               <button
                                 type="button"
-                                className="flex min-h-[44px] w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent"
+                                className="flex min-h-11 w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent"
                                 onMouseDown={() => void selectCity(entry)}
                               >
                                 <span className="font-medium">{entry.city}</span>
@@ -693,10 +623,12 @@ export function ChartIntakeForm({
 
                     if (lat && lon) {
                       setTzAutoDetecting(true);
-                      void lookupTimezone(parseFloat(lat), parseFloat(lon)).then((timezone) => {
-                        setTzAutoDetecting(false);
-                        if (timezone) setForm((current) => ({ ...current, timezone }));
-                      });
+                      void locationsApi
+                        .lookupTimezone(parseFloat(lat), parseFloat(lon))
+                        .then((timezone) => {
+                          setTzAutoDetecting(false);
+                          if (timezone) setForm((current) => ({ ...current, timezone }));
+                        });
                     }
                   }}
                 />

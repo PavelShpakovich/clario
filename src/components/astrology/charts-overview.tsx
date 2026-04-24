@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { ZodiacIcon } from '@/components/ui/astrology-icons';
 import { CalendarDays, MapPin, Trash2 } from 'lucide-react';
-import type { ChartRecord } from '@/services/charts-api';
+import { chartsApi, type ChartRecord } from '@/services/charts-api';
 
 export interface BigThree {
   sun?: string;
@@ -75,8 +75,7 @@ export function ChartsOverview({
     if (!deleteId) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/charts/${deleteId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Delete failed');
+      await chartsApi.deleteChart(deleteId);
       setCharts((prev) => prev.filter((c) => c.id !== deleteId));
       toast.success(t('deleteChartSuccess'));
     } catch {

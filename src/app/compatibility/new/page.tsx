@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, Heart } from 'lucide-react';
+import { useCredits } from '@/components/providers/credits-provider';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -15,6 +16,9 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ConfirmSpendDialog } from '@/components/common/confirm-spend-dialog';
+import { ApiClientError } from '@/services/api-client';
+import { chartsApi } from '@/services/charts-api';
+import { compatibilityApi } from '@/services/compatibility-api';
 
 interface ChartOption {
   id: string;
@@ -27,6 +31,7 @@ export default function NewCompatibilityPage() {
   const tCredits = useTranslations('credits');
   const tNav = useTranslations('navigation');
   const router = useRouter();
+  const { getCost, isFreeProduct, refreshCredits } = useCredits();
   const searchParams = useSearchParams();
   const [charts, setCharts] = useState<ChartOption[]>([]);
   const [primaryId, setPrimaryId] = useState(searchParams.get('primaryChartId') ?? '');
@@ -35,30 +40,12 @@ export default function NewCompatibilityPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [compatCost, setCompatCost] = useState<number>(1);
-  const [isFree, setIsFree] = useState(false);
+  const compatCost = getCost('compatibility_report');
+  const isFree = isFreeProduct('compatibility_report');
 
   useEffect(() => {
-    fetch('/api/credits/pricing')
-      .then(
-        (r) =>
-          r.json() as Promise<{
-            costs?: { compatibility_report?: number };
-            freeProducts?: string[];
-          }>,
-      )
-      .then((data) => {
-        if (data.costs?.compatibility_report) setCompatCost(data.costs.compatibility_report);
-        if (data.freeProducts?.includes('compatibility_report')) setIsFree(true);
-      })
-      .catch(() => {
-        /* non-critical */
-      });
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/charts')
-      .then((r) => r.json() as Promise<{ charts: ChartOption[] }>)
+    chartsApi
+      .listCharts()
       .then(({ charts: data }) =>
         setCharts(
           (data ?? []).filter(
@@ -77,22 +64,18 @@ export default function NewCompatibilityPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch('/api/compatibility', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ primaryChartId: primaryId, secondaryChartId: secondaryId }),
+      const data = await compatibilityApi.createReport({
+        primaryChartId: primaryId,
+        secondaryChartId: secondaryId,
       });
-      const data = (await res.json()) as { report?: { id: string }; error?: string };
-      if (!res.ok || !data.report) {
-        const msg =
-          data.error === 'insufficient_credits'
-            ? tCredits('insufficientTitle')
-            : (data.error ?? t('createFailed'));
-        throw new Error(msg);
-      }
+      void refreshCredits();
       router.push(`/compatibility/${data.report.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('createFailed'));
+      if (err instanceof ApiClientError && err.code === 'insufficient_credits') {
+        setError(tCredits('insufficientTitle'));
+      } else {
+        setError(err instanceof Error ? err.message : t('createFailed'));
+      }
       setSubmitting(false);
     }
   }

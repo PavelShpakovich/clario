@@ -1,59 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Sparkles, History, Package, Zap } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-
-interface CreditPack {
-  id: string;
-  name: string;
-  credits: number;
-  priceminor: number | null;
-  currency: string;
-}
-
-interface CreditCosts {
-  natal_report: number;
-  compatibility_report: number;
-  forecast_report: number;
-  follow_up_pack: number;
-}
-
-interface Transaction {
-  id: string;
-  amount: number;
-  balance_after: number;
-  reason: string;
-  note: string | null;
-  created_at: string;
-}
+import { useCredits } from '@/components/providers/credits-provider';
 
 export default function StorePage() {
   const t = useTranslations('credits');
-  const [balance, setBalance] = useState<number>(0);
-  const [forecastAccessUntil, setForecastAccessUntil] = useState<string | null>(null);
-  const [packs, setPacks] = useState<CreditPack[]>([]);
-  const [costs, setCosts] = useState<CreditCosts | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { balance, forecastAccessUntil, packs, costs, transactions, loadStoreData, storeReady } =
+    useCredits();
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/credits/balance').then((r) => r.json()),
-      fetch('/api/credits/packs').then((r) => r.json()),
-      fetch('/api/credits/pricing').then((r) => r.json()),
-      fetch('/api/credits/history?pageSize=10').then((r) => r.json()),
-    ]).then(([balanceData, packsData, pricingData, historyData]) => {
-      setBalance(balanceData.balance ?? 0);
-      setForecastAccessUntil(balanceData.forecastAccessUntil ?? null);
-      setPacks(packsData.packs ?? []);
-      setCosts(pricingData.costs ?? null);
-      setTransactions(historyData.transactions ?? []);
-      setIsLoading(false);
-    });
-  }, []);
+    void loadStoreData(10);
+  }, [loadStoreData]);
 
   const reasonLabel = (reason: string) => {
     const key = `reason${reason
@@ -84,7 +45,7 @@ export default function StorePage() {
         <p className="text-muted-foreground mt-1">{t('storeDescription')}</p>
       </div>
 
-      {isLoading ? (
+      {!storeReady ? (
         <>
           {/* Balance card skeleton */}
           <Card className="border-primary/20 bg-primary/5">
@@ -152,7 +113,7 @@ export default function StorePage() {
               <div>
                 <p className="text-sm text-muted-foreground">{t('yourBalance')}</p>
                 <p className="text-3xl font-bold">
-                  {balance}{' '}
+                  {balance ?? 0}{' '}
                   <span className="text-lg font-normal text-muted-foreground">
                     {t('creditsUnit')}
                   </span>

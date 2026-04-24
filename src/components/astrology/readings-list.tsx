@@ -19,6 +19,7 @@ import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { Trash2, Sparkles, Search } from 'lucide-react';
 import { READING_TYPES } from '@/lib/astrology/constants';
 import type { Tables } from '@/lib/supabase/types';
+import { readingsApi } from '@/services/readings-api';
 
 type ReadingRow = Tables<'readings'>;
 
@@ -50,8 +51,7 @@ export function ReadingsList({ initialReadings }: ReadingsListProps) {
     if (!deleteId) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/readings/${deleteId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Delete failed');
+      await readingsApi.deleteReading(deleteId);
       setReadings((prev) => prev.filter((r) => r.id !== deleteId));
       toast.success(t('deleteReadingSuccess'));
     } catch {

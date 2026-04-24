@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Sparkles, Heart, Briefcase, TrendingUp, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { preferencesApi } from '@/services/preferences-api';
+import { profileApi } from '@/services/profile-api';
 
 type FocusOption = 'love' | 'career' | 'growth' | 'all';
 type ToneOption = 'balanced' | 'mystical' | 'therapeutic' | 'analytical';
@@ -31,16 +33,8 @@ export default function OnboardingPage() {
         contentFocusGrowth: focus === 'growth' || focus === 'all',
       };
       await Promise.all([
-        fetch('/api/preferences', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(prefsPayload),
-        }),
-        fetch('/api/profile', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ onboardingCompleted: true }),
-        }),
+        preferencesApi.updatePreferences(prefsPayload),
+        profileApi.updateProfile({ onboardingCompleted: true }),
       ]);
       router.push('/dashboard');
     } catch {
@@ -188,11 +182,7 @@ export default function OnboardingPage() {
         className="text-center text-xs text-muted-foreground hover:underline"
         onClick={() =>
           void (async () => {
-            await fetch('/api/profile', {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ onboardingCompleted: true }),
-            });
+            await profileApi.updateProfile({ onboardingCompleted: true });
             router.push('/dashboard');
           })()
         }
