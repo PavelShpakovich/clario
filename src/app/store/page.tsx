@@ -23,6 +23,7 @@ export default function StorePage() {
     loadStoreData,
     storeReady,
     isStoreLoading,
+    isFreeProduct,
   } = useCredits();
 
   useEffect(() => {
@@ -57,10 +58,26 @@ export default function StorePage() {
 
   const costItems = costs
     ? [
-        { label: t('natalReport'), cost: costs.natal_report },
-        { label: t('compatibilityReport'), cost: costs.compatibility_report },
-        { label: t('forecastPack'), cost: costs.forecast_report },
-        { label: t('chatPack'), cost: costs.follow_up_pack },
+        {
+          label: t('natalReport'),
+          cost: costs.natal_report,
+          isFree: isFreeProduct('natal_report'),
+        },
+        {
+          label: t('compatibilityReport'),
+          cost: costs.compatibility_report,
+          isFree: isFreeProduct('compatibility_report'),
+        },
+        {
+          label: t('forecastPack'),
+          cost: costs.forecast_report,
+          isFree: isFreeProduct('forecast_report'),
+        },
+        {
+          label: t('chatPack'),
+          cost: costs.follow_up_pack,
+          isFree: isFreeProduct('follow_up_pack'),
+        },
       ]
     : [];
 
@@ -207,9 +224,13 @@ export default function StorePage() {
                     className="flex items-center justify-between rounded-lg border px-4 py-3"
                   >
                     <span className="text-sm">{item.label}</span>
-                    <span className="font-semibold text-primary">
-                      {item.cost} {t('creditsUnit')}
-                    </span>
+                    {item.isFree ? (
+                      <span className="font-semibold text-primary">{t('freeLabel')}</span>
+                    ) : (
+                      <span className="font-semibold text-primary">
+                        {item.cost} {t('creditsUnit')}
+                      </span>
+                    )}
                   </div>
                 ))}
               </CardContent>

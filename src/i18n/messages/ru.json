@@ -990,6 +990,7 @@
     "creditCosts": "Стоимость услуг",
     "purchaseHistory": "История операций",
     "noTransactions": "Операций пока нет",
+    "freeLabel": "Бесплатно",
     "previousPage": "Назад",
     "nextPage": "Вперёд",
     "pageLabel": "Стр. {current} из {total}",
