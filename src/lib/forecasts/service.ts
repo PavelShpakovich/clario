@@ -241,7 +241,13 @@ function todayInTimezone(tz?: string | null): string {
 }
 
 export const dailyForecastSchema = z.object({
-  interpretation: z.string().min(100, 'Interpretation must be at least 100 characters'),
+  interpretation: z
+    .string()
+    .min(200, 'Interpretation must be at least 200 characters')
+    .refine(
+      (s) => s.includes('\n\n'),
+      'Interpretation must contain multiple paragraphs separated by blank lines',
+    ),
   keyTheme: z.string().min(5, 'Key theme must be at least 5 characters'),
   advice: z.string().min(20, 'Advice must be at least 20 characters'),
   moonPhase: z.string().optional(), // set deterministically after generation

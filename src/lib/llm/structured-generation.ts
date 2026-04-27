@@ -41,10 +41,25 @@ export async function generateStructuredOutputWithUsage<T>(
     request.maxTokens,
     request.temperature,
   );
-  return {
-    content: parseStructuredJson(result.text, request.schema),
-    usageTokens: result.usageTokens,
-  };
+  try {
+    return {
+      content: parseStructuredJson(result.text, request.schema),
+      usageTokens: result.usageTokens,
+    };
+  } catch {
+    // Retry once on validation failure — LLM occasionally produces
+    // output that doesn't meet structural requirements (e.g. single paragraph).
+    const retry = await generateStructuredText(
+      request.systemPrompt,
+      request.userPrompt,
+      request.maxTokens,
+      request.temperature,
+    );
+    return {
+      content: parseStructuredJson(retry.text, request.schema),
+      usageTokens: retry.usageTokens,
+    };
+  }
 }
 
 async function generateStructuredText(
