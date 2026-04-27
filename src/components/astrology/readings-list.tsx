@@ -128,7 +128,7 @@ export function ReadingsList({ initialReadings }: ReadingsListProps) {
                       {getStatusLabel(reading.status)}
                     </Badge>
                   ) : null}
-                  <span>{new Date(reading.created_at).toLocaleDateString()}</span>
+                  <span>{new Date(reading.created_at).toLocaleDateString('ru')}</span>
                 </div>
                 <Button
                   variant="ghost"

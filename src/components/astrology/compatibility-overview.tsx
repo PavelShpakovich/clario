@@ -7,10 +7,18 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
-import { Heart, Plus, Trash2 } from 'lucide-react';
+import { Heart, Plus, Trash2, Users, Briefcase, Home, Link2 } from 'lucide-react';
 import { compatibilityApi } from '@/services/compatibility-api';
+import type { CompatibilityType } from '@/lib/compatibility/types';
+
+const TYPE_ICONS: Record<string, typeof Heart> = {
+  romantic: Heart,
+  friendship: Users,
+  business: Briefcase,
+  family: Home,
+};
 
 export interface CompatibilityReportRecord {
   id: string;
@@ -19,6 +27,7 @@ export interface CompatibilityReportRecord {
   created_at: string;
   primary_chart_id: string;
   secondary_chart_id: string;
+  compatibility_type?: CompatibilityType;
 }
 
 export interface ChartStub {
@@ -99,7 +108,7 @@ export function CompatibilityOverview({
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Heart className="size-5 text-muted-foreground" />
+              <Link2 className="size-5 text-muted-foreground" />
               <CardTitle>{t('emptyTitle')}</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">{t('emptyDescription')}</p>
@@ -119,44 +128,40 @@ export function CompatibilityOverview({
             const primary = chartMap[report.primary_chart_id];
             const secondary = chartMap[report.secondary_chart_id];
             const title = `${primary?.person_name ?? '?'} и ${secondary?.person_name ?? '?'}`;
+            const reportType =
+              (report as CompatibilityReportRecord).compatibility_type ?? 'romantic';
+            const TypeIcon = TYPE_ICONS[reportType] ?? Link2;
             return (
-              <Card
-                key={report.id}
-                className="group relative transition-colors hover:border-primary/50"
-              >
+              <Card key={report.id} className="relative transition-colors hover:border-primary/50">
                 <Link href={`/compatibility/${report.id}`} className="absolute inset-0 z-0" />
                 <CardHeader className="pb-2">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Heart className="size-3.5 text-primary" />
-                    {t('synastryLabel')}
-                  </div>
+                  <CardDescription className="flex items-center gap-1.5">
+                    <TypeIcon className="size-3.5 text-primary" />
+                    {t(`type_${reportType}`)}
+                  </CardDescription>
                   <CardTitle className="text-base">{title}</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col gap-2 text-sm">
+                  {report.summary ? (
+                    <p className="line-clamp-2 text-muted-foreground">{report.summary}</p>
+                  ) : null}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <StatusBadge status={report.status} />
                       <span>{new Date(report.created_at).toLocaleDateString('ru')}</span>
                     </div>
-                    <div className="relative z-10">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-10 text-muted-foreground hover:text-destructive"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setDeleteId(report.id);
-                        }}
-                      >
-                        <Trash2 />
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative z-10 size-10 text-muted-foreground hover:text-destructive"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setDeleteId(report.id);
+                      }}
+                    >
+                      <Trash2 />
+                    </Button>
                   </div>
-                  {report.summary ? (
-                    <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                      {report.summary}
-                    </p>
-                  ) : null}
                 </CardContent>
               </Card>
             );

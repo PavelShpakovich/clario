@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Sparkles,
   Star,
+  Link2,
 } from 'lucide-react';
 import { ZodiacIcon } from '@/components/astrology/zodiac-icon';
 
@@ -264,7 +265,7 @@ export default async function DashboardPage() {
             { href: '/readings', icon: BookOpen, value: totalReadings, label: t('statsReadings') },
             {
               href: '/compatibility',
-              icon: Sparkles,
+              icon: Link2,
               value: totalCompatibility ?? 0,
               label: t('statsCompatibility'),
             },

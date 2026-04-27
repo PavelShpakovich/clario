@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { requireAuth } from '@/lib/api/auth';
 import { ValidationError, InsufficientCreditsError } from '@/lib/errors';
-import { createPendingCompatibility } from '@/lib/compatibility/service';
+import { createPendingCompatibility, COMPATIBILITY_TYPES } from '@/lib/compatibility/service';
 import { chargeForProduct } from '@/lib/credits/service';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
@@ -12,6 +12,7 @@ const db = supabaseAdmin;
 const createSchema = z.object({
   primaryChartId: z.string().uuid(),
   secondaryChartId: z.string().uuid(),
+  compatibilityType: z.enum(COMPATIBILITY_TYPES).default('romantic'),
 });
 
 export const GET = withApiHandler(async () => {
@@ -36,7 +37,7 @@ export const POST = withApiHandler(async (req) => {
     throw new ValidationError({ message: parsed.error.issues.map((i) => i.message).join(', ') });
   }
 
-  const { primaryChartId, secondaryChartId } = parsed.data;
+  const { primaryChartId, secondaryChartId, compatibilityType } = parsed.data;
   if (primaryChartId === secondaryChartId) {
     throw new ValidationError({ message: 'Primary and secondary charts must be different' });
   }
@@ -58,7 +59,12 @@ export const POST = withApiHandler(async (req) => {
     throw err;
   }
 
-  const report = await createPendingCompatibility(user.id, primaryChartId, secondaryChartId);
+  const report = await createPendingCompatibility(
+    user.id,
+    primaryChartId,
+    secondaryChartId,
+    compatibilityType,
+  );
 
   return NextResponse.json({ report }, { status: 201 });
 });

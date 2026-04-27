@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Pencil,
-  Heart,
+  Link2,
   ChevronLeft,
   Sun,
   Moon,
@@ -435,7 +435,7 @@ export default async function ChartDetailPage({
                   className="h-11 w-full justify-center rounded-xl border-border/70 bg-background/90 px-4"
                 >
                   <Link href={`/compatibility/new?primaryChartId=${chart.id}`}>
-                    <Heart className="size-4" />
+                    <Link2 className="size-4" />
                     {t('compareWithChart')}
                   </Link>
                 </Button>

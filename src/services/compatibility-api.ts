@@ -1,4 +1,5 @@
 import { fetchJson } from '@/services/api-client';
+import type { CompatibilityType } from '@/lib/compatibility/types';
 
 export interface CompatibilityReportSummary {
   id: string;
@@ -8,6 +9,7 @@ class CompatibilityApi {
   async createReport(payload: {
     primaryChartId: string;
     secondaryChartId: string;
+    compatibilityType?: CompatibilityType;
   }): Promise<{ report: CompatibilityReportSummary }> {
     return fetchJson<{ report: CompatibilityReportSummary }>('/api/compatibility', {
       method: 'POST',

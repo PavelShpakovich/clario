@@ -7,6 +7,11 @@ import { auth } from '@/auth';
 export const metadata: Metadata = { robots: { index: false } };
 export const dynamic = 'force-dynamic';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import {
+  computeHarmonyScore,
+  type CompatibilityType,
+  type HarmonyPositionRow,
+} from '@/lib/compatibility/service';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,89 +24,7 @@ function isUUID(v: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 }
 
-// ─── Cross-aspect computation ─────────────────────────────────────────────────
-
-interface PositionRow {
-  body_key: string;
-  degree_decimal: number;
-}
-
-// Orbs aligned with SYNASTRY_ASPECT_DEFS in compatibility/service.ts.
-// Weights follow standard Western synastry practice:
-//   conjunction is the strongest aspect (Ptolemy, Lilly, Al-Biruni),
-//   trine is the most harmonious, sextile is mildly positive,
-//   square produces friction, opposition creates tension.
-const ASPECT_DEFS = [
-  { key: 'conjunction', angle: 0, orb: 8, weight: 0.85 },
-  { key: 'sextile', angle: 60, orb: 4, weight: 0.6 },
-  { key: 'square', angle: 90, orb: 7, weight: -0.5 },
-  { key: 'trine', angle: 120, orb: 7, weight: 1 },
-  { key: 'opposition', angle: 180, orb: 8, weight: -0.35 },
-] as const;
-
-// Weights reflect astrological significance in synastry.
-// Keys use DB body_key values (e.g. 'ascendant', not 'asc').
-const PLANET_WEIGHT: Record<string, number> = {
-  sun: 3,
-  moon: 3,
-  ascendant: 2.5,
-  venus: 2.5,
-  mars: 2.5,
-  mercury: 2,
-  jupiter: 1.5,
-  saturn: 1.5,
-  uranus: 1,
-  neptune: 1,
-  pluto: 1.2,
-  midheaven: 1,
-};
-
-const KEY_PLANETS = new Set([
-  'sun',
-  'moon',
-  'mercury',
-  'venus',
-  'mars',
-  'jupiter',
-  'saturn',
-  'uranus',
-  'neptune',
-  'pluto',
-  'ascendant',
-  'midheaven',
-]);
-
-function computeHarmonyScore(primary: PositionRow[], secondary: PositionRow[]): number {
-  if (primary.length === 0 || secondary.length === 0) return 50;
-
-  let totalScore = 0;
-  let totalWeight = 0;
-
-  for (const pA of primary) {
-    if (!KEY_PLANETS.has(pA.body_key)) continue;
-    for (const pB of secondary) {
-      if (!KEY_PLANETS.has(pB.body_key)) continue;
-      const diff = Math.abs(pA.degree_decimal - pB.degree_decimal);
-      const angular = Math.min(diff, 360 - diff);
-      for (const def of ASPECT_DEFS) {
-        const orbDistance = Math.abs(angular - def.angle);
-        if (orbDistance <= def.orb) {
-          // Tighter aspects are stronger: linear falloff from 1.0 (exact) to 0.3 (at max orb)
-          const tightness = 1 - (orbDistance / def.orb) * 0.7;
-          const pairWeight = (PLANET_WEIGHT[pA.body_key] ?? 1) * (PLANET_WEIGHT[pB.body_key] ?? 1);
-          totalScore += def.weight * pairWeight * tightness;
-          totalWeight += pairWeight * tightness;
-          break; // one aspect per planet pair
-        }
-      }
-    }
-  }
-
-  if (totalWeight === 0) return 50;
-  // Normalise ratio symmetrically so the 0–100 range is centered at 50
-  const ratio = totalScore / totalWeight;
-  return Math.round(Math.max(5, Math.min(98, 50 + ratio * 48)));
-}
+// ─── Harmony score display helpers ────────────────────────────────────────────
 
 function getHarmonyColors(score: number) {
   if (score >= 80) return { accent: '#0f9f76', softAccent: 'rgba(16, 185, 129, 0.14)' };
@@ -113,16 +36,24 @@ function getHarmonyColors(score: number) {
 
 type HarmonyT = Awaited<ReturnType<typeof getTranslations<'compatibility'>>>;
 
-function getHarmonyText(score: number, t: HarmonyT): { label: string; description: string } {
-  if (score >= 80)
-    return { label: t('harmonyHigh.label'), description: t('harmonyHigh.description') };
-  if (score >= 65)
-    return { label: t('harmonyGood.label'), description: t('harmonyGood.description') };
-  if (score >= 45)
-    return { label: t('harmonyModerate.label'), description: t('harmonyModerate.description') };
-  if (score >= 25)
-    return { label: t('harmonyNeutral.label'), description: t('harmonyNeutral.description') };
-  return { label: t('harmonyDifficult.label'), description: t('harmonyDifficult.description') };
+function getHarmonyText(
+  score: number,
+  t: HarmonyT,
+  compatibilityType: CompatibilityType = 'romantic',
+): { label: string; description: string } {
+  const level =
+    score >= 80
+      ? 'High'
+      : score >= 65
+        ? 'Good'
+        : score >= 45
+          ? 'Moderate'
+          : score >= 25
+            ? 'Neutral'
+            : 'Difficult';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const key = `harmony${level}_${compatibilityType}` as any;
+  return { label: t(`${key}.label`), description: t(`${key}.description`) };
 }
 
 // ─── Speedometer SVG ─────────────────────────────────────────────────────────
@@ -332,6 +263,8 @@ export default async function CompatibilityReportPage({
 
   const t = await getTranslations('compatibility');
 
+  const compatibilityType =
+    ((report as Record<string, unknown>).compatibility_type as CompatibilityType) ?? 'romantic';
   const content = (report.rendered_content_json ?? {}) as ContentJson;
   const title =
     content.title ??
@@ -365,29 +298,49 @@ export default async function CompatibilityReportPage({
             .from('chart_positions')
             .select('body_key, degree_decimal')
             .eq('chart_snapshot_id', primarySnapRes.data.id)
-        : { data: [] as PositionRow[] },
+        : { data: [] as HarmonyPositionRow[] },
       secondarySnapRes.data?.id
         ? db
             .from('chart_positions')
             .select('body_key, degree_decimal')
             .eq('chart_snapshot_id', secondarySnapRes.data.id)
-        : { data: [] as PositionRow[] },
+        : { data: [] as HarmonyPositionRow[] },
     ]);
     harmonyScore = computeHarmonyScore(
-      (primRes.data ?? []) as PositionRow[],
-      (secRes.data ?? []) as PositionRow[],
+      (primRes.data ?? []) as HarmonyPositionRow[],
+      (secRes.data ?? []) as HarmonyPositionRow[],
+      compatibilityType,
     );
   }
   const harmonyColors = getHarmonyColors(harmonyScore);
-  const harmonyText = getHarmonyText(harmonyScore, t);
+  const harmonyText = getHarmonyText(harmonyScore, t, compatibilityType);
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-col gap-2">
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm" className="-ml-2">
+            <Link href="/compatibility">{t('backToAll')}</Link>
+          </Button>
+          {primaryChart || secondaryChart ? (
+            <div className="ml-auto flex items-center gap-2">
+              {primaryChart ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/charts/${primaryChart.id}`}>{primaryChart.label}</Link>
+                </Button>
+              ) : null}
+              {secondaryChart ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/charts/${secondaryChart.id}`}>{secondaryChart.label}</Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-1">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            {t('sectionLabel')}
+            {t(`type_${compatibilityType}`)}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
           <div className="flex items-center gap-2">
@@ -408,21 +361,6 @@ export default async function CompatibilityReportPage({
               </Badge>
             ) : null}
           </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/compatibility">{t('backToAll')}</Link>
-          </Button>
-          {primaryChart ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/charts/${primaryChart.id}`}>{primaryChart.label}</Link>
-            </Button>
-          ) : null}
-          {secondaryChart ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/charts/${secondaryChart.id}`}>{secondaryChart.label}</Link>
-            </Button>
-          ) : null}
         </div>
       </section>
 
@@ -541,7 +479,7 @@ export default async function CompatibilityReportPage({
                     {t('infoInterpretTitle')}
                   </p>
                   <p className="mt-2 text-sm leading-6 text-foreground/90">
-                    {t('infoInterpretBody')}
+                    {t(`infoInterpretBody_${compatibilityType}` as any)}
                   </p>
                 </div>
               </div>

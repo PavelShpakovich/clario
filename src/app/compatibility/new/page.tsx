@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, Heart } from 'lucide-react';
+import { ArrowLeft, Heart, Users, Briefcase, Home, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useCredits } from '@/components/providers/credits-provider';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +20,14 @@ import { ConfirmSpendDialog } from '@/components/common/confirm-spend-dialog';
 import { ApiClientError } from '@/services/api-client';
 import { chartsApi } from '@/services/charts-api';
 import { compatibilityApi } from '@/services/compatibility-api';
+import { COMPATIBILITY_TYPES, type CompatibilityType } from '@/lib/compatibility/types';
+
+const TYPE_ICONS: Record<CompatibilityType, typeof Heart> = {
+  romantic: Heart,
+  friendship: Users,
+  business: Briefcase,
+  family: Home,
+};
 
 interface ChartOption {
   id: string;
@@ -36,12 +45,15 @@ export default function NewCompatibilityPage() {
   const [charts, setCharts] = useState<ChartOption[]>([]);
   const [primaryId, setPrimaryId] = useState(searchParams.get('primaryChartId') ?? '');
   const [secondaryId, setSecondaryId] = useState('');
+  const [compatibilityType, setCompatibilityType] = useState<CompatibilityType>('romantic');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const compatCost = getCost('compatibility_report');
   const isFree = isFreeProduct('compatibility_report');
+
+  const TypeIcon = TYPE_ICONS[compatibilityType];
 
   useEffect(() => {
     chartsApi
@@ -67,6 +79,7 @@ export default function NewCompatibilityPage() {
       const data = await compatibilityApi.createReport({
         primaryChartId: primaryId,
         secondaryChartId: secondaryId,
+        compatibilityType,
       });
       void refreshCredits();
       router.push(`/compatibility/${data.report.id}`);
@@ -104,7 +117,7 @@ export default function NewCompatibilityPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Heart className="size-5 text-primary" />
+            <TypeIcon className="size-5 text-primary" />
             <CardTitle>{t('newReport')}</CardTitle>
           </div>
           <CardDescription>{t('newReportDesc')}</CardDescription>
@@ -121,6 +134,39 @@ export default function NewCompatibilityPage() {
             </div>
           ) : (
             <>
+              {/* Compatibility type selector */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">{t('typeLabel')}</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {COMPATIBILITY_TYPES.map((type) => {
+                    const Icon = TYPE_ICONS[type];
+                    const isSelected = compatibilityType === type;
+                    return (
+                      <Button
+                        key={type}
+                        type="button"
+                        variant="outline"
+                        onClick={() => setCompatibilityType(type)}
+                        className={cn(
+                          'h-auto justify-start gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-normal',
+                          isSelected
+                            ? 'border-primary bg-primary/5 font-medium text-primary hover:bg-primary/10 hover:text-primary'
+                            : 'text-muted-foreground hover:border-primary/40',
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            'size-4 shrink-0',
+                            isSelected ? 'text-primary' : 'text-muted-foreground',
+                          )}
+                        />
+                        <span>{t(`type_${type}`)}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">{t('primaryChart')}</label>
                 <Select value={primaryId} onValueChange={setPrimaryId}>
@@ -135,10 +181,6 @@ export default function NewCompatibilityPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="flex items-center justify-center">
-                <Heart className="size-5 text-muted-foreground" />
               </div>
 
               <div className="flex flex-col gap-2">
@@ -172,8 +214,9 @@ export default function NewCompatibilityPage() {
                   }
                 }}
                 disabled={!primaryId || !secondaryId || primaryId === secondaryId || submitting}
-                className="w-full"
+                className="w-full gap-2"
               >
+                {!submitting && <Sparkles className="size-4" />}
                 {submitting ? t('creatingReport') : t('createReport')}
               </Button>
             </>

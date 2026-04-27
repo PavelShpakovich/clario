@@ -222,8 +222,20 @@ export function RegisterForm() {
             required
           />
         </FormField>
-        <div className="space-y-1">
-          <div className="flex items-start gap-3 pt-1">
+        <div
+          className={cn(
+            'rounded-xl border px-4 py-3 transition-colors',
+            consentChecked
+              ? 'border-primary/40 bg-primary/5'
+              : consentError
+                ? 'border-destructive/50 bg-destructive/5'
+                : 'border-border bg-muted/30',
+          )}
+        >
+          <label
+            htmlFor="register-consent"
+            className="flex items-start gap-3 cursor-pointer select-none"
+          >
             <Checkbox
               id="register-consent"
               checked={consentChecked}
@@ -234,28 +246,34 @@ export function RegisterForm() {
               }}
               disabled={isSubmitting}
               aria-describedby="register-consent-error"
-              className={cn(consentError && 'border-destructive/50')}
+              className={cn(
+                'mt-0.5 h-5 w-5 shrink-0 rounded-md',
+                consentError && !consentChecked && 'border-destructive/70',
+              )}
             />
-            <label
-              htmlFor="register-consent"
-              className="text-sm text-muted-foreground leading-snug cursor-pointer"
-            >
+            <span className="text-sm text-muted-foreground leading-snug">
               {t.rich('consentLabel', {
                 privacy: (chunks) => (
-                  <Link href="/privacy" className="text-primary hover:underline">
+                  <Link
+                    href="/privacy"
+                    className="text-primary underline-offset-2 hover:underline font-medium"
+                  >
                     {chunks}
                   </Link>
                 ),
                 terms: (chunks) => (
-                  <Link href="/terms" className="text-primary hover:underline">
+                  <Link
+                    href="/terms"
+                    className="text-primary underline-offset-2 hover:underline font-medium"
+                  >
                     {chunks}
                   </Link>
                 ),
               })}
-            </label>
-          </div>
+            </span>
+          </label>
           {consentError && (
-            <p id="register-consent-error" className="text-xs text-destructive pl-7">
+            <p id="register-consent-error" className="text-xs text-destructive mt-2 pl-8">
               {consentError}
             </p>
           )}

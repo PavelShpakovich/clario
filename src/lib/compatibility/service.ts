@@ -13,6 +13,258 @@ import type { Json, TablesInsert } from '@/lib/supabase/types';
 
 const db = supabaseAdmin;
 
+// ─── Compatibility types ──────────────────────────────────────────────────────
+
+export { COMPATIBILITY_TYPES, type CompatibilityType } from './types';
+import type { CompatibilityType } from './types';
+
+interface CompatibilityTypeConfig {
+  promptVersion: string;
+  titleSuffix: string;
+  role: string;
+  sections: string;
+  mockSections: Array<{ key: string; title: string; content: string }>;
+  planetWeights: Record<string, number>;
+}
+
+const COMPATIBILITY_CONFIGS: Record<CompatibilityType, CompatibilityTypeConfig> = {
+  romantic: {
+    promptVersion: 'compatibility-romantic-v1',
+    titleSuffix: 'Синастрия',
+    role: 'Ты — эксперт-астролог по синастрии и отношениям в профессиональном астрологическом сервисе.\nТы анализируешь, как две натальные карты взаимодействуют между собой, чтобы раскрыть сильные стороны, вызовы и темы роста романтических отношений.',
+    sections: `(1) эмоциональный резонанс и глубина связи (взаимодействия Луна-Луна, Луна-Венера, Луна-ASC), (2) коммуникация и ментальная совместимость (аспекты Меркурий-Меркурий, Меркурий-ASC), (3) любовь, притяжение и ценности (кросс-аспекты Венера-Марс, Венера-Венера, Венера-ASC), (4) вызовы и зоны роста (напряжённые кросс-аспекты: квадратуры, оппозиции между ключевыми планетами), (5) долгосрочный потенциал и предназначение отношений (кросс-аспекты Сатурна, Юпитера, темы Северного узла)`,
+    mockSections: [
+      {
+        key: 'emotional',
+        title: 'Эмоциональный резонанс',
+        content: 'Анализ эмоциональной связи и глубины контакта.',
+      },
+      {
+        key: 'communication',
+        title: 'Общение и мышление',
+        content: 'Как партнёры понимают друг друга.',
+      },
+      { key: 'attraction', title: 'Влечение и ценности', content: 'Венера и Марс в синастрии.' },
+      {
+        key: 'challenges',
+        title: 'Вызовы и рост',
+        content: 'Напряжённые аспекты и как с ними работать.',
+      },
+      { key: 'potential', title: 'Долгосрочный потенциал', content: 'Сатурн и цель отношений.' },
+    ],
+    planetWeights: {
+      sun: 3,
+      moon: 3,
+      ascendant: 2.5,
+      venus: 2.5,
+      mars: 2.5,
+      mercury: 2,
+      jupiter: 1.5,
+      saturn: 1.5,
+      uranus: 1,
+      neptune: 1,
+      pluto: 1.2,
+      midheaven: 1,
+    },
+  },
+  friendship: {
+    promptVersion: 'compatibility-friendship-v1',
+    titleSuffix: 'Дружеская совместимость',
+    role: 'Ты — эксперт-астролог по синастрии в профессиональном астрологическом сервисе.\nТы анализируешь, как две натальные карты взаимодействуют между собой, чтобы раскрыть сильные стороны, вызовы и темы роста дружеских отношений.',
+    sections: `(1) эмоциональный комфорт и доверие — насколько легко эти два человека чувствуют себя в безопасности и расслабленно друг с другом (взаимодействия Луна-Луна, Луна-Венера, Луна-ASC), (2) стиль общения, общий юмор и интеллектуальная синергия (аспекты Меркурий-Меркурий, Меркурий-Юпитер), (3) общие интересы, ценности и что притягивает этих друзей друг к другу (кросс-аспекты Венера-Венера, Юпитер-Юпитер, Солнце-Солнце), (4) потенциальные точки трения и как справляться с разногласиями (напряжённые кросс-аспекты: квадратуры, оппозиции), (5) взаимный рост, вдохновение и что эта дружба даёт каждому (темы Юпитера, Урана, Северного узла)`,
+    mockSections: [
+      {
+        key: 'trust',
+        title: 'Эмоциональный комфорт и доверие',
+        content: 'Как легко вы чувствуете себя друг с другом.',
+      },
+      {
+        key: 'communication',
+        title: 'Общение и юмор',
+        content: 'Стиль общения и интеллектуальная синергия.',
+      },
+      { key: 'values', title: 'Общие интересы и ценности', content: 'Что объединяет эту дружбу.' },
+      {
+        key: 'friction',
+        title: 'Точки трения',
+        content: 'Потенциальные разногласия и как их решать.',
+      },
+      { key: 'growth', title: 'Взаимный рост и вдохновение', content: 'Что дружба даёт каждому.' },
+    ],
+    planetWeights: {
+      sun: 2,
+      moon: 3,
+      ascendant: 2,
+      venus: 1.5,
+      mars: 1,
+      mercury: 2.5,
+      jupiter: 2.5,
+      saturn: 1.5,
+      uranus: 1.5,
+      neptune: 1,
+      pluto: 1,
+      midheaven: 0.5,
+    },
+  },
+  business: {
+    promptVersion: 'compatibility-business-v1',
+    titleSuffix: 'Деловая совместимость',
+    role: 'Ты — эксперт-астролог по синастрии в профессиональном астрологическом сервисе.\nТы анализируешь, как две натальные карты взаимодействуют между собой, чтобы раскрыть сильные стороны, вызовы и темы роста делового или профессионального партнёрства.',
+    sections: `(1) стили лидерства и принятия решений — как каждый подходит к авторитету, инициативе и структуре (кросс-аспекты Солнце-Сатурн, Марс-Сатурн, Солнце-Марс), (2) коммуникация и переговоры — насколько эффективно эти двое обсуждают идеи, решают споры и приходят к согласию (аспекты Меркурий-Меркурий, Меркурий-Сатурн, Меркурий-Юпитер), (3) рабочая этика, амбиции и совпадение профессиональных целей (кросс-аспекты Марс-Марс, Сатурн-Сатурн, MC-MC, Юпитер-Сатурн), (4) потенциальные конфликты, динамика власти и конкурентные напряжения (напряжённые кросс-аспекты: квадратуры, оппозиции между Марсом, Плутоном, Сатурном), (5) долгосрочный профессиональный потенциал и взаимодополняющие сильные стороны (темы Юпитера, Сатурна, Северного узла, взаимодействия MC)`,
+    mockSections: [
+      {
+        key: 'leadership',
+        title: 'Лидерство и принятие решений',
+        content: 'Как каждый подходит к инициативе и структуре.',
+      },
+      {
+        key: 'communication',
+        title: 'Коммуникация и переговоры',
+        content: 'Эффективность обсуждения идей и решения споров.',
+      },
+      {
+        key: 'ambition',
+        title: 'Рабочий стиль и амбиции',
+        content: 'Совместимость профессиональных целей.',
+      },
+      {
+        key: 'conflicts',
+        title: 'Конфликты и динамика власти',
+        content: 'Потенциальные конкурентные напряжения.',
+      },
+      {
+        key: 'potential',
+        title: 'Профессиональный потенциал',
+        content: 'Долгосрочные перспективы сотрудничества.',
+      },
+    ],
+    planetWeights: {
+      sun: 2.5,
+      moon: 1.5,
+      ascendant: 1.5,
+      venus: 1,
+      mars: 2.5,
+      mercury: 2.5,
+      jupiter: 2,
+      saturn: 3,
+      uranus: 1,
+      neptune: 0.5,
+      pluto: 1.5,
+      midheaven: 2.5,
+    },
+  },
+  family: {
+    promptVersion: 'compatibility-family-v1',
+    titleSuffix: 'Родственная совместимость',
+    role: 'Ты — эксперт-астролог по синастрии в профессиональном астрологическом сервисе.\nТы анализируешь, как две натальные карты взаимодействуют между собой, чтобы раскрыть сильные стороны, вызовы и темы роста родственных отношений (родитель-ребёнок, братья/сёстры или другие близкие семейные связи).',
+    sections: `(1) эмоциональная связь и взаимопонимание — насколько естественно эти родственники чувствуют потребности и настроения друг друга (взаимодействия Луна-Луна, Луна-Солнце, Луна-ASC), (2) стиль общения и как конфликты выражаются или подавляются (аспекты Меркурий-Меркурий, Меркурий-Луна, Меркурий-Сатурн), (3) общие ценности, традиции и чувство «дома», которое они создают вместе (кросс-аспекты Венера-Венера, Луна-IC, Солнце-Солнце, Юпитер-Луна), (4) точки напряжения и вопросы границ — где проявляются различия поколений или темпераментов (напряжённые кросс-аспекты: Сатурн-Луна, Плутон-Солнце, Марс-Сатурн), (5) взаимная поддержка, рост и чему каждый учится у другого в долгосрочной перспективе (темы Юпитера, Сатурна, Северного узла)`,
+    mockSections: [
+      {
+        key: 'bond',
+        title: 'Эмоциональная связь и понимание',
+        content: 'Как естественно вы чувствуете потребности друг друга.',
+      },
+      {
+        key: 'communication',
+        title: 'Стиль общения',
+        content: 'Как выражаются и решаются конфликты.',
+      },
+      {
+        key: 'values',
+        title: 'Общие ценности и традиции',
+        content: 'Чувство «дома», которое вы создаёте вместе.',
+      },
+      {
+        key: 'tension',
+        title: 'Точки напряжения и границы',
+        content: 'Различия темпераментов и поколений.',
+      },
+      { key: 'support', title: 'Поддержка и рост', content: 'Чему вы учите друг друга.' },
+    ],
+    planetWeights: {
+      sun: 3,
+      moon: 3.5,
+      ascendant: 2,
+      venus: 1.5,
+      mars: 1.5,
+      mercury: 2,
+      jupiter: 2,
+      saturn: 2.5,
+      uranus: 1,
+      neptune: 1,
+      pluto: 1.2,
+      midheaven: 0.5,
+    },
+  },
+};
+
+// ─── Harmony score computation ────────────────────────────────────────────────
+
+const ASPECT_SCORE_DEFS = [
+  { key: 'conjunction', angle: 0, orb: 8, weight: 0.85 },
+  { key: 'sextile', angle: 60, orb: 4, weight: 0.6 },
+  { key: 'square', angle: 90, orb: 7, weight: -0.5 },
+  { key: 'trine', angle: 120, orb: 7, weight: 1 },
+  { key: 'opposition', angle: 180, orb: 8, weight: -0.35 },
+] as const;
+
+const KEY_PLANETS = new Set([
+  'sun',
+  'moon',
+  'mercury',
+  'venus',
+  'mars',
+  'jupiter',
+  'saturn',
+  'uranus',
+  'neptune',
+  'pluto',
+  'ascendant',
+  'midheaven',
+]);
+
+export interface HarmonyPositionRow {
+  body_key: string;
+  degree_decimal: number;
+}
+
+export function computeHarmonyScore(
+  primary: HarmonyPositionRow[],
+  secondary: HarmonyPositionRow[],
+  compatibilityType: CompatibilityType = 'romantic',
+): number {
+  if (primary.length === 0 || secondary.length === 0) return 50;
+
+  const weights = COMPATIBILITY_CONFIGS[compatibilityType].planetWeights;
+  let totalScore = 0;
+  let totalWeight = 0;
+
+  for (const pA of primary) {
+    if (!KEY_PLANETS.has(pA.body_key)) continue;
+    for (const pB of secondary) {
+      if (!KEY_PLANETS.has(pB.body_key)) continue;
+      const diff = Math.abs(pA.degree_decimal - pB.degree_decimal);
+      const angular = Math.min(diff, 360 - diff);
+      for (const def of ASPECT_SCORE_DEFS) {
+        const orbDistance = Math.abs(angular - def.angle);
+        if (orbDistance <= def.orb) {
+          const tightness = 1 - (orbDistance / def.orb) * 0.7;
+          const pairWeight = (weights[pA.body_key] ?? 1) * (weights[pB.body_key] ?? 1);
+          totalScore += def.weight * pairWeight * tightness;
+          totalWeight += pairWeight * tightness;
+          break;
+        }
+      }
+    }
+  }
+
+  if (totalWeight === 0) return 50;
+  const ratio = totalScore / totalWeight;
+  return Math.round(Math.max(5, Math.min(98, 50 + ratio * 48)));
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface PositionRow {
   body_key: string;
   sign_key: string;
@@ -129,6 +381,7 @@ export async function createPendingCompatibility(
   userId: string,
   primaryChartId: string,
   secondaryChartId: string,
+  compatibilityType: CompatibilityType = 'romantic',
 ) {
   const { data: primary } = await db
     .from('charts')
@@ -148,6 +401,8 @@ export async function createPendingCompatibility(
 
   if (!secondary) throw new NotFoundError({ message: 'Secondary chart not found' });
 
+  const config = COMPATIBILITY_CONFIGS[compatibilityType];
+
   const { data: report, error } = await db
     .from('compatibility_reports')
     .insert({
@@ -155,7 +410,8 @@ export async function createPendingCompatibility(
       primary_chart_id: primaryChartId,
       secondary_chart_id: secondaryChartId,
       status: 'pending',
-      prompt_version: 'compatibility-synastry-v1',
+      prompt_version: config.promptVersion,
+      compatibility_type: compatibilityType,
     })
     .select('*')
     .single();
@@ -172,7 +428,7 @@ export async function generateCompatibilityContent(
 ): Promise<void> {
   const { data: report } = await db
     .from('compatibility_reports')
-    .select('id, primary_chart_id, secondary_chart_id, status')
+    .select('id, primary_chart_id, secondary_chart_id, status, compatibility_type')
     .eq('id', reportId)
     .eq('user_id', userId)
     .maybeSingle();
@@ -180,6 +436,9 @@ export async function generateCompatibilityContent(
   if (!report) throw new NotFoundError({ message: 'Compatibility report not found' });
 
   if (report.status === 'ready' || report.status === 'generating') return;
+
+  const compatibilityType = (report.compatibility_type as CompatibilityType | null) ?? 'romantic';
+  const config = COMPATIBILITY_CONFIGS[compatibilityType];
 
   await db.from('compatibility_reports').update({ status: 'generating' }).eq('id', reportId);
 
@@ -276,14 +535,20 @@ export async function generateCompatibilityContent(
     secondaryChart.person_name,
   );
 
-  const systemPrompt = `КРИТИЧЕСКИ ВАЖНО: Весь JSON-ответ — каждое строковое поле — ОБЯЗАТЕЛЬНО должен быть написан на русском языке. Использование английского языка в любом поле недопустимо.
+  const systemPrompt = `Весь JSON-ответ — каждое строковое поле — ОБЯЗАТЕЛЬНО должен быть написан на русском языке. Использование английского языка в любом поле недопустимо.
 
-You are an expert synastry and relationship astrologer at a professional astrology service.
-You analyze how two natal charts interact to reveal the strengths, challenges, and growth themes of a relationship.
-Do not mention being an AI. Do not give medical, legal, financial, or fatalistic certainty.
-Write in Russian. Every string field in the JSON must be in Russian.
+${config.role}
+Не упоминай, что ты ИИ. Не давай медицинских, юридических, финансовых утверждений и фаталистических прогнозов.
 
-Return only valid JSON matching this shape exactly:
+КРИТИЧЕСКИЕ ПРАВИЛА:
+- Используй ТОЛЬКО кросс-аспекты (межкартные аспекты) из раздела «Кросс-аспекты» в сообщении пользователя. НЕ придумывай аспекты, которых нет в данных.
+- НЕ используй натальные аспекты (аспекты внутри одной карты) как кросс-аспекты. Кросс-аспект — это ВСЕГДА планета одного человека к планете другого.
+- Если данных по Северному узлу, Лилит или другим точкам нет в кросс-аспектах — НЕ упоминай их и НЕ спекулируй об их влиянии.
+- Используй правильную грамматику русского языка: «в соединении с Плутоном Павла» (творительный падеж), а не «с Плутон Павла».
+- Названия планет: Солнце, Луна, Меркурий, Венера, Марс, Юпитер, Сатурн, Уран, Нептун, Плутон, ASC (Асцендент), MC (Середина Неба). Слова «Мидиан», «Мидиана», «Мидиану» — ЗАПРЕЩЕНЫ. Используй только «MC» или «Середина Неба».
+- Используй имена обоих людей (${primaryChart.person_name} и ${secondaryChart.person_name}) часто и естественно — минимум 5-7 раз каждое имя по всему тексту. Не заменяй имена местоимениями или абстракциями вроде «первый человек».
+
+Верни ТОЛЬКО валидный JSON следующей формы:
 {
   "title": string,
   "summary": string,
@@ -294,17 +559,17 @@ Return only valid JSON matching this shape exactly:
   "metadata": { "locale": "ru", "readingType": "natal_overview", "promptVersion": string, "schemaVersion": string }
 }
 
-Requirements:
-- Title should name both people, e.g. "${primaryChart.person_name} и ${secondaryChart.person_name} — Синастрия"
-- Produce exactly 5 sections covering: (1) emotional resonance and connection depth (Moon-Moon, Moon-Venus, Moon-ASC interactions), (2) communication and mental compatibility (Mercury-Mercury, Mercury-ASC aspects), (3) love, attraction and values (Venus-Mars, Venus-Venus, Venus-ASC cross-aspects), (4) challenges and growth areas (hard cross-aspects: squares, oppositions between key planets), (5) long-term potential and the relationship's purpose (Saturn, Jupiter cross-aspects, North Node themes)
-- Each section must be 300-400 words of specific, grounded insight referencing actual cross-aspects between the two charts by name (e.g. "Луна Анны в соединении с Венерой Ивана")
-- Use both people's names naturally throughout the reading
-- Identify the most significant inter-chart aspects (cross-aspects) and explain what they mean for how these two people experience each other
-- placementHighlights should list the 4-6 most striking inter-chart aspects
-- advice should contain 4-5 concrete, actionable suggestions for this specific relationship
-- summary must be 3-4 sentences capturing the overall relationship dynamic`;
+Требования:
+- В заголовке укажи имена обоих людей, например: "${primaryChart.person_name} и ${secondaryChart.person_name} — ${config.titleSuffix}"
+- Ровно 5 секций: ${config.sections}
+- Каждая секция — 300-400 слов конкретного, обоснованного анализа с указанием реальных кросс-аспектов между двумя картами по имени (например, "Луна ${primaryChart.person_name} в тригоне к Венере ${secondaryChart.person_name}")
+- Используй имена обоих людей естественно по всему тексту
+- Ссылайся ТОЛЬКО на те кросс-аспекты, которые указаны в данных. Каждое упоминание аспекта должно соответствовать реальному кросс-аспекту из списка.
+- placementHighlights — список 4-6 самых ярких межкартных аспектов (формат: "Планета Имени в аспекте к Планете Имени (орбита)")
+- advice — 4-5 конкретных, практичных рекомендаций для этих отношений
+- summary — 3-4 предложения, описывающие общую динамику отношений`;
 
-  const userPrompt = `Analyze the synastry between these two charts:
+  const userPrompt = `Проанализируй синастрию между этими двумя картами:
 
 ${primaryFacts}
 
@@ -312,10 +577,10 @@ ${primaryFacts}
 
 ${secondaryFacts}
 
-Cross-aspects (inter-chart aspects, computed server-side — most significant):
-${crossAspectLines || '  — none found'}
+Кросс-аспекты (межкартные аспекты, вычислены на сервере — самые значимые):
+${crossAspectLines || '  — не найдены'}
 
-Use the pre-computed cross-aspects above as the primary material for your analysis. These are the actual inter-chart aspects between the two people.`;
+Используй приведённые выше кросс-аспекты как основной материал для анализа. Это реальные межкартные аспекты между двумя людьми.`;
 
   let content: StructuredReadingOutput;
   let status: 'ready' | 'error' = 'ready';
@@ -327,42 +592,16 @@ Use the pre-computed cross-aspects above as the primary material for your analys
       userPrompt,
       schema: structuredReadingSchema,
       mockResponse: {
-        title: `${primaryChart.person_name} и ${secondaryChart.person_name} — Синастрия`,
-        summary: `Синастрия ${primaryChart.person_name} и ${secondaryChart.person_name} показывает яркую эмоциональную связь с рядом точек роста.`,
-        sections: [
-          {
-            key: 'emotional',
-            title: 'Эмоциональный резонанс',
-            content: 'Анализ эмоциональной связи и глубины контакта.',
-          },
-          {
-            key: 'communication',
-            title: 'Общение и мышление',
-            content: 'Как партнёры понимают друг друга.',
-          },
-          {
-            key: 'attraction',
-            title: 'Влечение и ценности',
-            content: 'Венера и Марс в синастрии.',
-          },
-          {
-            key: 'challenges',
-            title: 'Вызовы и рост',
-            content: 'Напряжённые аспекты и как с ними работать.',
-          },
-          {
-            key: 'potential',
-            title: 'Долгосрочный потенциал',
-            content: 'Сатурн и цель отношений.',
-          },
-        ],
+        title: `${primaryChart.person_name} и ${secondaryChart.person_name} — ${config.titleSuffix}`,
+        summary: `Синастрия ${primaryChart.person_name} и ${secondaryChart.person_name} показывает яркую связь с рядом точек роста.`,
+        sections: config.mockSections,
         placementHighlights: [],
-        advice: ['Уделяйте внимание эмоциональным потребностям партнёра.'],
+        advice: ['Уделяйте внимание потребностям друг друга.'],
         disclaimers: ['Синастрия — это интерпретация потенциала, а не предсказание.'],
         metadata: {
           locale: 'ru',
           readingType: 'natal_overview',
-          promptVersion: 'compatibility-synastry-v1',
+          promptVersion: config.promptVersion,
           schemaVersion: '1',
         },
       },

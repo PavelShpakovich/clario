@@ -30,9 +30,9 @@ import {
   Monitor,
   ScrollText,
   Orbit,
-  Heart,
   CalendarDays,
   Sparkles,
+  Link2,
 } from 'lucide-react';
 import { FeedbackButton } from '@/components/common/feedback-widget';
 import { CreditBalance } from '@/components/layout/credit-balance';
@@ -207,7 +207,7 @@ export function Header() {
           />
           <NavLink
             href="/compatibility"
-            icon={Heart}
+            icon={Link2}
             label={t('navigation.compatibility')}
             pathname={pathname}
           />
@@ -274,7 +274,7 @@ export function Header() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/compatibility" className="flex items-center gap-2">
-                  <Heart className="size-4" />
+                  <Link2 className="size-4" />
                   {t('navigation.compatibility')}
                 </Link>
               </DropdownMenuItem>
