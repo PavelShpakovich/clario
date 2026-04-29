@@ -18,6 +18,19 @@ const PUBLIC_PAGES = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Handle CORS preflight for all routes (mobile Expo web dev)
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Request-Id',
+        'Access-Control-Max-Age': '86400',
+      },
+    });
+  }
+
   // 301-redirect legacy locale-prefixed paths: /en[/...] → /[...], /ru[/...] → /[...]
   const localeMatch = /^\/(en|ru)(\/.*)?$/.exec(pathname);
   if (localeMatch) {
@@ -26,6 +39,13 @@ export async function middleware(request: NextRequest) {
   }
 
   if (PUBLIC_API_ROUTES.some((route) => pathname.startsWith(route))) {
+    return NextResponse.next();
+  }
+
+  // Mobile clients authenticate via Supabase Bearer token.
+  // Let the route handler's requireAuth() validate it — no NextAuth JWT involved.
+  const authHeader = request.headers.get('authorization');
+  if (pathname.startsWith('/api') && authHeader?.startsWith('Bearer ')) {
     return NextResponse.next();
   }
 
