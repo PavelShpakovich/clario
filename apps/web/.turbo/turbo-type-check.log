@@ -1,0 +1,13 @@
+
+> @clario/web@0.1.0 type-check /Users/Pavel_Shpakovich/Desktop/clario/apps/web
+> tsc --noEmit
+
+src/app/api/compatibility/[reportId]/route.ts(56,7): error TS2345: Argument of type 'string' is not assignable to parameter of type '"romantic" | "friendship" | "business" | "family" | undefined'.
+src/app/api/readings/[readingId]/pdf/route.ts(61,5): error TS2345: Argument of type 'FunctionComponentElement<ReadingPdfProps>' is not assignable to parameter of type 'ReactElement<DocumentProps, string | JSXElementConstructor<any>>'.
+  Types of property 'type' are incompatible.
+    Type 'FunctionComponent<ReadingPdfProps>' is not assignable to type 'string | JSXElementConstructor<any>'.
+      Type 'FunctionComponent<ReadingPdfProps>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+        Type 'ReactNode | Promise<ReactNode>' is not assignable to type 'ReactNode'.
+          Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+            Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+ ELIFECYCLE  Command failed with exit code 2.

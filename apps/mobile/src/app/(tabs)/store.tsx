@@ -571,4 +571,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.error,
   },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 8,
+  },
 });

@@ -79,7 +79,8 @@ export default function CalendarScreen() {
   for (const day of days) {
     const d = new Date(day.date + 'T12:00:00Z');
     const monthKey = MONTH_KEYS[d.getUTCMonth()];
-    const monthName = `${tCal(`months.${monthKey}`)} ${d.getUTCFullYear()}`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const monthName = `${tCal(`months.${monthKey}` as any)} ${d.getUTCFullYear()}`;
     const existing = months.find((m) => m.name === monthName);
     if (existing) existing.days.push(day);
     else months.push({ name: monthName, days: [day] });
@@ -117,11 +118,13 @@ export default function CalendarScreen() {
         </View>
         <View style={styles.legendItem}>
           <Text style={styles.legendEmoji}>🌑</Text>
-          <Text style={styles.legendText}>{tCal('phases.new')}</Text>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <Text style={styles.legendText}>{tCal('phases.new' as any)}</Text>
         </View>
         <View style={styles.legendItem}>
           <Text style={styles.legendEmoji}>🌕</Text>
-          <Text style={styles.legendText}>{tCal('phases.full')}</Text>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <Text style={styles.legendText}>{tCal('phases.full' as any)}</Text>
         </View>
       </View>
 

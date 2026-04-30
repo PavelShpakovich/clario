@@ -1,0 +1,4 @@
+
+> @clario/types@0.1.0 type-check /Users/Pavel_Shpakovich/Desktop/clario/packages/types
+> tsc --noEmit
+

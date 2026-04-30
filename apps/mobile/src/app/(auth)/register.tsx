@@ -434,4 +434,14 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
+  glowDecoration: {
+    position: 'absolute',
+    top: -60,
+    right: -60,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: colors.primary,
+    opacity: 0.06,
+  },
 });

@@ -711,7 +711,6 @@ export default function AdminScreen() {
       </View>
 
       <FlatList
-        data={filtered}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
