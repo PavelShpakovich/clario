@@ -1144,5 +1144,9 @@
     "productName_natal_report": "Натальный разбор",
     "productName_compatibility_report": "Совместимость",
     "productName_forecast_report": "Прогноз"
+  },
+  "splash": {
+    "appName": "Clario",
+    "tagline": "Астрология для вашей жизни"
   }
 }

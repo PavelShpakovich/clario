@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, useColorScheme } from 'react-native';
+import { View, StyleSheet, useColorScheme } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
@@ -10,12 +10,14 @@ import { requestNotificationPermissions } from '@/lib/notifications';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { ConfirmDialogProvider } from '@/components/ConfirmDialog';
-import { colors, useColors } from '@/lib/colors';
+import { SplashAnimation } from '@/components/SplashAnimation';
+import { useColors } from '@/lib/colors';
 
 export default function RootLayout() {
   const themeColors = useColors();
   const isDark = useColorScheme() === 'dark';
   const [authReady, setAuthReady] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
   const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
 
   useEffect(() => {
@@ -77,11 +79,7 @@ export default function RootLayout() {
             }}
           />
           <StatusBar style={isDark ? 'light' : 'auto'} />
-          {!authReady && (
-            <View style={styles.authOverlay}>
-              <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-          )}
+          {(!authReady || !splashDone) && <SplashAnimation onDone={() => setSplashDone(true)} />}
         </View>
         <Toast position="bottom" bottomOffset={32} />
       </ConfirmDialogProvider>
@@ -89,11 +87,4 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  authOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+const styles = StyleSheet.create({});
