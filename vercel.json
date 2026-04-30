@@ -1,0 +1,26 @@
+{
+  "outputDirectory": "apps/web/.next",
+  "functions": {
+    "apps/web/src/app/api/charts/**": {
+      "maxDuration": 60
+    },
+    "apps/web/src/app/api/readings/**": {
+      "maxDuration": 300
+    },
+    "apps/web/src/app/api/chat/**": {
+      "maxDuration": 60
+    },
+    "apps/web/src/app/api/auth/**": {
+      "maxDuration": 30
+    },
+    "apps/web/src/app/api/cron/**": {
+      "maxDuration": 30
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-unverified",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}
