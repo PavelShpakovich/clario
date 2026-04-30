@@ -1,0 +1,437 @@
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Linking,
+} from 'react-native';
+import { router } from 'expo-router';
+import { authApi } from '@clario/api-client';
+import { useTranslations } from '@/lib/i18n';
+import { colors, cardShadow } from '@/lib/colors';
+import { AuthBackground } from '@/components/AuthBackground';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
+
+export default function RegisterScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
+
+  const tCommon = useTranslations('common');
+  const tAuth = useTranslations('auth');
+  const tValidation = useTranslations('validation');
+
+  async function handleRegister() {
+    if (!email.trim()) {
+      setError(tValidation('emailRequired'));
+      return;
+    }
+    if (!password) {
+      setError(tValidation('passwordRequired'));
+      return;
+    }
+    if (password.length < 8) {
+      setError(tValidation('passwordTooShort'));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError(tValidation('passwordsDoNotMatch'));
+      return;
+    }
+    if (!consent) {
+      setError(tValidation('consentRequired'));
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await authApi.register(email.trim(), password);
+      setSent(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('already') || msg.includes('exists') || msg.includes('duplicate')) {
+        setError(tAuth('emailAlreadyExists'));
+      } else {
+        setError(tAuth('error'));
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResend() {
+    setResending(true);
+    await authApi.resendVerificationEmail(email.trim());
+    setResending(false);
+    setResent(true);
+  }
+
+  if (sent) {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.glowDecoration} />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.cardWrapper}>
+            <View style={styles.card}>
+              <Text style={styles.eyebrow}>{tCommon('appName')}</Text>
+              <Text style={styles.title}>{tAuth('verifyEmailTitle')}</Text>
+              <Text style={styles.subtitle}>
+                {tAuth('verifyEmailDescription', { email: email.trim() })}
+              </Text>
+              {resent ? (
+                <View style={styles.successBanner}>
+                  <Text style={styles.successBannerText}>
+                    {tAuth('resendVerificationSuccess')}
+                  </Text>
+                </View>
+              ) : null}
+              <TouchableOpacity
+                style={[styles.button, resending && styles.buttonDisabled]}
+                onPress={handleResend}
+                disabled={resending || resent}
+              >
+                <Text style={styles.buttonText}>
+                  {resending ? tAuth('signingIn') : tAuth('resendVerification')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.footerLinkContainer}
+                onPress={() => router.replace('/(auth)/login')}
+              >
+                <Text style={styles.footerLink}>{tAuth('backToLogin')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <AuthBackground />
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.cardWrapper}>
+          <View style={styles.card}>
+            {/* Eyebrow */}
+            <Text style={styles.eyebrow}>{tCommon('appName')}</Text>
+
+            {/* Card header */}
+            <Text style={styles.title}>{tAuth('registerTitle')}</Text>
+            <Text style={styles.subtitle}>{tAuth('registerDescription')}</Text>
+
+            {/* Form fields */}
+            <View style={styles.fieldsContainer}>
+              {/* Email */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>{tAuth('email')}</Text>
+                <TextInput
+                  style={[styles.input, error ? styles.inputError : null]}
+                  placeholder={tAuth('emailPlaceholder')}
+                  placeholderTextColor={colors.placeholder}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+              </View>
+
+              {/* Password */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>{tAuth('password')}</Text>
+                <TextInput
+                  style={[styles.input, error ? styles.inputError : null]}
+                  placeholder={tAuth('passwordPlaceholder')}
+                  placeholderTextColor={colors.placeholder}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  editable={!loading}
+                />
+              </View>
+
+              {/* Confirm password */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>{tAuth('confirmPassword')}</Text>
+                <TextInput
+                  style={[styles.input, error ? styles.inputError : null]}
+                  placeholder={tAuth('confirmPassword')}
+                  placeholderTextColor={colors.placeholder}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  editable={!loading}
+                />
+              </View>
+            </View>
+
+            {/* Consent checkbox */}
+            <TouchableOpacity
+              style={styles.consentRow}
+              onPress={() => setConsent((v) => !v)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, consent && styles.checkboxChecked]}>
+                {consent && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.consentText}>
+                {tAuth('consentPrefix')}{' '}
+                <Text
+                  style={styles.consentLink}
+                  onPress={() => void Linking.openURL(`${API_URL}/privacy`)}
+                >
+                  {tAuth('consentPrivacy')}
+                </Text>
+                {' '}{tAuth('consentAnd')}{' '}
+                <Text
+                  style={styles.consentLink}
+                  onPress={() => void Linking.openURL(`${API_URL}/terms`)}
+                >
+                  {tAuth('consentTerms')}
+                </Text>
+              </Text>
+            </TouchableOpacity>
+
+            {/* Error banner */}
+            {error ? (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerText}>{error}</Text>
+              </View>
+            ) : null}
+
+            {/* Submit */}
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <Text style={styles.buttonText}>{tAuth('signingUp')}</Text>
+              ) : (
+                <Text style={styles.buttonText}>{tAuth('signUp')}</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Login link */}
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>{tAuth('haveAccount')} </Text>
+              <TouchableOpacity onPress={() => router.replace('/(auth)/login')}>
+                <Text style={styles.footerRowLink}>{tAuth('signInLink')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  cardWrapper: {
+    width: '100%',
+    maxWidth: 400,
+    marginHorizontal: 20,
+    paddingHorizontal: 20,
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 28,
+    ...cardShadow,
+  },
+  eyebrow: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: colors.foreground,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 20,
+  },
+  fieldsContainer: {
+    gap: 14,
+    marginBottom: 16,
+  },
+  fieldGroup: {
+    gap: 0,
+  },
+  label: {
+    fontSize: 13,
+    color: colors.mutedForeground,
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  input: {
+    height: 40,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    color: colors.foreground,
+    backgroundColor: 'transparent',
+  },
+  inputError: {
+    borderColor: colors.destructive,
+  },
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 12,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+    flexShrink: 0,
+  },
+  checkboxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  checkmark: {
+    color: colors.primaryForeground,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  consentText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.mutedForeground,
+    lineHeight: 18,
+  },
+  consentLink: {
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  errorBanner: {
+    backgroundColor: colors.destructiveSubtle,
+    borderColor: colors.destructive,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  errorBannerText: {
+    fontSize: 13,
+    color: colors.destructive,
+  },
+  successBanner: {
+    backgroundColor: colors.successSubtle,
+    borderColor: colors.success,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 20,
+  },
+  successBannerText: {
+    fontSize: 13,
+    color: colors.success,
+  },
+  button: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    color: colors.primaryForeground,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  footerLinkContainer: {
+    marginTop: 14,
+    alignItems: 'center',
+  },
+  footerLink: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  footerText: {
+    fontSize: 13,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+  },
+  footerRowLink: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+});

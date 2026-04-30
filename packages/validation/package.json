@@ -1,0 +1,17 @@
+{
+  "name": "@clario/validation",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clario/types": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
