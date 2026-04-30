@@ -66,7 +66,8 @@ export const GET = withApiHandler(async (_req, ctx) => {
       sections: content.sections,
       advice: content.advice,
       disclaimers: content.disclaimers,
-    }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any,
   );
 
   const safeTitle = reading.title
