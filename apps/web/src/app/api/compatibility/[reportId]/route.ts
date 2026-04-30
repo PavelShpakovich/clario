@@ -35,19 +35,41 @@ export const GET = withApiHandler(async (_req, ctx) => {
 
   let harmonyScore: number | null = null;
   if (report.status === 'ready') {
-    const compatibilityType = (report as Record<string, unknown>).compatibility_type as string ?? 'romantic';
+    const compatibilityType =
+      ((report as Record<string, unknown>).compatibility_type as
+        | 'romantic'
+        | 'friendship'
+        | 'business'
+        | 'family'
+        | undefined) ?? 'romantic';
     const [primarySnapRes, secondarySnapRes] = await Promise.all([
-      db.from('chart_snapshots').select('id').eq('chart_id', report.primary_chart_id)
-        .order('snapshot_version', { ascending: false }).limit(1).maybeSingle(),
-      db.from('chart_snapshots').select('id').eq('chart_id', report.secondary_chart_id)
-        .order('snapshot_version', { ascending: false }).limit(1).maybeSingle(),
+      db
+        .from('chart_snapshots')
+        .select('id')
+        .eq('chart_id', report.primary_chart_id)
+        .order('snapshot_version', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      db
+        .from('chart_snapshots')
+        .select('id')
+        .eq('chart_id', report.secondary_chart_id)
+        .order('snapshot_version', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
     const [primRes, secRes] = await Promise.all([
       primarySnapRes.data?.id
-        ? db.from('chart_positions').select('body_key, degree_decimal').eq('chart_snapshot_id', primarySnapRes.data.id)
+        ? db
+            .from('chart_positions')
+            .select('body_key, degree_decimal')
+            .eq('chart_snapshot_id', primarySnapRes.data.id)
         : { data: [] as HarmonyPositionRow[] },
       secondarySnapRes.data?.id
-        ? db.from('chart_positions').select('body_key, degree_decimal').eq('chart_snapshot_id', secondarySnapRes.data.id)
+        ? db
+            .from('chart_positions')
+            .select('body_key, degree_decimal')
+            .eq('chart_snapshot_id', secondarySnapRes.data.id)
         : { data: [] as HarmonyPositionRow[] },
     ]);
     harmonyScore = computeHarmonyScore(
