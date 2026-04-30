@@ -65,7 +65,10 @@ export default function AuthCallbackScreen() {
       router.replace('/(auth)/login');
     }
 
-    void process();
+    // Defer navigation by one tick so the Root Layout navigation container
+    // is fully mounted before we attempt to navigate (cold-start via deep link).
+    const t = setTimeout(() => void process(), 0);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

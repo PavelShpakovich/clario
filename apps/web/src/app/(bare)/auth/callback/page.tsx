@@ -24,7 +24,6 @@ export default function AuthCallbackPage() {
         <meta name="robots" content="noindex, nofollow" />
         <title>Открываем Clario…</title>
         <style
-          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
             __html: `
               *{margin:0;padding:0;box-sizing:border-box}
@@ -48,7 +47,6 @@ export default function AuthCallbackPage() {
           }}
         />
         <script
-          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
             __html: `
               (function () {

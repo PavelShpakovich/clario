@@ -31,9 +31,9 @@ export const POST = withApiHandler(async (req) => {
     type: 'recovery',
     email,
     options: {
-      // Mobile: redirect through /auth/callback?source=mobile (Supabase won't allow clario:// directly)
-      //   That page reads the hash tokens and forwards to clario://auth/callback#...
-      // Web: redirect to the set-password page
+      // Mobile: always redirect through the canonical production URL so the link
+      // works on any device regardless of dev/prod environment. NEXT_PUBLIC_APP_URL
+      // Web: redirect to the set-password page.
       redirectTo: isMobile
         ? `${env.NEXT_PUBLIC_APP_URL}/auth/callback?source=mobile`
         : `${env.NEXT_PUBLIC_APP_URL}/set-password`,

@@ -479,7 +479,7 @@ export default async function CompatibilityReportPage({
                     {t('infoInterpretTitle')}
                   </p>
                   <p className="mt-2 text-sm leading-6 text-foreground/90">
-                    {t(`infoInterpretBody_${compatibilityType}` as any)}
+                    {t(`infoInterpretBody_${compatibilityType}` as Parameters<typeof t>[0])}
                   </p>
                 </div>
               </div>
