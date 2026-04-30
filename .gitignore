@@ -48,3 +48,6 @@ generator/.env
 # Local env files
 .env.local
 .env.*.local
+
+# Turborepo cache
+.turbo/
