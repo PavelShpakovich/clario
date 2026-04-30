@@ -1,1 +1,1 @@
-npx tsc --noEmit
+pnpm run type-check
