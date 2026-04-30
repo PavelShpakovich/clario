@@ -7,6 +7,7 @@ interface HeroSectionProps {
   subheadline: string;
   ctaGetStarted: string;
   ctaLogin: string;
+  mobileOnly?: boolean;
 }
 
 export function HeroSection({
@@ -15,6 +16,7 @@ export function HeroSection({
   subheadline,
   ctaGetStarted,
   ctaLogin,
+  mobileOnly = false,
 }: HeroSectionProps) {
   return (
     <section className="relative flex flex-col items-center justify-center overflow-hidden text-center px-4 py-28 sm:py-36">
@@ -73,14 +75,16 @@ export function HeroSection({
         <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mb-10 text-balance leading-relaxed">
           {subheadline}
         </p>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Button size="lg" asChild className="px-8 shadow-lg shadow-primary/20">
-            <Link href="/register">{ctaGetStarted}</Link>
-          </Button>
-          <Button size="lg" variant="outline" asChild className="px-8">
-            <Link href="/login">{ctaLogin}</Link>
-          </Button>
-        </div>
+        {!mobileOnly && (
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button size="lg" asChild className="px-8 shadow-lg shadow-primary/20">
+              <Link href="/register">{ctaGetStarted}</Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="px-8">
+              <Link href="/login">{ctaLogin}</Link>
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );

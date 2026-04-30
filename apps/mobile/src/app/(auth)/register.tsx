@@ -101,9 +101,7 @@ export default function RegisterScreen() {
               </Text>
               {resent ? (
                 <View style={styles.successBanner}>
-                  <Text style={styles.successBannerText}>
-                    {tAuth('resendVerificationSuccess')}
-                  </Text>
+                  <Text style={styles.successBannerText}>{tAuth('resendVerificationSuccess')}</Text>
                 </View>
               ) : null}
               <TouchableOpacity
@@ -135,10 +133,7 @@ export default function RegisterScreen() {
     >
       <AuthBackground />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.cardWrapper}>
           <View style={styles.card}>
             {/* Eyebrow */}
@@ -211,8 +206,8 @@ export default function RegisterScreen() {
                   onPress={() => void Linking.openURL(`${API_URL}/privacy`)}
                 >
                   {tAuth('consentPrivacy')}
-                </Text>
-                {' '}{tAuth('consentAnd')}{' '}
+                </Text>{' '}
+                {tAuth('consentAnd')}{' '}
                 <Text
                   style={styles.consentLink}
                   onPress={() => void Linking.openURL(`${API_URL}/terms`)}

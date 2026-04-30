@@ -153,6 +153,7 @@ export function Header() {
 
   // ── Unauthenticated ───────────────────────────────────────────────────────
   if (!isAuthenticated) {
+    const mobileOnly = process.env.NEXT_PUBLIC_MOBILE_ONLY === 'true';
     return (
       <header className={HEADER_CLASS}>
         <div className={INNER_CLASS}>
@@ -168,12 +169,16 @@ export function Header() {
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle theme={theme} resolvedTheme={resolvedTheme} setTheme={setTheme} t={t} />
-            <Button variant="ghost" asChild className="h-11 px-4">
-              <Link href="/login">{t('navigation.login')}</Link>
-            </Button>
-            <Button asChild className="h-11 px-4">
-              <Link href="/register">{t('navigation.register')}</Link>
-            </Button>
+            {!mobileOnly && (
+              <>
+                <Button variant="ghost" asChild className="h-11 px-4">
+                  <Link href="/login">{t('navigation.login')}</Link>
+                </Button>
+                <Button asChild className="h-11 px-4">
+                  <Link href="/register">{t('navigation.register')}</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>

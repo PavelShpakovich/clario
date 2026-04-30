@@ -166,6 +166,7 @@ export default async function LandingPage() {
         subheadline={t('heroSubheadline')}
         ctaGetStarted={t('heroCtaStart')}
         ctaLogin={t('heroCtaLogin')}
+        mobileOnly={process.env.NEXT_PUBLIC_MOBILE_ONLY === 'true'}
       />
 
       {/* Stats strip */}
@@ -245,9 +246,11 @@ export default async function LandingPage() {
           <Sparkles className="h-8 w-8 text-primary" />
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t('ctaTitle')}</h2>
           <p className="text-muted-foreground">{t('ctaSubtitle')}</p>
-          <Button asChild size="lg" className="px-10 shadow-lg shadow-primary/20">
-            <Link href="/register">{t('ctaButton')}</Link>
-          </Button>
+          {process.env.NEXT_PUBLIC_MOBILE_ONLY !== 'true' && (
+            <Button asChild size="lg" className="px-10 shadow-lg shadow-primary/20">
+              <Link href="/register">{t('ctaButton')}</Link>
+            </Button>
+          )}
         </div>
       </section>
     </main>

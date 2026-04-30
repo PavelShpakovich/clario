@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
+import { headers } from 'next/headers';
 import { getLocale, getMessages } from 'next-intl/server';
 import { RootProviders } from '@/components/root-providers';
 import { Header } from '@/components/layout/header';
@@ -96,6 +97,15 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') ?? '';
+
+  // Pages that need no shell (header/footer/providers) — just bare HTML.
+  const isBare = pathname === '/auth/callback';
+  if (isBare) {
+    return <>{children}</>;
+  }
+
   const locale = await getLocale();
   const messages = await getMessages();
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -116,7 +126,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Header />
             <div className="flex-1 flex flex-col min-h-0">{children}</div>
             {!session ? <LandingFooter /> : null}
-            <CookieConsent />
+            {process.env.NEXT_PUBLIC_MOBILE_ONLY !== 'true' && <CookieConsent />}
           </RootProviders>
         </Suspense>
       </body>

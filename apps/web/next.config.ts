@@ -4,6 +4,11 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
+  // Expose selected env vars to Edge middleware (process.env is not fully available there)
+  env: {
+    MOBILE_ONLY: process.env.MOBILE_ONLY ?? '',
+  },
+
   // React Compiler enables automatic memoization and optimizations
   reactCompiler: true,
 
@@ -63,7 +68,10 @@ const nextConfig: NextConfig = {
           { key: 'Pragma', value: 'no-cache' },
           { key: 'Access-Control-Allow-Origin', value: '*' },
           { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PATCH, PUT, DELETE, OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'Authorization, Content-Type, X-Request-Id' },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Authorization, Content-Type, X-Request-Id',
+          },
         ],
       },
       {

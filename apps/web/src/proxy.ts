@@ -21,9 +21,9 @@ const MOBILE_ONLY_ALLOWED_PAGES = ['/', '/privacy', '/terms', '/auth/callback'];
 
 // Hardcoded: restrict web to mobile-only allowed pages.
 // Set to false to re-enable all pages.
-const MOBILE_ONLY = true;
+const MOBILE_ONLY = process.env.NEXT_PUBLIC_MOBILE_ONLY === 'true';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Inject x-pathname so server layouts can detect the current route.

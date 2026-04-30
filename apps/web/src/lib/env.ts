@@ -32,6 +32,14 @@ const envSchema = z.object({
   // Cron security
   CRON_SECRET: z.string().min(1, 'CRON_SECRET is required'),
 
+  // Feature flags
+  // When true, only /, /privacy, /terms, /auth/callback and /api/* are served.
+  // All other pages return 404. Used when the web UI is disabled for mobile-only mode.
+  NEXT_PUBLIC_MOBILE_ONLY: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true'),
+
   // Node
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });

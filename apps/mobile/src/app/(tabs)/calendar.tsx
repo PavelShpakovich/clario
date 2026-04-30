@@ -19,30 +19,40 @@ const signLabels = messages.chartDetail.signs as Record<string, string>;
 const phaseLabels = (messages.calendar as { phases: Record<string, string> }).phases;
 
 const PHASE_EMOJI: Record<string, string> = {
-  'new': '🌑',
-  'crescent': '🌒',
+  new: '🌑',
+  crescent: '🌒',
   'first-quarter': '🌓',
-  'gibbous': '🌔',
-  'full': '🌕',
+  gibbous: '🌔',
+  full: '🌕',
   'waning-gibbous': '🌖',
   'last-quarter': '🌗',
   'waning-crescent': '🌘',
 };
 
 const PHASE_KEY_MAP: Record<string, string> = {
-  'new': 'new',
-  'crescent': 'crescent',
+  new: 'new',
+  crescent: 'crescent',
   'first-quarter': 'firstQuarter',
-  'gibbous': 'gibbous',
-  'full': 'full',
+  gibbous: 'gibbous',
+  full: 'full',
   'waning-gibbous': 'waningGibbous',
   'last-quarter': 'lastQuarter',
   'waning-crescent': 'waningCrescent',
 };
 
 const MONTH_KEYS = [
-  'january', 'february', 'march', 'april', 'may', 'june',
-  'july', 'august', 'september', 'october', 'november', 'december',
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
 ] as const;
 
 const todayStr = new Date().toISOString().slice(0, 10);
@@ -137,9 +147,9 @@ export default function CalendarScreen() {
               const d = new Date(day.date + 'T12:00:00Z');
               const isToday = day.date === todayStr;
               const isSpecialPhase = day.phase === 'new' || day.phase === 'full';
-              const phaseEmoji = day.phase ? PHASE_EMOJI[day.phase] ?? '' : '';
+              const phaseEmoji = day.phase ? (PHASE_EMOJI[day.phase] ?? '') : '';
               const phaseKey = day.phase ? PHASE_KEY_MAP[day.phase] : null;
-              const phaseLabel = phaseKey ? phaseLabels[phaseKey] ?? '' : '';
+              const phaseLabel = phaseKey ? (phaseLabels[phaseKey] ?? '') : '';
 
               return (
                 <View
@@ -155,9 +165,7 @@ export default function CalendarScreen() {
                     <Text style={[styles.dayNumber, isToday && styles.dayNumberToday]}>
                       {d.getUTCDate()}
                     </Text>
-                    {phaseEmoji ? (
-                      <Text style={styles.phaseEmoji}>{phaseEmoji}</Text>
-                    ) : null}
+                    {phaseEmoji ? <Text style={styles.phaseEmoji}>{phaseEmoji}</Text> : null}
                   </View>
 
                   {/* Sun sign */}
