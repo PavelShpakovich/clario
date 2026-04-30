@@ -12,11 +12,6 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL'),
   NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET must be at least 32 characters'),
 
-  // Canonical public URL — always the production domain (https://tryclario.by).
-  // Used for mobile password-reset redirect_to so the link works on any device
-  // regardless of whether the dev server is running on localhost.
-  NEXT_PUBLIC_SITE_URL: z.string().url('NEXT_PUBLIC_SITE_URL must be a valid URL'),
-
   // LLM — Qwen is the only production provider; 'mock' is for tests/CI.
   LLM_PROVIDER: z.enum(['qwen', 'mock']),
   QWEN_API_KEY: z.string().optional(),

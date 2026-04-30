@@ -31,9 +31,6 @@ export const POST = withApiHandler(async (req) => {
     type: 'recovery',
     email,
     options: {
-      // Mobile: always redirect through the canonical production URL so the link
-      // works on any device regardless of dev/prod environment. NEXT_PUBLIC_APP_URL
-      // Web: redirect to the set-password page.
       redirectTo: isMobile
         ? `${env.NEXT_PUBLIC_APP_URL}/auth/callback?source=mobile`
         : `${env.NEXT_PUBLIC_APP_URL}/set-password`,
