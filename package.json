@@ -2,12 +2,12 @@
   "name": "clario-workspace",
   "version": "0.0.0",
   "private": true,
+  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "dev": "turbo run dev",
     "dev:web": "pnpm --filter @clario/web dev",
     "dev:mobile": "pnpm --filter @clario/mobile start",
     "build": "turbo run build",
-    "build:web": "pnpm --filter @clario/web build",
     "lint": "turbo run lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -17,7 +17,6 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix --max-warnings 0",
       "prettier --write"
     ],
     "*.{json,md,css}": [
@@ -26,9 +25,9 @@
   },
   "devDependencies": {
     "husky": "^9.1.7",
-    "lint-staged": "^16.3.1",
-    "prettier": "^3.8.1",
-    "turbo": "^2.5.4",
-    "typescript": "^5"
+    "lint-staged": "^16.1.0",
+    "prettier": "^3.5.3",
+    "turbo": "^2.9.6",
+    "typescript": "^5.3.3"
   }
 }
