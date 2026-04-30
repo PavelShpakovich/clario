@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.clario.app",
+      "bundleIdentifier": "by.tryclario.app",
       "infoPlist": {
         "NSUserNotificationUsageDescription": "Уведомления сообщают о готовности вашего астрологического разбора."
       }
@@ -24,7 +24,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.clario.app"
+      "package": "by.tryclario.app"
     },
     "web": {
       "bundler": "metro",
