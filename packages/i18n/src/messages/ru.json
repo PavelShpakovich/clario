@@ -716,7 +716,11 @@
     "deleteAccountConfirmTitle": "Вы уверены?",
     "deleteAccountConfirmDesc": "Это действие нельзя отменить. Ваш аккаунт, все карты, разборы и история чатов будут удалены навсегда.",
     "deleteAccountCancel": "Отмена",
-    "deleteAccountConfirm": "Да, удалить аккаунт"
+    "deleteAccountConfirm": "Да, удалить аккаунт",
+    "themeTitle": "Тема оформления",
+    "themeLight": "Светлая",
+    "themeDark": "Тёмная",
+    "themeSystem": "Системная"
   },
   "createReading": {
     "submit": "Создать разбор",

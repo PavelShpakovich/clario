@@ -18,6 +18,8 @@ import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { toast } from '@/lib/toast';
 import { colors, cardShadow } from '@/lib/colors';
+import { useTheme } from '@/lib/theme-context';
+import type { ThemePreference } from '@/lib/theme-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TONE_STYLES } from '@clario/types';
 import { TimezonePickerModal, timezoneLabel } from '@/components/TimezonePickerModal';
@@ -98,6 +100,7 @@ export default function SettingsScreen() {
   const [tzPickerOpen, setTzPickerOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { theme: currentTheme, setTheme } = useTheme();
 
   const tSettings = useTranslations('settingsPage');
   const tNav = useTranslations('navigation');
@@ -376,6 +379,45 @@ export default function SettingsScreen() {
           <Text style={styles.prefsHint}>{tSettings('preferencesHint')}</Text>
         </View>
       )}
+
+      {/* Theme card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Ionicons name="color-palette-outline" size={16} color={colors.primary} />
+          <Text style={styles.cardSectionTitle}>{tSettings('themeTitle')}</Text>
+        </View>
+        <View style={styles.themeButtons}>
+          {(['light', 'dark', 'system'] as ThemePreference[]).map((opt) => (
+            <TouchableOpacity
+              key={opt}
+              style={[styles.themeButton, currentTheme === opt && styles.themeButtonActive]}
+              onPress={() => setTheme(opt)}
+            >
+              <Ionicons
+                name={
+                  opt === 'light'
+                    ? 'sunny-outline'
+                    : opt === 'dark'
+                      ? 'moon-outline'
+                      : 'phone-portrait-outline'
+                }
+                size={15}
+                color={currentTheme === opt ? colors.primaryForeground : colors.mutedForeground}
+              />
+              <Text
+                style={[
+                  styles.themeButtonText,
+                  currentTheme === opt && styles.themeButtonTextActive,
+                ]}
+              >
+                {tSettings(
+                  opt === 'light' ? 'themeLight' : opt === 'dark' ? 'themeDark' : 'themeSystem',
+                )}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       {/* Store link */}
       <TouchableOpacity style={styles.outlineButton} onPress={() => router.push('/(tabs)/store')}>
@@ -732,5 +774,34 @@ const styles = StyleSheet.create({
     color: colors.destructive,
     fontSize: 15,
     fontWeight: '600',
+  },
+  themeButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  themeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.muted,
+  },
+  themeButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  themeButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.mutedForeground,
+  },
+  themeButtonTextActive: {
+    color: colors.primaryForeground,
   },
 });

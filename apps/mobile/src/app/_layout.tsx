@@ -12,6 +12,7 @@ import { OfflineBanner } from '@/components/OfflineBanner';
 import { ConfirmDialogProvider } from '@/components/ConfirmDialog';
 import { SplashAnimation } from '@/components/SplashAnimation';
 import { useColors } from '@/lib/colors';
+import { ThemeProvider } from '@/lib/theme-context';
 
 export default function RootLayout() {
   const themeColors = useColors();
@@ -68,22 +69,24 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <ConfirmDialogProvider>
-        <View style={{ flex: 1 }}>
-          <OfflineBanner />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: themeColors.background },
-            }}
-          />
-          <StatusBar style={isDark ? 'light' : 'auto'} />
-          {(!authReady || !splashDone) && <SplashAnimation onDone={() => setSplashDone(true)} />}
-        </View>
-        <Toast position="bottom" bottomOffset={32} />
-      </ConfirmDialogProvider>
-    </ErrorBoundary>
+    <ThemeProvider>
+      <ErrorBoundary>
+        <ConfirmDialogProvider>
+          <View style={{ flex: 1 }}>
+            <OfflineBanner />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: themeColors.background },
+              }}
+            />
+            <StatusBar style={isDark ? 'light' : 'auto'} />
+            {(!authReady || !splashDone) && <SplashAnimation onDone={() => setSplashDone(true)} />}
+          </View>
+          <Toast position="bottom" bottomOffset={32} />
+        </ConfirmDialogProvider>
+      </ErrorBoundary>
+    </ThemeProvider>
   );
 }
 
