@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
@@ -75,11 +75,17 @@ export function ChartsOverview({
     if (!deleteId) return;
     setDeleting(true);
     try {
-      await chartsApi.deleteChart(deleteId);
-      setCharts((prev) => prev.filter((c) => c.id !== deleteId));
-      toast.success(t('deleteChartSuccess'));
+      await runToastMutation({
+        action: () => chartsApi.deleteChart(deleteId),
+        successMessage: t('deleteChartSuccess'),
+        errorMessage: t('deleteChartFailed'),
+        toastKey: 'charts-delete',
+        onSuccess: () => {
+          setCharts((prev) => prev.filter((c) => c.id !== deleteId));
+        },
+      });
     } catch {
-      toast.error(t('deleteChartFailed'));
+      // Toast is handled by runToastMutation.
     } finally {
       setDeleting(false);
       setDeleteId(null);

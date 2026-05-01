@@ -23,6 +23,7 @@ import type {
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { toast } from '@/lib/toast';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
@@ -144,38 +145,46 @@ function PricingSection() {
   async function saveAll() {
     setSaving(true);
     try {
-      const productUpdates = products
-        .filter((p) => draftProducts[p.id] != null || draftProductsFree[p.id] != null)
-        .map((p) =>
-          adminApi.updateProductPricing(p.id, {
-            ...(draftProducts[p.id] != null ? { creditCost: draftProducts[p.id] } : {}),
-            ...(draftProductsFree[p.id] != null ? { free: draftProductsFree[p.id] } : {}),
-          }),
-        );
-      const packUpdates = Object.entries(draftPacks).map(([id, updates]) =>
-        adminApi.updateCreditPack(id, updates),
-      );
-      await Promise.all([...productUpdates, ...packUpdates]);
-      setProducts((prev) =>
-        prev.map((p) => ({
-          ...p,
-          ...(draftProducts[p.id] != null ? { credit_cost: draftProducts[p.id] } : {}),
-          ...(draftProductsFree[p.id] != null ? { free: draftProductsFree[p.id] } : {}),
-        })),
-      );
-      setPacks((prev) =>
-        prev.map((pk) => {
-          const d = draftPacks[pk.id];
-          if (!d) return pk;
-          return { ...pk, credits: d.credits ?? pk.credits, active: d.active ?? pk.active };
-        }),
-      );
-      setDraftProducts({});
-      setDraftProductsFree({});
-      setDraftPacks({});
-      toast.success(t('pricingSaved'));
+      await runToastMutation({
+        action: async () => {
+          const productUpdates = products
+            .filter((p) => draftProducts[p.id] != null || draftProductsFree[p.id] != null)
+            .map((p) =>
+              adminApi.updateProductPricing(p.id, {
+                ...(draftProducts[p.id] != null ? { creditCost: draftProducts[p.id] } : {}),
+                ...(draftProductsFree[p.id] != null ? { free: draftProductsFree[p.id] } : {}),
+              }),
+            );
+          const packUpdates = Object.entries(draftPacks).map(([id, updates]) =>
+            adminApi.updateCreditPack(id, updates),
+          );
+          await Promise.all([...productUpdates, ...packUpdates]);
+        },
+        successMessage: t('pricingSaved'),
+        errorMessage: t('pricingFailed'),
+        toastKey: 'admin-pricing-save',
+        onSuccess: () => {
+          setProducts((prev) =>
+            prev.map((p) => ({
+              ...p,
+              ...(draftProducts[p.id] != null ? { credit_cost: draftProducts[p.id] } : {}),
+              ...(draftProductsFree[p.id] != null ? { free: draftProductsFree[p.id] } : {}),
+            })),
+          );
+          setPacks((prev) =>
+            prev.map((pk) => {
+              const d = draftPacks[pk.id];
+              if (!d) return pk;
+              return { ...pk, credits: d.credits ?? pk.credits, active: d.active ?? pk.active };
+            }),
+          );
+          setDraftProducts({});
+          setDraftProductsFree({});
+          setDraftPacks({});
+        },
+      });
     } catch {
-      toast.error(t('pricingFailed'));
+      // Toast is handled by runToastMutation.
     } finally {
       setSaving(false);
     }
@@ -414,15 +423,22 @@ function CreditForm({ user, mode, onClose, onDone }: CreditFormProps) {
     if (!n || n <= 0) return;
     setLoading(true);
     try {
-      await adminFetch(
-        mode === 'grant' ? '/api/admin/credits/grant' : '/api/admin/credits/revoke',
-        { method: 'POST', body: JSON.stringify({ userId: user.id, amount: n }) },
-      );
-      toast.success(mode === 'grant' ? t('grantSuccess') : t('revokeSuccess'));
-      onDone();
-      onClose();
+      await runToastMutation({
+        action: () =>
+          adminFetch(mode === 'grant' ? '/api/admin/credits/grant' : '/api/admin/credits/revoke', {
+            method: 'POST',
+            body: JSON.stringify({ userId: user.id, amount: n }),
+          }),
+        successMessage: mode === 'grant' ? t('grantSuccess') : t('revokeSuccess'),
+        errorMessage: mode === 'grant' ? t('grantFailed') : t('revokeFailed'),
+        toastKey: `admin-credit-${mode}`,
+        onSuccess: async () => {
+          await onDone();
+          onClose();
+        },
+      });
     } catch {
-      toast.error(mode === 'grant' ? t('grantFailed') : t('revokeFailed'));
+      // Toast is handled by runToastMutation.
     } finally {
       setLoading(false);
     }
@@ -629,13 +645,23 @@ export default function AdminScreen() {
     });
     if (!ok) return;
     try {
-      await adminFetch(`/api/admin/users/${user.id}/admin`, {
-        method: 'PATCH',
-        body: JSON.stringify({ makeAdmin: !user.isAdmin }),
+      await runToastMutation({
+        action: () =>
+          adminFetch(`/api/admin/users/${user.id}/admin`, {
+            method: 'PATCH',
+            body: JSON.stringify({ makeAdmin: !user.isAdmin }),
+          }),
+        silentSuccess: true,
+        errorMessage: t('failedToggleAdmin'),
+        toastKey: 'admin-toggle-role',
+        onSuccess: () => {
+          setUsers((prev) =>
+            prev.map((u) => (u.id === user.id ? { ...u, isAdmin: !u.isAdmin } : u)),
+          );
+        },
       });
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, isAdmin: !u.isAdmin } : u)));
     } catch {
-      toast.error(t('failedToggleAdmin'));
+      // Toast is handled by runToastMutation.
     }
   }
 
@@ -649,11 +675,17 @@ export default function AdminScreen() {
     });
     if (!ok) return;
     try {
-      await adminFetch(`/api/admin/users/${user.id}`, { method: 'DELETE' });
-      toast.success(t('deleteUserSuccess'));
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      await runToastMutation({
+        action: () => adminFetch(`/api/admin/users/${user.id}`, { method: 'DELETE' }),
+        successMessage: t('deleteUserSuccess'),
+        errorMessage: t('failedDeleteUser'),
+        toastKey: 'admin-delete-user',
+        onSuccess: () => {
+          setUsers((prev) => prev.filter((u) => u.id !== user.id));
+        },
+      });
     } catch {
-      toast.error(t('failedDeleteUser'));
+      // Toast is handled by runToastMutation.
     }
   }
 

@@ -6,9 +6,9 @@ import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useCredits } from '@/components/providers/credits-provider';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Send, Loader2, Square, Lock } from 'lucide-react';
-import { toast } from 'sonner';
 import { ConfirmSpendDialog } from '@/components/common/confirm-spend-dialog';
 import { ApiClientError, chatApi } from '@clario/api-client';
 
@@ -182,22 +182,28 @@ export function FollowUpChat({
   async function handleUnlock() {
     setIsUnlocking(true);
     try {
-      const data = await chatApi.unlockFollowUp(readingId);
-      setCurrentLimit(data.messagesLimit);
-      syncCredits({ newBalance: data.newBalance });
-      toast.success(t('unlockSuccess', { count: data.addedMessages ?? 5 }));
+      await runToastMutation({
+        action: () => chatApi.unlockFollowUp(readingId),
+        mapSuccessMessage: (data) => t('unlockSuccess', { count: data.addedMessages ?? 5 }),
+        errorMessage: t('unlockFailed'),
+        mapErrorMessage: (error) => {
+          if (error instanceof ApiClientError && error.code === 'insufficient_credits') {
+            const details = (error.data ?? {}) as { required?: number; balance?: number };
+            return tCredits('insufficientDescription', {
+              required: details.required ?? unlockCost,
+              balance: details.balance ?? 0,
+            });
+          }
+
+          return t('unlockFailed');
+        },
+        onSuccess: (data) => {
+          setCurrentLimit(data.messagesLimit);
+          syncCredits({ newBalance: data.newBalance });
+        },
+      });
     } catch (error) {
-      if (error instanceof ApiClientError && error.code === 'insufficient_credits') {
-        const details = (error.data ?? {}) as { required?: number; balance?: number };
-        toast.error(
-          tCredits('insufficientDescription', {
-            required: details.required ?? unlockCost,
-            balance: details.balance ?? 0,
-          }),
-        );
-      } else {
-        toast.error(t('unlockFailed'));
-      }
+      // Toast is handled by runToastMutation.
     } finally {
       setIsUnlocking(false);
     }

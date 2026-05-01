@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Pencil, Check, X } from 'lucide-react';
 import { revalidateProfileData } from '@/actions/profile';
 import { broadcastDisplayName } from '@/hooks/use-display-name';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { profileApi } from '@clario/api-client';
 
 interface DisplayNameFormProps {
@@ -30,17 +31,25 @@ export function DisplayNameForm({ initialName }: DisplayNameFormProps) {
 
     startTransition(async () => {
       try {
-        await profileApi.updateDisplayName(trimmed);
-        setSaved(trimmed);
-        setValue(trimmed);
-        setEditing(false);
-        broadcastDisplayName(trimmed);
-        await revalidateProfileData();
-        toast.success(t('nameSaved'));
+        await runToastMutation({
+          action: () => profileApi.updateDisplayName(trimmed),
+          successMessage: t('nameSaved'),
+          errorMessage: t('nameError'),
+          toastKey: 'profile-display-name',
+          onSuccess: async () => {
+            setSaved(trimmed);
+            setValue(trimmed);
+            setEditing(false);
+            broadcastDisplayName(trimmed);
+            await revalidateProfileData();
+          },
+          onError: () => {
+            setValue(saved);
+            setEditing(false);
+          },
+        });
       } catch {
-        toast.error(t('nameError'));
-        setValue(saved);
-        setEditing(false);
+        // Toast is handled by runToastMutation.
       }
     });
   };

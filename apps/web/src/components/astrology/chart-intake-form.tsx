@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition, type KeyboardE
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { LocationMap } from '@/components/astrology/location-map';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -281,53 +282,65 @@ export function ChartIntakeForm({
 
     startTransition(async () => {
       try {
-        if (mode === 'edit' && chartId) {
-          await chartsApi.updateChart(chartId, {
-            label: form.label,
-            personName: form.personName,
-            subjectType: form.subjectType as 'self' | 'partner' | 'child' | 'client' | 'other',
-            birthDate: form.birthDate,
-            birthTime: birthTimeKnown ? normalizedBirthTime : null,
-            birthTimeKnown,
-            city: form.city,
-            country: form.country,
-            timezone: form.timezone || null,
-            latitude: form.latitude ? Number(form.latitude) : null,
-            longitude: form.longitude ? Number(form.longitude) : null,
-            houseSystem: form.houseSystem as HouseSystem,
-            notes: form.notes || null,
-          });
+        await runToastMutation({
+          action: () => {
+            if (mode === 'edit' && chartId) {
+              return chartsApi.updateChart(chartId, {
+                label: form.label,
+                personName: form.personName,
+                subjectType: form.subjectType as 'self' | 'partner' | 'child' | 'client' | 'other',
+                birthDate: form.birthDate,
+                birthTime: birthTimeKnown ? normalizedBirthTime : null,
+                birthTimeKnown,
+                city: form.city,
+                country: form.country,
+                timezone: form.timezone || null,
+                latitude: form.latitude ? Number(form.latitude) : null,
+                longitude: form.longitude ? Number(form.longitude) : null,
+                houseSystem: form.houseSystem as HouseSystem,
+                notes: form.notes || null,
+              });
+            }
 
-          toast.success(t('successToastEdit'));
-          router.push(`/charts/${chartId}`);
-          router.refresh();
-          return;
-        }
+            return chartsApi.createChart({
+              label: form.label,
+              personName: form.personName,
+              subjectType: form.subjectType as 'self' | 'partner' | 'child' | 'client' | 'other',
+              birthDate: form.birthDate,
+              birthTime: birthTimeKnown ? normalizedBirthTime : undefined,
+              birthTimeKnown,
+              city: form.city,
+              country: form.country,
+              timezone: form.timezone || undefined,
+              latitude: form.latitude ? Number(form.latitude) : undefined,
+              longitude: form.longitude ? Number(form.longitude) : undefined,
+              houseSystem: form.houseSystem as HouseSystem,
+              notes: form.notes || undefined,
+            });
+          },
+          successMessage: mode === 'edit' ? t('successToastEdit') : t('successToast'),
+          errorMessage: t('errorToast'),
+          mapErrorMessage: (error) => {
+            if (error instanceof Error && error.message === 'rate_limit') {
+              return t('rateLimitToast');
+            }
 
-        const { chart } = await chartsApi.createChart({
-          label: form.label,
-          personName: form.personName,
-          subjectType: form.subjectType as 'self' | 'partner' | 'child' | 'client' | 'other',
-          birthDate: form.birthDate,
-          birthTime: birthTimeKnown ? normalizedBirthTime : undefined,
-          birthTimeKnown,
-          city: form.city,
-          country: form.country,
-          timezone: form.timezone || undefined,
-          latitude: form.latitude ? Number(form.latitude) : undefined,
-          longitude: form.longitude ? Number(form.longitude) : undefined,
-          houseSystem: form.houseSystem as HouseSystem,
-          notes: form.notes || undefined,
+            return error instanceof Error ? error.message : t('errorToast');
+          },
+          toastKey: mode === 'edit' ? 'chart-save-edit' : 'chart-save-create',
+          onSuccess: (result) => {
+            if (mode === 'edit' && chartId) {
+              router.push(`/charts/${chartId}`);
+              router.refresh();
+              return;
+            }
+
+            const created = result as Awaited<ReturnType<typeof chartsApi.createChart>>;
+            router.push(`/charts/${created.chart.id}`);
+          },
         });
-
-        toast.success(t('successToast'));
-        router.push(`/charts/${chart.id}`);
       } catch (error) {
-        if (error instanceof Error && error.message === 'rate_limit') {
-          toast.error(t('rateLimitToast'));
-        } else {
-          toast.error(error instanceof Error ? error.message : t('errorToast'));
-        }
+        // Toast is handled by runToastMutation.
       }
     });
   };

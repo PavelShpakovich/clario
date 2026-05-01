@@ -13,7 +13,7 @@ import { compatibilityApi } from '@clario/api-client';
 import type { CompatibilityReport } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
-import { toast } from '@/lib/toast';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
@@ -131,10 +131,17 @@ export default function CompatibilityListScreen() {
     });
     if (!ok) return;
     try {
-      await compatibilityApi.deleteReport(report.id);
-      setReports((prev) => prev.filter((r) => r.id !== report.id));
+      await runToastMutation({
+        action: () => compatibilityApi.deleteReport(report.id),
+        silentSuccess: true,
+        errorMessage: tCompat('deleteFailed'),
+        toastKey: 'mobile-compatibility-delete',
+        onSuccess: () => {
+          setReports((prev) => prev.filter((r) => r.id !== report.id));
+        },
+      });
     } catch {
-      toast.error(tCompat('deleteFailed'));
+      // Toast is handled by runToastMutation.
     }
   }
 

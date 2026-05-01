@@ -21,6 +21,7 @@ import { useTranslations } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import { messages } from '@clario/i18n';
 import { useColors } from '@/lib/colors';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInsufficientCredits } from '@/lib/insufficient-credits-context';
 
@@ -131,19 +132,36 @@ export default function ChatScreen() {
   async function handleUnlock() {
     setUnlocking(true);
     try {
-      const result: UnlockFollowUpResponse = await chatApi.unlockFollowUp(readingId);
-      setMessagesLimit(result.messagesLimit);
-      toast.success(tChat('unlockSuccess').replace('{count}', String(result.addedMessages)));
+      await runToastMutation<UnlockFollowUpResponse>({
+        action: () => chatApi.unlockFollowUp(readingId),
+        mapSuccessMessage: (result) =>
+          tChat('unlockSuccess').replace('{count}', String(result.addedMessages)),
+        errorMessage: tChat('unlockFailed'),
+        mapErrorMessage: (error) => {
+          if (
+            error instanceof ApiClientError &&
+            (error.status === 402 || error.code === 'insufficient_credits')
+          ) {
+            return undefined;
+          }
+
+          return tChat('unlockFailed');
+        },
+        onSuccess: (result) => {
+          setMessagesLimit(result.messagesLimit);
+        },
+        onError: (error) => {
+          if (
+            error instanceof ApiClientError &&
+            (error.status === 402 || error.code === 'insufficient_credits')
+          ) {
+            const data = error.data as { required?: number; balance?: number } | undefined;
+            showInsufficientCredits({ required: data?.required, balance: data?.balance });
+          }
+        },
+      });
     } catch (err) {
-      if (
-        err instanceof ApiClientError &&
-        (err.status === 402 || err.code === 'insufficient_credits')
-      ) {
-        const data = err.data as { required?: number; balance?: number } | undefined;
-        showInsufficientCredits({ required: data?.required, balance: data?.balance });
-      } else {
-        toast.error(tChat('unlockFailed'));
-      }
+      // Toast is handled by runToastMutation.
     } finally {
       setUnlocking(false);
     }

@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
 import { useCredits } from '@/components/providers/credits-provider';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { Button } from '@/components/ui/button';
 import { ConfirmSpendDialog } from '@/components/common/confirm-spend-dialog';
 import { ApiClientError, forecastsApi } from '@clario/api-client';
@@ -27,22 +27,29 @@ export function HoroscopeRegenerate({ forecastId }: HoroscopeRegenerateProps) {
   async function handleRegenerate() {
     setLoading(true);
     try {
-      const data = await forecastsApi.regenerateForecast(forecastId);
-      syncCredits({ newBalance: data.newBalance });
-      // Server will see null content → render HoroscopeGenerating
-      router.refresh();
+      await runToastMutation({
+        action: () => forecastsApi.regenerateForecast(forecastId),
+        silentSuccess: true,
+        errorMessage: t('regenerateFailed'),
+        mapErrorMessage: (error) => {
+          if (error instanceof ApiClientError && error.code === 'insufficient_credits') {
+            const details = (error.data ?? {}) as { required?: number; balance?: number };
+            return tCredits('insufficientDescription', {
+              required: details.required ?? cost,
+              balance: details.balance ?? 0,
+            });
+          }
+
+          return t('regenerateFailed');
+        },
+        onSuccess: (data) => {
+          syncCredits({ newBalance: data.newBalance });
+          // Server will see null content → render HoroscopeGenerating
+          router.refresh();
+        },
+      });
     } catch (error) {
-      if (error instanceof ApiClientError && error.code === 'insufficient_credits') {
-        const details = (error.data ?? {}) as { required?: number; balance?: number };
-        toast.error(
-          tCredits('insufficientDescription', {
-            required: details.required ?? cost,
-            balance: details.balance ?? 0,
-          }),
-        );
-      } else {
-        toast.error(t('regenerateFailed'));
-      }
+      // Toast is handled by runToastMutation.
     } finally {
       setLoading(false);
     }

@@ -19,6 +19,7 @@ import { COMPATIBILITY_TYPES } from '@clario/types';
 import type { CompatibilityType } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInsufficientCredits } from '@/lib/insufficient-credits-context';
@@ -133,27 +134,46 @@ export default function NewCompatibilityScreen() {
     if (!primaryId || !secondaryId) return;
     setSubmitting(true);
     try {
-      const { report } = await compatibilityApi.createReport({
-        primaryChartId: primaryId,
-        secondaryChartId: secondaryId,
-        compatibilityType: compatType,
+      await runToastMutation({
+        action: () =>
+          compatibilityApi.createReport({
+            primaryChartId: primaryId,
+            secondaryChartId: secondaryId,
+            compatibilityType: compatType,
+          }),
+        silentSuccess: true,
+        errorMessage: tCompat('createFailed'),
+        mapErrorMessage: (error) => {
+          if (
+            error instanceof ApiClientError &&
+            (error.status === 402 || error.code === 'insufficient_credits')
+          ) {
+            return undefined;
+          }
+
+          return tCompat('createFailed');
+        },
+        toastKey: 'mobile-compatibility-create',
+        onSuccess: ({ report }) => {
+          router.push(
+            withReturnTo(
+              `/(tabs)/compatibility/${report.id}`,
+              resolveParentRoute(returnTo, '/(tabs)/compatibility'),
+            ) as never,
+          );
+        },
+        onError: (error) => {
+          if (
+            error instanceof ApiClientError &&
+            (error.status === 402 || error.code === 'insufficient_credits')
+          ) {
+            const data = error.data as { required?: number; balance?: number } | undefined;
+            showInsufficientCredits({ required: data?.required, balance: data?.balance });
+          }
+        },
       });
-      router.push(
-        withReturnTo(
-          `/(tabs)/compatibility/${report.id}`,
-          resolveParentRoute(returnTo, '/(tabs)/compatibility'),
-        ) as never,
-      );
-    } catch (err) {
-      if (
-        err instanceof ApiClientError &&
-        (err.status === 402 || err.code === 'insufficient_credits')
-      ) {
-        const data = err.data as { required?: number; balance?: number } | undefined;
-        showInsufficientCredits({ required: data?.required, balance: data?.balance });
-      } else {
-        toast.error(tCompat('createFailed'));
-      }
+    } catch {
+      // Toast is handled by runToastMutation.
     } finally {
       setSubmitting(false);
     }

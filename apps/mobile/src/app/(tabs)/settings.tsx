@@ -16,7 +16,7 @@ import type { UserPreferencesResponse } from '@clario/api-client';
 import { supabase } from '@/lib/supabase';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
-import { toast } from '@/lib/toast';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useTheme } from '@/lib/theme-context';
 import type { ThemePreference } from '@/lib/theme-context';
@@ -199,11 +199,18 @@ export default function SettingsScreen() {
   async function handleDeleteAccount() {
     setDeletingAccount(true);
     try {
-      await profileApi.deleteAccount();
-      await supabase.auth.signOut();
-      router.replace('/(auth)/login');
+      await runToastMutation({
+        action: () => profileApi.deleteAccount(),
+        silentSuccess: true,
+        errorMessage: tSettings('deleteAccountError'),
+        toastKey: 'mobile-delete-account',
+        onSuccess: async () => {
+          await supabase.auth.signOut();
+          router.replace('/(auth)/login');
+        },
+      });
     } catch {
-      toast.error(tSettings('deleteAccountError'));
+      // Toast is handled by runToastMutation.
     } finally {
       setDeletingAccount(false);
     }

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { signOut } from 'next-auth/react';
-import { toast } from 'sonner';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -106,10 +106,14 @@ export function SettingsForm({ data }: { data: SettingsFormData }) {
     setTimezone(value);
     startTransition(async () => {
       try {
-        await saveProfile({ timezone: value || null });
-        toast.success(t('saved'));
+        await runToastMutation({
+          action: () => saveProfile({ timezone: value || null }),
+          successMessage: t('saved'),
+          errorMessage: t('saveError'),
+          toastKey: 'settings-timezone-save',
+        });
       } catch {
-        toast.error(t('saveError'));
+        // Toast is handled by runToastMutation.
       }
     });
   }
@@ -117,10 +121,14 @@ export function SettingsForm({ data }: { data: SettingsFormData }) {
   function handleSavePreferences() {
     startTransition(async () => {
       try {
-        await savePreferences();
-        toast.success(t('saved'));
+        await runToastMutation({
+          action: () => savePreferences(),
+          successMessage: t('saved'),
+          errorMessage: t('saveError'),
+          toastKey: 'settings-preferences-save',
+        });
       } catch {
-        toast.error(t('saveError'));
+        // Toast is handled by runToastMutation.
       }
     });
   }
@@ -128,10 +136,17 @@ export function SettingsForm({ data }: { data: SettingsFormData }) {
   function handleDeleteAccount() {
     startDeleteTransition(async () => {
       try {
-        await profileApi.deleteAccount();
-        await signOut({ callbackUrl: '/' });
+        await runToastMutation({
+          action: () => profileApi.deleteAccount(),
+          silentSuccess: true,
+          errorMessage: t('deleteAccountError'),
+          toastKey: 'settings-delete-account',
+          onSuccess: async () => {
+            await signOut({ callbackUrl: '/' });
+          },
+        });
       } catch {
-        toast.error(t('deleteAccountError'));
+        // Toast is handled by runToastMutation.
       }
     });
   }

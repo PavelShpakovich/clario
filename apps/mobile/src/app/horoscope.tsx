@@ -13,8 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { forecastsApi } from '@clario/api-client';
 import type { DailyForecastRecord, DailyForecastResponse } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
-import { toast } from '@/lib/toast';
 import { useColors, cardShadow } from '@/lib/colors';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HoroscopeScreen() {
@@ -103,10 +103,17 @@ export default function HoroscopeScreen() {
   async function handleUnlock() {
     setUnlocking(true);
     try {
-      await forecastsApi.activateAccess();
-      await loadForecast();
+      await runToastMutation({
+        action: () => forecastsApi.activateAccess(),
+        silentSuccess: true,
+        errorMessage: tHoro('unlockForecastFailed'),
+        toastKey: 'mobile-forecast-unlock',
+        onSuccess: async () => {
+          await loadForecast();
+        },
+      });
     } catch {
-      toast.error(tHoro('unlockForecastFailed'));
+      // Toast is handled by runToastMutation.
     } finally {
       setUnlocking(false);
     }
@@ -116,11 +123,18 @@ export default function HoroscopeScreen() {
     if (!forecast) return;
     setRegenerating(true);
     try {
-      await forecastsApi.regenerateForecast(forecast.id);
-      setLoading(true);
-      await loadForecast();
+      await runToastMutation({
+        action: () => forecastsApi.regenerateForecast(forecast.id),
+        silentSuccess: true,
+        errorMessage: tHoro('regenerateFailed'),
+        toastKey: 'mobile-forecast-regenerate',
+        onSuccess: async () => {
+          setLoading(true);
+          await loadForecast();
+        },
+      });
     } catch {
-      toast.error(tHoro('regenerateFailed'));
+      // Toast is handled by runToastMutation.
     } finally {
       setRegenerating(false);
     }

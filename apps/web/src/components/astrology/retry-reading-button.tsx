@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { readingsApi } from '@clario/api-client';
@@ -23,17 +23,24 @@ export function RetryReadingButton({ chartId, readingType, readingId }: RetryRea
   const handleRetry = () => {
     startTransition(async () => {
       try {
-        const data = await readingsApi.createReading({
-          chartId,
-          readingType,
-          replaceReadingId: readingId,
+        await runToastMutation({
+          action: () =>
+            readingsApi.createReading({
+              chartId,
+              readingType,
+              replaceReadingId: readingId,
+            }),
+          successMessage: t('retrySuccess'),
+          errorMessage: t('retryError'),
+          mapErrorMessage: (error) => (error instanceof Error ? error.message : t('retryError')),
+          toastKey: 'reading-retry',
+          onSuccess: (data) => {
+            setDone(true);
+            router.push(`/readings/${data.reading.id}`);
+          },
         });
-
-        setDone(true);
-        toast.success(t('retrySuccess'));
-        router.push(`/readings/${data.reading.id}`);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('retryError'));
+      } catch {
+        // Toast is handled by runToastMutation.
       }
     });
   };

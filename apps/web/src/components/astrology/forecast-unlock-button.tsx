@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
 import { useCredits } from '@/components/providers/credits-provider';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles } from 'lucide-react';
 import { ConfirmSpendDialog } from '@/components/common/confirm-spend-dialog';
-import { ApiClientError, forecastsApi } from '@clario/api-client';
+import { forecastsApi } from '@clario/api-client';
 
 export function ForecastUnlockButton() {
   const t = useTranslations('horoscope');
@@ -22,18 +22,21 @@ export function ForecastUnlockButton() {
   async function handleUnlock() {
     setLoading(true);
     try {
-      const data = await forecastsApi.activateAccess();
-      syncCredits({
-        newBalance: data.newBalance,
-        forecastAccessUntil: data.forecastAccessUntil,
+      await runToastMutation({
+        action: () => forecastsApi.activateAccess(),
+        silentSuccess: true,
+        errorMessage: t('unlockForecastFailed'),
+        toastKey: 'forecast-unlock',
+        onSuccess: (data) => {
+          syncCredits({
+            newBalance: data.newBalance,
+            forecastAccessUntil: data.forecastAccessUntil,
+          });
+          router.refresh();
+        },
       });
-      router.refresh();
-    } catch (error) {
-      if (error instanceof ApiClientError && error.code === 'insufficient_credits') {
-        toast.error(t('unlockForecastFailed'));
-      } else {
-        toast.error(t('unlockForecastFailed'));
-      }
+    } catch {
+      // Toast is handled by runToastMutation.
     } finally {
       setLoading(false);
     }

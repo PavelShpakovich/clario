@@ -16,6 +16,7 @@ import type { ChartDetail, ChartReadingRow } from '@clario/api-client';
 import { READING_TYPES } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -355,22 +356,40 @@ export default function ChartDetailScreen() {
     if (!chartId) return;
     setCreatingReading(readingType);
     try {
-      const { reading } = await readingsApi.createReading({ chartId, readingType });
-      setShowReadingModal(false);
-      router.push(
-        withReturnTo(`/(tabs)/readings/${reading.id}`, `/(tabs)/charts/${chartId}`) as never,
-      );
-    } catch (err) {
-      if (
-        err instanceof ApiClientError &&
-        (err.status === 402 || err.code === 'insufficient_credits')
-      ) {
-        setShowReadingModal(false);
-        const data = err.data as { required?: number; balance?: number } | undefined;
-        showInsufficientCredits({ required: data?.required, balance: data?.balance });
-      } else {
-        toast.error(tCreateReading('error'));
-      }
+      await runToastMutation({
+        action: () => readingsApi.createReading({ chartId, readingType }),
+        silentSuccess: true,
+        errorMessage: tCreateReading('error'),
+        mapErrorMessage: (error) => {
+          if (
+            error instanceof ApiClientError &&
+            (error.status === 402 || error.code === 'insufficient_credits')
+          ) {
+            return undefined;
+          }
+
+          return tCreateReading('error');
+        },
+        toastKey: `mobile-create-reading-${readingType}`,
+        onSuccess: ({ reading }) => {
+          setShowReadingModal(false);
+          router.push(
+            withReturnTo(`/(tabs)/readings/${reading.id}`, `/(tabs)/charts/${chartId}`) as never,
+          );
+        },
+        onError: (error) => {
+          if (
+            error instanceof ApiClientError &&
+            (error.status === 402 || error.code === 'insufficient_credits')
+          ) {
+            setShowReadingModal(false);
+            const data = error.data as { required?: number; balance?: number } | undefined;
+            showInsufficientCredits({ required: data?.required, balance: data?.balance });
+          }
+        },
+      });
+    } catch {
+      // Toast is handled by runToastMutation.
     } finally {
       setCreatingReading(null);
     }

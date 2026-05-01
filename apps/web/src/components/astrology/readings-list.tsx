@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,11 +51,17 @@ export function ReadingsList({ initialReadings }: ReadingsListProps) {
     if (!deleteId) return;
     setDeleting(true);
     try {
-      await readingsApi.deleteReading(deleteId);
-      setReadings((prev) => prev.filter((r) => r.id !== deleteId));
-      toast.success(t('deleteReadingSuccess'));
+      await runToastMutation({
+        action: () => readingsApi.deleteReading(deleteId),
+        successMessage: t('deleteReadingSuccess'),
+        errorMessage: t('deleteReadingFailed'),
+        toastKey: 'readings-delete',
+        onSuccess: () => {
+          setReadings((prev) => prev.filter((r) => r.id !== deleteId));
+        },
+      });
     } catch {
-      toast.error(t('deleteReadingFailed'));
+      // Toast is handled by runToastMutation.
     } finally {
       setDeleting(false);
       setDeleteId(null);

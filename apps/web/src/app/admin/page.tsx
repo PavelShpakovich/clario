@@ -28,6 +28,7 @@ import {
 import { BackLink } from '@/components/common/back-link';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { AdminTableSkeleton } from '@/components/skeletons';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { useCredits } from '@/components/providers/credits-provider';
@@ -73,26 +74,28 @@ function CreditActionDialog({
     if (!numAmount || numAmount <= 0) return;
     setLoading(true);
     try {
-      let result: { success: boolean; newBalance: number; transactionId: string };
-      if (mode === 'grant') {
-        result = await adminApi.grantCredits(userId, numAmount, note || undefined);
-        toast.success(t('grantSuccess'));
-      } else {
-        result = await adminApi.revokeCredits(userId, numAmount, note || undefined);
-        toast.success(t('revokeSuccess'));
-      }
+      await runToastMutation({
+        action: () =>
+          mode === 'grant'
+            ? adminApi.grantCredits(userId, numAmount, note || undefined)
+            : adminApi.revokeCredits(userId, numAmount, note || undefined),
+        successMessage: mode === 'grant' ? t('grantSuccess') : t('revokeSuccess'),
+        errorMessage: mode === 'grant' ? t('grantFailed') : t('revokeFailed'),
+        toastKey: `web-admin-credit-${mode}`,
+        onSuccess: (result) => {
+          if (session?.user?.id === userId) {
+            syncCredits({ newBalance: result.newBalance });
+            void refreshCredits();
+          }
 
-      if (session?.user?.id === userId) {
-        syncCredits({ newBalance: result.newBalance });
-        void refreshCredits();
-      }
-
-      onDone();
-      onOpenChange(false);
-      setAmount('');
-      setNote('');
+          onDone();
+          onOpenChange(false);
+          setAmount('');
+          setNote('');
+        },
+      });
     } catch {
-      toast.error(mode === 'grant' ? t('grantFailed') : t('revokeFailed'));
+      // Toast is handled by runToastMutation.
     } finally {
       setLoading(false);
     }
@@ -422,11 +425,18 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
   const executeToggleAdmin = async () => {
     setLoading(true);
     try {
-      await adminApi.toggleAdmin(user.id, !isAdminState);
-      setIsAdminState(!isAdminState);
-      onRefresh();
+      await runToastMutation({
+        action: () => adminApi.toggleAdmin(user.id, !isAdminState),
+        silentSuccess: true,
+        errorMessage: t('failedToggleAdmin'),
+        toastKey: 'web-admin-toggle-role',
+        onSuccess: () => {
+          setIsAdminState(!isAdminState);
+          onRefresh();
+        },
+      });
     } catch {
-      toast.error(t('failedToggleAdmin'));
+      // Toast is handled by runToastMutation.
     } finally {
       setLoading(false);
     }
@@ -435,11 +445,17 @@ function useUserActions(user: AdminUser, onRefresh: () => void) {
   const executeDeleteUser = async () => {
     setLoading(true);
     try {
-      await adminApi.deleteUser(user.id);
-      toast.success(t('deleteUserSuccess'));
-      onRefresh();
+      await runToastMutation({
+        action: () => adminApi.deleteUser(user.id),
+        successMessage: t('deleteUserSuccess'),
+        errorMessage: t('failedDeleteUser'),
+        toastKey: 'web-admin-delete-user',
+        onSuccess: () => {
+          onRefresh();
+        },
+      });
     } catch {
-      toast.error(t('failedDeleteUser'));
+      // Toast is handled by runToastMutation.
     } finally {
       setLoading(false);
     }
@@ -939,44 +955,51 @@ function PricingSection() {
   const saveAll = async () => {
     setSaving(true);
     try {
-      const productUpdates = products
-        .filter((p) => draftProducts[p.id] != null || draftProductsFree[p.id] != null)
-        .map((p) =>
-          adminApi.updateProductPricing(p.id, {
-            ...(draftProducts[p.id] != null ? { creditCost: draftProducts[p.id] } : {}),
-            ...(draftProductsFree[p.id] != null ? { free: draftProductsFree[p.id] } : {}),
-          }),
-        );
-      const packUpdates = Object.entries(draftPacks).map(([id, updates]) =>
-        adminApi.updateCreditPack(id, updates),
-      );
-      await Promise.all([...productUpdates, ...packUpdates]);
-      toast.success(t('pricingSaved'));
+      await runToastMutation({
+        action: async () => {
+          const productUpdates = products
+            .filter((p) => draftProducts[p.id] != null || draftProductsFree[p.id] != null)
+            .map((p) =>
+              adminApi.updateProductPricing(p.id, {
+                ...(draftProducts[p.id] != null ? { creditCost: draftProducts[p.id] } : {}),
+                ...(draftProductsFree[p.id] != null ? { free: draftProductsFree[p.id] } : {}),
+              }),
+            );
+          const packUpdates = Object.entries(draftPacks).map(([id, updates]) =>
+            adminApi.updateCreditPack(id, updates),
+          );
 
-      // Apply drafts to local state
-      setProducts((prev) =>
-        prev.map((p) => ({
-          ...p,
-          ...(draftProducts[p.id] != null ? { credit_cost: draftProducts[p.id] } : {}),
-          ...(draftProductsFree[p.id] != null ? { free: draftProductsFree[p.id] } : {}),
-        })),
-      );
-      setPacks((prev) =>
-        prev.map((pk) => {
-          const d = draftPacks[pk.id];
-          if (!d) return pk;
-          return {
-            ...pk,
-            credits: d.credits ?? pk.credits,
-            active: d.active ?? pk.active,
-          };
-        }),
-      );
-      setDraftProducts({});
-      setDraftProductsFree({});
-      setDraftPacks({});
+          await Promise.all([...productUpdates, ...packUpdates]);
+        },
+        successMessage: t('pricingSaved'),
+        errorMessage: t('pricingFailed'),
+        toastKey: 'web-admin-pricing-save',
+        onSuccess: () => {
+          setProducts((prev) =>
+            prev.map((p) => ({
+              ...p,
+              ...(draftProducts[p.id] != null ? { credit_cost: draftProducts[p.id] } : {}),
+              ...(draftProductsFree[p.id] != null ? { free: draftProductsFree[p.id] } : {}),
+            })),
+          );
+          setPacks((prev) =>
+            prev.map((pk) => {
+              const d = draftPacks[pk.id];
+              if (!d) return pk;
+              return {
+                ...pk,
+                credits: d.credits ?? pk.credits,
+                active: d.active ?? pk.active,
+              };
+            }),
+          );
+          setDraftProducts({});
+          setDraftProductsFree({});
+          setDraftPacks({});
+        },
+      });
     } catch {
-      toast.error(t('pricingFailed'));
+      // Toast is handled by runToastMutation.
     } finally {
       setSaving(false);
     }

@@ -3,8 +3,8 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
 import { useCredits } from '@/components/providers/credits-provider';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -43,16 +43,25 @@ export function CreateReadingButton({ chartId, chartStatus, className }: CreateR
     setActiveType(readingType);
     startTransition(async () => {
       try {
-        const data = await readingsApi.createReading({ chartId, readingType });
-        void refreshCredits();
-        router.push(`/readings/${data.reading.id}`);
-      } catch (error) {
-        if (error instanceof ApiClientError && error.code === 'insufficient_credits') {
-          toast.error(tCredits('insufficientTitle'));
-          return;
-        }
+        await runToastMutation({
+          action: () => readingsApi.createReading({ chartId, readingType }),
+          silentSuccess: true,
+          errorMessage: t('error'),
+          mapErrorMessage: (error) => {
+            if (error instanceof ApiClientError && error.code === 'insufficient_credits') {
+              return tCredits('insufficientTitle');
+            }
 
-        toast.error(error instanceof Error ? error.message : t('error'));
+            return error instanceof Error ? error.message : t('error');
+          },
+          toastKey: `create-reading-${readingType}`,
+          onSuccess: (data) => {
+            void refreshCredits();
+            router.push(`/readings/${data.reading.id}`);
+          },
+        });
+      } catch {
+        // Toast is handled by runToastMutation.
       } finally {
         setActiveType(null);
         isSubmittingRef.current = false;

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import { runToastMutation } from '@/lib/mutation-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,12 +74,18 @@ export function CompatibilityOverview({
     if (!deleteId) return;
     setDeleting(true);
     try {
-      await compatibilityApi.deleteReport(deleteId);
-      setReports((prev) => prev.filter((r) => r.id !== deleteId));
-      toast.success(t('deleteSuccess'));
-      router.refresh();
+      await runToastMutation({
+        action: () => compatibilityApi.deleteReport(deleteId),
+        successMessage: t('deleteSuccess'),
+        errorMessage: t('deleteFailed'),
+        toastKey: 'compatibility-delete',
+        onSuccess: () => {
+          setReports((prev) => prev.filter((r) => r.id !== deleteId));
+          router.refresh();
+        },
+      });
     } catch {
-      toast.error(t('deleteFailed'));
+      // Toast is handled by runToastMutation.
     } finally {
       setDeleting(false);
       setDeleteId(null);
