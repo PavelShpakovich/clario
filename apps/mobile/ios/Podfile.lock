@@ -1235,6 +1235,50 @@ PODS:
     - React-logger (= 0.74.5)
     - React-perflogger (= 0.74.5)
     - React-utils (= 0.74.5)
+  - RNDateTimePicker (8.0.1):
+    - React-Core
+  - RNGestureHandler (2.31.1):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.01.01.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Codegen
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
+  - RNReanimated (3.10.1):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.01.01.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Codegen
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - RNScreens (3.31.1):
     - DoubleConversion
     - glog
@@ -1272,7 +1316,7 @@ DEPENDENCIES:
   - "ExpoAsset (from `../../../node_modules/.pnpm/expo-asset@10.0.10_expo@51.0.39_@babel+core@7.29.0_@babel+preset-env@7.29.2_@babel+core_89506e5a6fdfe3bbd8c2ea33882f77ac/node_modules/expo-asset/ios`)"
   - "ExpoFileSystem (from `../../../node_modules/.pnpm/expo-file-system@17.0.1_expo@51.0.39_@babel+core@7.29.0_@babel+preset-env@7.29.2_@babel_7e3e237a83fa66e83db4f8bbeac86ba9/node_modules/expo-file-system/ios`)"
   - "ExpoFont (from `../../../node_modules/.pnpm/expo-font@12.0.10_expo@51.0.39_@babel+core@7.29.0_@babel+preset-env@7.29.2_@babel+core@_fc5ad4c3f02edab071ba4a82c315ee67/node_modules/expo-font/ios`)"
-  - "ExpoHead (from `../../../node_modules/.pnpm/expo-router@3.5.24_2a6e37f6df6f78a42958e71a7fc83b51/node_modules/expo-router/ios`)"
+  - "ExpoHead (from `../../../node_modules/.pnpm/expo-router@3.5.24_7e9c78a356a2cc7044ab01920b075952/node_modules/expo-router/ios`)"
   - "ExpoKeepAwake (from `../../../node_modules/.pnpm/expo-keep-awake@13.0.2_expo@51.0.39_@babel+core@7.29.0_@babel+preset-env@7.29.2_@babel+_4ac0db163e3d3c49525cc49aec50f25c/node_modules/expo-keep-awake/ios`)"
   - "ExpoModulesCore (from `../../../node_modules/.pnpm/expo-modules-core@1.12.26/node_modules/expo-modules-core`)"
   - "ExpoNetwork (from `../../../node_modules/.pnpm/expo-network@6.0.1_expo@51.0.39_@babel+core@7.29.0_@babel+preset-env@7.29.2_@babel+core_8f1ca3f0051e8ad2fee52dc71fc681c5/node_modules/expo-network/ios`)"
@@ -1333,6 +1377,9 @@ DEPENDENCIES:
   - React-runtimescheduler (from `../node_modules/react-native/ReactCommon/react/renderer/runtimescheduler`)
   - React-utils (from `../node_modules/react-native/ReactCommon/react/utils`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
+  - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
+  - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
@@ -1361,7 +1408,7 @@ EXTERNAL SOURCES:
   ExpoFont:
     :path: "../../../node_modules/.pnpm/expo-font@12.0.10_expo@51.0.39_@babel+core@7.29.0_@babel+preset-env@7.29.2_@babel+core@_fc5ad4c3f02edab071ba4a82c315ee67/node_modules/expo-font/ios"
   ExpoHead:
-    :path: "../../../node_modules/.pnpm/expo-router@3.5.24_2a6e37f6df6f78a42958e71a7fc83b51/node_modules/expo-router/ios"
+    :path: "../../../node_modules/.pnpm/expo-router@3.5.24_7e9c78a356a2cc7044ab01920b075952/node_modules/expo-router/ios"
   ExpoKeepAwake:
     :path: "../../../node_modules/.pnpm/expo-keep-awake@13.0.2_expo@51.0.39_@babel+core@7.29.0_@babel+preset-env@7.29.2_@babel+_4ac0db163e3d3c49525cc49aec50f25c/node_modules/expo-keep-awake/ios"
   ExpoModulesCore:
@@ -1479,6 +1526,12 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/utils"
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  RNDateTimePicker:
+    :path: "../node_modules/@react-native-community/datetimepicker"
+  RNGestureHandler:
+    :path: "../node_modules/react-native-gesture-handler"
+  RNReanimated:
+    :path: "../node_modules/react-native-reanimated"
   RNScreens:
     :path: "../node_modules/react-native-screens"
   RNSVG:
@@ -1555,6 +1608,9 @@ SPEC CHECKSUMS:
   React-runtimescheduler: 2cbd0f3625b30bba08e8768776107f6f0203159b
   React-utils: 9fa4e5d0b5e6c6c85c958f19d6ef854337886417
   ReactCommon: 9f285823dbe955099978d9bff65a7653ca029256
+  RNDateTimePicker: dde7ca9005d716f3efa9a63004b441679bca9a41
+  RNGestureHandler: 45a1aaeb0d66e4f606fd40cc5706cdd18a643011
+  RNReanimated: b37187062e7e9b88fc80451e6d711c09e16ce7cf
   RNScreens: a2d8a2555b4653d7a19706eb172f855657ac30d7
   RNSVG: 0e7deccab0678200815104223aadd5ca734dd41d
   SocketRocket: abac6f5de4d4d62d24e11868d7a2f427e0ef940d

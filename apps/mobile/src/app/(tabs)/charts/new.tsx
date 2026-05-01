@@ -21,6 +21,7 @@ import { useTranslations } from '@/lib/i18n';
 import { useColors } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CityPickerModal } from '@/components/CityPickerModal';
+import { DateTimePickerField } from '@/components/DateTimePickerField';
 
 type SubjectType = (typeof CHART_SUBJECT_TYPES)[number];
 type HouseSystem = (typeof HOUSE_SYSTEMS)[number];
@@ -232,20 +233,23 @@ export default function NewChartScreen() {
             <Text style={styles.stepDesc}>{tForm('stepBirthDesc')}</Text>
 
             <Text style={styles.label}>{tForm('birthDate')} (ГГГГ-ММ-ДД)</Text>
-            <TextInput
-              style={styles.input}
+            <DateTimePickerField
+              mode="date"
               value={form.birthDate}
-              onChangeText={(v) => update('birthDate', v)}
               placeholder="1990-06-15"
-              placeholderTextColor={colors.placeholder}
-              keyboardType="numeric"
+              title={tForm('birthDate')}
+              maximumDate={new Date()}
+              onChange={(v) => update('birthDate', v)}
             />
 
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>{tForm('birthTimeKnown')}</Text>
               <Switch
                 value={form.birthTimeKnown}
-                onValueChange={(v) => update('birthTimeKnown', v)}
+                onValueChange={(v) => {
+                  update('birthTimeKnown', v);
+                  if (!v) update('birthTime', '');
+                }}
                 trackColor={{ true: colors.primary }}
               />
             </View>
@@ -253,13 +257,12 @@ export default function NewChartScreen() {
             {form.birthTimeKnown && (
               <>
                 <Text style={styles.label}>{tForm('birthTime')} (ЧЧ:ММ)</Text>
-                <TextInput
-                  style={styles.input}
+                <DateTimePickerField
+                  mode="time"
                   value={form.birthTime}
-                  onChangeText={(v) => update('birthTime', v)}
                   placeholder="14:30"
-                  placeholderTextColor={colors.placeholder}
-                  keyboardType="numeric"
+                  title={tForm('birthTime')}
+                  onChange={(v) => update('birthTime', v)}
                 />
               </>
             )}

@@ -16,6 +16,7 @@
     "@clario/types": "workspace:*",
     "@clario/validation": "workspace:*",
     "@expo/vector-icons": "^14.0.2",
+    "@react-native-community/datetimepicker": "^8.0.1",
     "@react-navigation/native": "^6.1.18",
     "@supabase/supabase-js": "^2.46.1",
     "expo": "~51.0.28",
