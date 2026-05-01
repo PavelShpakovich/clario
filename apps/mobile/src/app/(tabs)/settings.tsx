@@ -25,6 +25,7 @@ import { TONE_STYLES } from '@clario/types';
 import { TimezonePickerModal, timezoneLabel } from '@/components/TimezonePickerModal';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { Skeleton } from '@/components/Skeleton';
+import { withReturnTo } from '@/lib/navigation';
 
 function SettingsSkeleton() {
   const colors = useColors();
@@ -426,7 +427,10 @@ export default function SettingsScreen() {
       </View>
 
       {/* Store link */}
-      <TouchableOpacity style={styles.outlineButton} onPress={() => router.push('/(tabs)/store')}>
+      <TouchableOpacity
+        style={styles.outlineButton}
+        onPress={() => router.push(withReturnTo('/store', '/(tabs)/settings') as never)}
+      >
         <Ionicons name="storefront-outline" size={16} color={colors.primary} />
         <Text style={styles.outlineButtonText}>{tCredits('storeTitle')}</Text>
       </TouchableOpacity>
@@ -440,7 +444,10 @@ export default function SettingsScreen() {
 
       {/* Admin panel — only for admins */}
       {isAdmin && (
-        <TouchableOpacity style={styles.outlineButton} onPress={() => router.push('/(tabs)/admin')}>
+        <TouchableOpacity
+          style={styles.outlineButton}
+          onPress={() => router.push(withReturnTo('/admin', '/(tabs)/settings') as never)}
+        >
           <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
           <Text style={styles.outlineButtonText}>{tAdmin('title')}</Text>
         </TouchableOpacity>

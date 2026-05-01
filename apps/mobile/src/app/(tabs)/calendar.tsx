@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { router } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { calendarApi } from '@clario/api-client';
 import type { CalendarDay } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
@@ -15,6 +15,7 @@ import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
+import { goBackTo } from '@/lib/navigation';
 
 const signLabels = messages.chartDetail.signs as Record<string, string>;
 const phaseLabels = (messages.calendar as { phases: Record<string, string> }).phases;
@@ -54,12 +55,7 @@ function CalendarSkeleton() {
           <Skeleton width={100} height={16} borderRadius={6} style={{ marginBottom: 12 }} />
           <View style={styles.monthGrid}>
             {Array.from({ length: 28 }).map((_, i) => (
-              <Skeleton
-                key={i}
-                style={[styles.dayCard, { padding: 0 }]}
-                height={72}
-                borderRadius={10}
-              />
+              <Skeleton key={i} style={styles.dayCardSkeleton} height={72} borderRadius={10} />
             ))}
           </View>
         </View>
@@ -112,10 +108,12 @@ export default function CalendarScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const [days, setDays] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState(true);
 
   const tCal = useTranslations('calendar');
+  const tNav = useTranslations('navigation');
 
   useEffect(() => {
     async function load() {
@@ -159,9 +157,9 @@ export default function CalendarScreen() {
         </View>
         <TouchableOpacity
           style={styles.horoscopeLink}
-          onPress={() => router.push('/(tabs)/horoscope')}
+          onPress={() => goBackTo(returnTo, '/(tabs)/index')}
         >
-          <Text style={styles.horoscopeLinkText}>{tCal('horoscopeLink')}</Text>
+          <Text style={styles.horoscopeLinkText}>{tNav('back')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -361,6 +359,11 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       ...cardShadow,
       padding: 12,
       gap: 4,
+    },
+    dayCardSkeleton: {
+      width: '48%',
+      borderRadius: 12,
+      padding: 0,
     },
     dayCardToday: {
       borderColor: colors.primary,

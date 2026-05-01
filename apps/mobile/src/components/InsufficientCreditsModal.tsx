@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/lib/colors';
 import { useTranslations } from '@/lib/i18n';
+import { withReturnTo } from '@/lib/navigation';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -60,7 +61,7 @@ export function InsufficientCreditsModal({ visible, required, balance, onClose }
     onClose();
     // Small delay so the modal closes before navigating
     setTimeout(() => {
-      router.push('/(tabs)/store');
+      router.push(withReturnTo('/store', '/(tabs)/index') as never);
     }, 250);
   }
 

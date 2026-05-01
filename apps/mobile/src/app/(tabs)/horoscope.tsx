@@ -7,8 +7,8 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
-import { goBack } from '@/lib/navigation';
+import { router, useLocalSearchParams } from 'expo-router';
+import { goBackTo, withReturnTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { forecastsApi } from '@clario/api-client';
 import type { DailyForecastRecord, DailyForecastResponse } from '@clario/api-client';
@@ -22,6 +22,7 @@ export default function HoroscopeScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const [forecast, setForecast] = useState<DailyForecastRecord | null>(null);
   const [preview, setPreview] = useState(false);
   const [fullAccessRequired, setFullAccessRequired] = useState(false);
@@ -158,7 +159,7 @@ export default function HoroscopeScreen() {
     return (
       <View style={[styles.generatingContainer, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
-          onPress={() => goBack('/(tabs)/index')}
+          onPress={() => goBackTo(returnTo, '/(tabs)/index')}
           style={[styles.backRow, styles.generatingBack]}
         >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
@@ -186,7 +187,7 @@ export default function HoroscopeScreen() {
     return (
       <View style={[styles.generatingContainer, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
-          onPress={() => goBack('/(tabs)/index')}
+          onPress={() => goBackTo(returnTo, '/(tabs)/index')}
           style={[styles.backRow, styles.generatingBack]}
         >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
@@ -234,7 +235,10 @@ export default function HoroscopeScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       {/* Header row: back + regenerate (only when user has full access) */}
       <View style={[styles.headerRow, { marginTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => goBack('/(tabs)/index')} style={styles.backRow}>
+        <TouchableOpacity
+          onPress={() => goBackTo(returnTo, '/(tabs)/index')}
+          style={styles.backRow}
+        >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
           <Text style={styles.backText}>{tHoro('backToDashboard').replace(/^←\s*/, '')}</Text>
         </TouchableOpacity>
@@ -313,7 +317,10 @@ export default function HoroscopeScreen() {
       ) : null}
 
       {/* Calendar link — outline button */}
-      <TouchableOpacity style={styles.calendarLink} onPress={() => router.push('/(tabs)/calendar')}>
+      <TouchableOpacity
+        style={styles.calendarLink}
+        onPress={() => router.push(withReturnTo('/calendar', '/horoscope') as never)}
+      >
         <Ionicons name="calendar-outline" size={16} color={colors.foreground} />
         <Text style={styles.calendarLinkText}>{tHoro('calendarLink')}</Text>
       </TouchableOpacity>

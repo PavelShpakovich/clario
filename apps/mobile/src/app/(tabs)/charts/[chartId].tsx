@@ -9,7 +9,7 @@ import {
   Modal,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { goBack } from '@/lib/navigation';
+import { goBackTo, withReturnTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, readingsApi } from '@clario/api-client';
 import type { ChartDetail, ChartReadingRow } from '@clario/api-client';
@@ -296,7 +296,7 @@ export default function ChartDetailScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
-  const { chartId } = useLocalSearchParams<{ chartId: string }>();
+  const { chartId, returnTo } = useLocalSearchParams<{ chartId: string; returnTo?: string }>();
   const scrollViewRef = useRef<ScrollView>(null);
   const readingsSectionY = useRef(0);
   const PAGE_SIZE = 5;
@@ -357,7 +357,9 @@ export default function ChartDetailScreen() {
     try {
       const { reading } = await readingsApi.createReading({ chartId, readingType });
       setShowReadingModal(false);
-      router.push(`/(tabs)/readings/${reading.id}`);
+      router.push(
+        withReturnTo(`/(tabs)/readings/${reading.id}`, `/(tabs)/charts/${chartId}`) as never,
+      );
     } catch (err) {
       if (
         err instanceof ApiClientError &&
@@ -405,7 +407,7 @@ export default function ChartDetailScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>{tChart('notFoundTitle')}</Text>
-        <TouchableOpacity onPress={() => goBack('/(tabs)/charts')}>
+        <TouchableOpacity onPress={() => goBackTo(returnTo, '/(tabs)/charts')}>
           <Text style={styles.linkText}>{tChart('allCharts')}</Text>
         </TouchableOpacity>
       </View>
@@ -528,13 +530,23 @@ export default function ChartDetailScreen() {
       >
         {/* ── Nav row ──────────────────────────────────────────────────────── */}
         <View style={[styles.navRow, { marginTop: insets.top + 12 }]}>
-          <TouchableOpacity style={styles.navLink} onPress={() => goBack('/(tabs)/charts')}>
+          <TouchableOpacity
+            style={styles.navLink}
+            onPress={() => goBackTo(returnTo, '/(tabs)/charts')}
+          >
             <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
             <Text style={styles.navLinkTextMuted}>{tChart('allCharts')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.navLink}
-            onPress={() => router.push(`/(tabs)/charts/edit/${chartId}`)}
+            onPress={() =>
+              router.push(
+                withReturnTo(
+                  `/(tabs)/charts/edit/${chartId}`,
+                  `/(tabs)/charts/${chartId}`,
+                ) as never,
+              )
+            }
           >
             <Ionicons name="pencil-outline" size={16} color={colors.primary} />
             <Text style={styles.navLinkText}>{tChart('editChart')}</Text>
@@ -615,7 +627,14 @@ export default function ChartDetailScreen() {
           )}
           <TouchableOpacity
             style={styles.outlineButton}
-            onPress={() => router.push(`/(tabs)/compatibility/new?primaryChartId=${chartId}`)}
+            onPress={() =>
+              router.push(
+                withReturnTo(
+                  `/(tabs)/compatibility/new?primaryChartId=${chartId}`,
+                  `/(tabs)/charts/${chartId}`,
+                ) as never,
+              )
+            }
           >
             <Ionicons name="link-outline" size={16} color={colors.primary} />
             <Text style={styles.outlineButtonText}>{tChart('compareWithChart')}</Text>

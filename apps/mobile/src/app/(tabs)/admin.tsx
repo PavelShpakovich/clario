@@ -10,8 +10,8 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
-import { goBack } from '@/lib/navigation';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { goBackTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { getAuthHeaders, resolveUrl, adminApi } from '@clario/api-client';
 import type {
@@ -571,6 +571,7 @@ export default function AdminScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
   const confirm = useConfirm();
@@ -716,7 +717,7 @@ export default function AdminScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => goBack('/(tabs)/settings')}
+          onPress={() => goBackTo(returnTo, '/(tabs)/settings')}
           style={styles.backBtn}
           hitSlop={8}
         >

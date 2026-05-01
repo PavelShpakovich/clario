@@ -10,8 +10,8 @@ import {
   FlatList,
   Pressable,
 } from 'react-native';
-import { router } from 'expo-router';
-import { goBack } from '@/lib/navigation';
+import { router, useLocalSearchParams } from 'expo-router';
+import { goBackTo, resolveParentRoute, withReturnTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, compatibilityApi, ApiClientError } from '@clario/api-client';
 import type { ChartRecord } from '@clario/api-client';
@@ -85,6 +85,7 @@ export default function NewCompatibilityScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const [charts, setCharts] = useState<ChartRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [primaryId, setPrimaryId] = useState<string | null>(null);
@@ -137,7 +138,12 @@ export default function NewCompatibilityScreen() {
         secondaryChartId: secondaryId,
         compatibilityType: compatType,
       });
-      router.replace(`/(tabs)/compatibility/${report.id}`);
+      router.push(
+        withReturnTo(
+          `/(tabs)/compatibility/${report.id}`,
+          resolveParentRoute(returnTo, '/(tabs)/compatibility'),
+        ) as never,
+      );
     } catch (err) {
       if (
         err instanceof ApiClientError &&
@@ -182,7 +188,10 @@ export default function NewCompatibilityScreen() {
   if (submitting) {
     return (
       <View style={[styles.generatingContainer, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => goBack('/(tabs)/compatibility')} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}
+          style={styles.backButton}
+        >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
           <Text style={styles.backText}>{tNav('back')}</Text>
         </TouchableOpacity>
@@ -209,12 +218,17 @@ export default function NewCompatibilityScreen() {
         <Ionicons name="planet-outline" size={48} color={colors.border} />
         <Text style={styles.notEnoughText}>{tCompat('notEnoughCharts')}</Text>
         <TouchableOpacity
-          onPress={() => router.push('/(tabs)/charts/new')}
+          onPress={() =>
+            router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/compatibility') as never)
+          }
           style={styles.linkButton}
         >
           <Text style={styles.linkText}>{tCompat('createReport')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => goBack('/(tabs)/compatibility')} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}
+          style={styles.backButton}
+        >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
           <Text style={styles.backText}>{tNav('back')}</Text>
         </TouchableOpacity>
@@ -230,7 +244,7 @@ export default function NewCompatibilityScreen() {
         {/* Back row */}
         <View style={[styles.backRow, { marginTop: insets.top + 8 }]}>
           <TouchableOpacity
-            onPress={() => goBack('/(tabs)/compatibility')}
+            onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}
             style={styles.backButton}
           >
             <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />

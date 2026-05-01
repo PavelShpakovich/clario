@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { goBack } from '@/lib/navigation';
+import { goBackTo, withReturnTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -98,7 +98,7 @@ export default function ReadingDetailScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
-  const { readingId } = useLocalSearchParams<{ readingId: string }>();
+  const { readingId, returnTo } = useLocalSearchParams<{ readingId: string; returnTo?: string }>();
   const [reading, setReading] = useState<ReadingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
@@ -243,7 +243,7 @@ export default function ReadingDetailScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>{tDetail('notFoundTitle')}</Text>
-        <TouchableOpacity onPress={() => goBack('/(tabs)/readings')}>
+        <TouchableOpacity onPress={() => goBackTo(returnTo, '/(tabs)/readings')}>
           <Text style={styles.linkText}>{tNav('back')}</Text>
         </TouchableOpacity>
       </View>
@@ -264,7 +264,7 @@ export default function ReadingDetailScreen() {
       {/* Back */}
       <TouchableOpacity
         style={[styles.backButton, { marginTop: insets.top + 8 }]}
-        onPress={() => goBack('/(tabs)/readings')}
+        onPress={() => goBackTo(returnTo, '/(tabs)/readings')}
       >
         <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
         <Text style={styles.backText}>{tDetail('backToReadings')}</Text>
@@ -316,7 +316,14 @@ export default function ReadingDetailScreen() {
         {reading.chart_id ? (
           <TouchableOpacity
             style={styles.outlineButton}
-            onPress={() => router.push(`/(tabs)/charts/${reading.chart_id}`)}
+            onPress={() =>
+              router.push(
+                withReturnTo(
+                  `/(tabs)/charts/${reading.chart_id}`,
+                  `/(tabs)/readings/${readingId}`,
+                ) as never,
+              )
+            }
           >
             <Ionicons name="planet-outline" size={15} color={colors.primary} />
             <Text style={styles.outlineButtonText}>{tDetail('viewChart')}</Text>
@@ -327,7 +334,14 @@ export default function ReadingDetailScreen() {
         {isReady ? (
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => router.push(`/(tabs)/readings/chat/${readingId}`)}
+            onPress={() =>
+              router.push(
+                withReturnTo(
+                  `/(tabs)/readings/chat/${readingId}`,
+                  `/(tabs)/readings/${readingId}`,
+                ) as never,
+              )
+            }
           >
             <Ionicons name="chatbubble-outline" size={15} color={colors.primaryForeground} />
             <Text style={styles.primaryButtonText}>{tDetail('askFollowUp')}</Text>

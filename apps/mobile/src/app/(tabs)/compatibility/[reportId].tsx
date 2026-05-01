@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { goBack } from '@/lib/navigation';
+import { goBackTo, withReturnTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, {
   Path,
@@ -215,7 +215,7 @@ export default function CompatibilityDetailScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
-  const { reportId } = useLocalSearchParams<{ reportId: string }>();
+  const { reportId, returnTo } = useLocalSearchParams<{ reportId: string; returnTo?: string }>();
   const [report, setReport] = useState<CompatibilityReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
@@ -310,7 +310,7 @@ export default function CompatibilityDetailScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>{tCompat('generatingErrorTitle')}</Text>
-        <TouchableOpacity onPress={() => goBack('/(tabs)/compatibility')}>
+        <TouchableOpacity onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}>
           <Text style={styles.linkText}>{tCompat('backToAll')}</Text>
         </TouchableOpacity>
       </View>
@@ -358,14 +358,24 @@ export default function CompatibilityDetailScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       {/* Back + chart links */}
       <View style={[styles.topBar, { marginTop: insets.top + 8 }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => goBack('/(tabs)/compatibility')}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}
+        >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
           <Text style={styles.backText}>{tCompat('backToAll').replace(/^←\s*/, '')}</Text>
         </TouchableOpacity>
         <View style={styles.chartLinks}>
           <TouchableOpacity
             style={styles.chartLinkButton}
-            onPress={() => router.push(`/(tabs)/charts/${report.primary_chart_id}`)}
+            onPress={() =>
+              router.push(
+                withReturnTo(
+                  `/(tabs)/charts/${report.primary_chart_id}`,
+                  `/(tabs)/compatibility/${reportId}`,
+                ) as never,
+              )
+            }
           >
             <Text style={styles.chartLinkText} numberOfLines={1}>
               {primaryName}
@@ -373,7 +383,14 @@ export default function CompatibilityDetailScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.chartLinkButton}
-            onPress={() => router.push(`/(tabs)/charts/${report.secondary_chart_id}`)}
+            onPress={() =>
+              router.push(
+                withReturnTo(
+                  `/(tabs)/charts/${report.secondary_chart_id}`,
+                  `/(tabs)/compatibility/${reportId}`,
+                ) as never,
+              )
+            }
           >
             <Text style={styles.chartLinkText} numberOfLines={1}>
               {secondaryName}

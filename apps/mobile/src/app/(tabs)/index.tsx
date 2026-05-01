@@ -17,6 +17,7 @@ import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
+import { withReturnTo } from '@/lib/navigation';
 
 const SIGN_ELEMENT: Record<string, string> = {
   aries: 'fire',
@@ -275,7 +276,7 @@ export default function DashboardScreen() {
         </View>
         <TouchableOpacity
           style={styles.balanceChip}
-          onPress={() => router.push('/(tabs)/store')}
+          onPress={() => router.push(withReturnTo('/store', '/(tabs)') as never)}
           activeOpacity={0.75}
         >
           <Ionicons name="wallet" size={13} color={colors.primary} style={{ marginRight: 4 }} />
@@ -285,7 +286,10 @@ export default function DashboardScreen() {
 
       {/* Today's Sky widget — taps to calendar */}
       {hasSky && (
-        <TouchableOpacity style={styles.skyWidget} onPress={() => router.push('/(tabs)/calendar')}>
+        <TouchableOpacity
+          style={styles.skyWidget}
+          onPress={() => router.push(withReturnTo('/calendar', '/(tabs)') as never)}
+        >
           <Text style={styles.skyWidgetEyebrow}>{tDashboard('skyToday')}</Text>
           <View style={styles.skyPlanets}>
             {(['sun', 'moon', 'mercury'] as const).map((key) => {
@@ -329,7 +333,7 @@ export default function DashboardScreen() {
           </View>
           <TouchableOpacity
             style={styles.horoscopeButton}
-            onPress={() => router.push('/(tabs)/horoscope')}
+            onPress={() => router.push(withReturnTo('/horoscope', '/(tabs)') as never)}
           >
             <Text style={styles.horoscopeButtonText}>
               {forecast?.hasContent ? tDashboard('horoscopeRead') : tDashboard('horoscopeOpen')}
@@ -471,7 +475,10 @@ export default function DashboardScreen() {
       )}
 
       {/* Store / credits banner */}
-      <TouchableOpacity style={styles.storeBanner} onPress={() => router.push('/(tabs)/store')}>
+      <TouchableOpacity
+        style={styles.storeBanner}
+        onPress={() => router.push(withReturnTo('/store', '/(tabs)') as never)}
+      >
         <Text style={styles.storeBannerLeft}>{tCredits('storeTitle')}</Text>
         <Text style={styles.storeBannerRight}>
           {balance} {tCredits('creditsUnit')} →

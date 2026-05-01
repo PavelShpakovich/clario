@@ -8,8 +8,8 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
-import { goBack } from '@/lib/navigation';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { goBackTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { creditsApi } from '@clario/api-client';
 import type {
@@ -119,6 +119,7 @@ export default function StoreScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   // Static data loaded once on focus (balance, packs, pricing)
   const [balance, setBalance] = useState<CreditBalanceSnapshot | null>(null);
   const [pricing, setPricing] = useState<CreditsPricingSnapshot | null>(null);
@@ -205,7 +206,10 @@ export default function StoreScreen() {
     >
       {/* Back row + page title */}
       <View style={[styles.backRow, { marginTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => goBack('/(tabs)/index')} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => goBackTo(returnTo, '/(tabs)/index')}
+          style={styles.backButton}
+        >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
           <Text style={styles.backText}>{tNav('back')}</Text>
         </TouchableOpacity>

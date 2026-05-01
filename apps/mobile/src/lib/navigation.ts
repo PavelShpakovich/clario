@@ -15,3 +15,18 @@ export function goBack(fallback: string): void {
     router.replace(fallback as never);
   }
 }
+
+export function resolveParentRoute(
+  returnTo: string | string[] | undefined,
+  fallback: string,
+): string {
+  return typeof returnTo === 'string' && returnTo.startsWith('/') ? returnTo : fallback;
+}
+
+export function goBackTo(returnTo: string | string[] | undefined, fallback: string): void {
+  goBack(resolveParentRoute(returnTo, fallback));
+}
+
+export function withReturnTo(pathname: string, returnTo: string): string {
+  return `${pathname}?returnTo=${encodeURIComponent(returnTo)}`;
+}

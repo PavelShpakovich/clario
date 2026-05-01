@@ -11,8 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { router } from 'expo-router';
-import { goBack } from '@/lib/navigation';
+import { router, useLocalSearchParams } from 'expo-router';
+import { goBackTo, resolveParentRoute, withReturnTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, locationsApi } from '@clario/api-client';
 import type { CityOption } from '@clario/api-client';
@@ -47,6 +47,7 @@ export default function NewChartScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>({
     label: '',
@@ -133,7 +134,12 @@ export default function NewChartScreen() {
         houseSystem: form.houseSystem,
         locale: 'ru',
       });
-      router.replace(`/(tabs)/charts/${chart.id}`);
+      router.push(
+        withReturnTo(
+          `/(tabs)/charts/${chart.id}`,
+          resolveParentRoute(returnTo, '/(tabs)/charts'),
+        ) as never,
+      );
     } catch {
       setError(tForm('errorToast'));
     } finally {
@@ -166,7 +172,7 @@ export default function NewChartScreen() {
     >
       <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
-          onPress={() => (step > 1 ? setStep((s) => s - 1) : goBack('/(tabs)/charts'))}
+          onPress={() => (step > 1 ? setStep((s) => s - 1) : goBackTo(returnTo, '/(tabs)/charts'))}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />

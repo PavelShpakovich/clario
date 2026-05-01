@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { goBack } from '@/lib/navigation';
+import { goBackTo } from '@/lib/navigation';
 import { MarkdownText } from '@/components/MarkdownText';
 import { Skeleton } from '@/components/Skeleton';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,7 +40,7 @@ export default function ChatScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
-  const { readingId } = useLocalSearchParams<{ readingId: string }>();
+  const { readingId, returnTo } = useLocalSearchParams<{ readingId: string; returnTo?: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -199,7 +199,10 @@ export default function ChatScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => goBack('/(tabs)/readings')} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => goBackTo(returnTo, '/(tabs)/readings')}
+          style={styles.backButton}
+        >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
           <Text style={styles.backText}>{tChat('backToReading')}</Text>
         </TouchableOpacity>
