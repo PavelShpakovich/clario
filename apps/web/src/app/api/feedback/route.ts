@@ -1,9 +1,10 @@
 import 'server-only';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { auth } from '@/auth';
+import { requireAuth } from '@/lib/api/auth';
 import { checkRateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 import { sendEmail } from '@/lib/email/resend';
+import { withApiHandler } from '@/lib/api/handler';
 
 const FEEDBACK_TO = 'pavelekname@gmail.com';
 
@@ -11,13 +12,10 @@ const bodySchema = z.object({
   message: z.string().min(5, 'Too short').max(2000, 'Too long'),
 });
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const POST = withApiHandler(async (req: Request) => {
+  const { user } = await requireAuth();
 
-  const rl = checkRateLimit(`feedback:${session.user.id}`, 5, 60 * 60 * 1000);
+  const rl = checkRateLimit(`feedback:${user.id}`, 5, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Too many requests' },
@@ -32,8 +30,11 @@ export async function POST(req: NextRequest) {
   }
 
   const { message } = parsed.data;
-  const userEmail = session.user.email ?? 'unknown';
-  const userName = session.user.name ?? userEmail;
+  const userEmail = (user as { email?: string }).email ?? 'unknown';
+  const userName =
+    (user as { name?: string; user_metadata?: { full_name?: string; name?: string } }).name ??
+    (user as { user_metadata?: { full_name?: string; name?: string } }).user_metadata?.full_name ??
+    userEmail;
 
   try {
     await sendEmail({
@@ -57,4 +58,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true });
-}
+});
