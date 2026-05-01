@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,8 +18,10 @@ import { chartsApi, locationsApi } from '@clario/api-client';
 import type { ChartRecord, CityOption } from '@clario/api-client';
 import { CHART_SUBJECT_TYPES, HOUSE_SYSTEMS } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
-import { colors } from '@/lib/colors';
+import { useColors } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Skeleton } from '@/components/Skeleton';
+import { CityPickerModal } from '@/components/CityPickerModal';
 
 type SubjectType = (typeof CHART_SUBJECT_TYPES)[number];
 type HouseSystem = (typeof HOUSE_SYSTEMS)[number];
@@ -41,7 +43,51 @@ interface FormData {
 
 const TOTAL_STEPS = 3;
 
+function EditChartSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* Header bar */}
+      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+        <Skeleton width={60} height={16} borderRadius={8} />
+        <Skeleton width={50} height={13} borderRadius={6} />
+      </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.stepContainer}>
+          {/* Step title + desc */}
+          <Skeleton width={180} height={22} borderRadius={6} />
+          <Skeleton width={'80%'} height={14} borderRadius={6} style={{ marginTop: 4 }} />
+          {/* Label field */}
+          <Skeleton width={80} height={13} borderRadius={6} style={{ marginTop: 10 }} />
+          <Skeleton width={'100%'} height={44} borderRadius={8} style={{ marginTop: 4 }} />
+          {/* Name field */}
+          <Skeleton width={100} height={13} borderRadius={6} style={{ marginTop: 10 }} />
+          <Skeleton width={'100%'} height={44} borderRadius={8} style={{ marginTop: 4 }} />
+          {/* Subject type label */}
+          <Skeleton width={110} height={13} borderRadius={6} style={{ marginTop: 10 }} />
+          {/* Chips row */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+            {[72, 80, 64, 70, 60].map((w, i) => (
+              <Skeleton key={i} width={w} height={32} borderRadius={20} />
+            ))}
+          </View>
+        </View>
+        {/* Next button */}
+        <Skeleton width={'100%'} height={50} borderRadius={10} style={{ marginTop: 28 }} />
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
 export default function EditChartScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const { chartId } = useLocalSearchParams<{ chartId: string }>();
   const [step, setStep] = useState(1);
@@ -60,16 +106,13 @@ export default function EditChartScreen() {
     lon: null,
     timezone: '',
   });
-  const [cityQuery, setCityQuery] = useState('');
-  const [cityResults, setCityResults] = useState<CityOption[]>([]);
-  const [citySearching, setCitySearching] = useState(false);
+  const [cityDisplay, setCityDisplay] = useState('');
+  const [cityModalOpen, setCityModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const tForm = useTranslations('chartForm');
   const tNav = useTranslations('navigation');
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!chartId) return;
@@ -95,7 +138,7 @@ export default function EditChartScreen() {
           lon: null,
           timezone: c.timezone ?? '',
         });
-        setCityQuery(c.city ? `${c.city}, ${c.country}` : '');
+        setCityDisplay(c.city ? `${c.city}, ${c.country}` : '');
       } finally {
         setLoading(false);
       }
@@ -103,33 +146,12 @@ export default function EditChartScreen() {
     void loadChart();
   }, [chartId]);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (cityQuery.length < 2) {
-      setCityResults([]);
-      return;
-    }
-    debounceRef.current = setTimeout(async () => {
-      setCitySearching(true);
-      try {
-        const results = await locationsApi.searchCities(cityQuery);
-        setCityResults(results);
-      } finally {
-        setCitySearching(false);
-      }
-    }, 400);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [cityQuery]);
-
   function update<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   async function handleCitySelect(city: CityOption) {
-    setCityQuery(city.displayName);
-    setCityResults([]);
+    setCityDisplay(city.displayName);
     update('city', city.city);
     update('country', city.country);
     update('lat', city.lat);
@@ -214,11 +236,7 @@ export default function EditChartScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <EditChartSkeleton />;
   }
 
   return (
@@ -343,50 +361,22 @@ export default function EditChartScreen() {
             <Text style={styles.stepDesc}>{tForm('stepLocationDesc')}</Text>
 
             <Text style={styles.label}>{tForm('city')}</Text>
-            <TextInput
-              style={styles.input}
-              value={cityQuery}
-              onChangeText={setCityQuery}
+            <TouchableOpacity style={styles.pickerButton} onPress={() => setCityModalOpen(true)}>
+              <Text
+                style={[styles.pickerButtonText, !cityDisplay && styles.pickerButtonPlaceholder]}
+                numberOfLines={1}
+              >
+                {cityDisplay || tForm('citySearchPlaceholder')}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+            <CityPickerModal
+              visible={cityModalOpen}
+              value={cityDisplay}
               placeholder={tForm('citySearchPlaceholder')}
-              placeholderTextColor={colors.placeholder}
-              autoCorrect={false}
+              onSelect={handleCitySelect}
+              onClose={() => setCityModalOpen(false)}
             />
-
-            {citySearching && (
-              <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 4 }} />
-            )}
-
-            {cityResults.length > 0 && (
-              <View style={styles.cityDropdown}>
-                {cityResults.map((city) => (
-                  <TouchableOpacity
-                    key={`${city.lat}-${city.lon}`}
-                    style={styles.cityItem}
-                    onPress={() => handleCitySelect(city)}
-                  >
-                    <Text style={styles.cityItemText} numberOfLines={1}>
-                      {city.displayName}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {form.city ? (
-              <View style={styles.summaryBox}>
-                <Text style={styles.summaryText}>
-                  {tForm('city')}: {form.city}
-                </Text>
-                <Text style={styles.summaryText}>
-                  {tForm('country')}: {form.country}
-                </Text>
-                {form.timezone ? (
-                  <Text style={styles.summaryText}>
-                    {tForm('timezone')}: {form.timezone}
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
           </View>
         )}
 
@@ -414,150 +404,145 @@ export default function EditChartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  headerBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 12,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backText: {
-    color: colors.mutedForeground,
-    fontSize: 14,
-  },
-  stepLabel: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 48,
-  },
-  stepContainer: {
-    gap: 10,
-  },
-  stepTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.foreground,
-    marginBottom: 2,
-  },
-  stepDesc: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    marginTop: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: colors.foreground,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  switchLabel: {
-    fontSize: 15,
-    color: colors.foreground,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    fontSize: 13,
-    color: colors.foreground,
-  },
-  chipTextActive: {
-    color: '#fff',
-  },
-  cityDropdown: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginTop: 4,
-  },
-  cityItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  cityItemText: {
-    fontSize: 14,
-    color: colors.foreground,
-  },
-  summaryBox: {
-    backgroundColor: colors.muted,
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 8,
-    gap: 4,
-  },
-  summaryText: {
-    fontSize: 14,
-    color: colors.foreground,
-  },
-  error: {
-    color: colors.error,
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    headerBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 56,
+      paddingBottom: 12,
+    },
+    backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    backText: {
+      color: colors.mutedForeground,
+      fontSize: 14,
+    },
+    stepLabel: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 48,
+    },
+    stepContainer: {
+      gap: 10,
+    },
+    stepTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.foreground,
+      marginBottom: 2,
+    },
+    stepDesc: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      marginBottom: 8,
+    },
+    label: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      marginTop: 6,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 15,
+      color: colors.foreground,
+    },
+    switchRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    switchLabel: {
+      fontSize: 15,
+      color: colors.foreground,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 4,
+    },
+    chip: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    chipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    chipText: {
+      fontSize: 13,
+      color: colors.foreground,
+    },
+    chipTextActive: {
+      color: '#fff',
+    },
+    pickerButton: {
+      height: 44,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.background,
+    },
+    pickerButtonText: {
+      fontSize: 15,
+      color: colors.foreground,
+      flex: 1,
+      marginRight: 8,
+    },
+    pickerButtonPlaceholder: {
+      color: colors.placeholder,
+    },
+    error: {
+      color: colors.error,
+      fontSize: 14,
+      textAlign: 'center',
+      marginTop: 8,
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 20,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    primaryButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });
+}

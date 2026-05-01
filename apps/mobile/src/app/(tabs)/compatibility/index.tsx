@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,11 +14,14 @@ import type { CompatibilityReport } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { toast } from '@/lib/toast';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 
 function CompatibilityListSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.container}>
@@ -65,7 +68,7 @@ const TYPE_ICONS: Record<CompatType, keyof typeof Ionicons.glyphMap> = {
   family: 'home-outline',
 };
 
-function getStatusStyle(status: string) {
+function getStatusStyle(status: string, colors: ReturnType<typeof useColors>) {
   switch (status) {
     case 'ready':
       return { bg: colors.successSubtle, fg: colors.success };
@@ -77,21 +80,26 @@ function getStatusStyle(status: string) {
 }
 
 export default function CompatibilityListScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const [reports, setReports] = useState<CompatibilityReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const tCompat = useTranslations('compatibility');
   const tCommon = useTranslations('common');
   const confirm = useConfirm();
 
-  const loadReports = useCallback(async () => {
-    setLoading(true);
+  const loadReports = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
     try {
       const { reports: data } = await compatibilityApi.listReports();
       setReports(data);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -100,6 +108,11 @@ export default function CompatibilityListScreen() {
       void loadReports();
     }, [loadReports]),
   );
+
+  function handleRefresh() {
+    setRefreshing(true);
+    void loadReports(true);
+  }
 
   async function handleDelete(report: CompatibilityReport) {
     const personTitle =
@@ -161,6 +174,8 @@ export default function CompatibilityListScreen() {
         data={reports}
         keyExtractor={(r) => r.id}
         contentContainerStyle={styles.list}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="heart-outline" size={48} color={colors.border} />
@@ -183,7 +198,7 @@ export default function CompatibilityListScreen() {
           </View>
         }
         renderItem={({ item }) => {
-          const statusStyle = getStatusStyle(item.status);
+          const statusStyle = getStatusStyle(item.status, colors);
           const compatType = (item.compatibility_type ?? 'romantic') as CompatType;
           const typeIcon = TYPE_ICONS[compatType] ?? 'heart-outline';
           const cardTitle =
@@ -249,175 +264,177 @@ export default function CompatibilityListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  headerBar: {
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 12,
-  },
-  pageDesc: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    lineHeight: 19,
-    marginTop: 6,
-    paddingBottom: 4,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-  },
-  headerText: {
-    gap: 4,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.5,
-  },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  list: {
-    paddingHorizontal: 20,
-    paddingBottom: 32,
-    paddingTop: 4,
-    gap: 12,
-    flexGrow: 1,
-  },
-  emptyState: {
-    alignItems: 'center',
-    gap: 12,
-    paddingTop: 60,
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.foreground,
-    textAlign: 'center',
-  },
-  emptyDesc: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    lineHeight: 21,
-    textAlign: 'center',
-  },
-  emptyButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    height: 40,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  outlineButton: {
-    height: 40,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  outlineButtonText: {
-    color: colors.foreground,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    gap: 6,
-    ...cardShadow,
-  },
-  cardTypeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginBottom: 2,
-  },
-  cardTypeLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  cardSummary: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    lineHeight: 19,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  cardFooterLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  cardDate: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-  },
-  statusBadge: {
-    borderRadius: 99,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  deleteButton: {
-    padding: 4,
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    headerBar: {
+      paddingHorizontal: 20,
+      paddingTop: 56,
+      paddingBottom: 12,
+    },
+    pageDesc: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      lineHeight: 19,
+      marginTop: 6,
+      paddingBottom: 4,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+    },
+    headerText: {
+      gap: 4,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+    },
+    pageTitle: {
+      fontSize: 26,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.5,
+    },
+    addButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    list: {
+      paddingHorizontal: 20,
+      paddingBottom: 32,
+      paddingTop: 4,
+      gap: 12,
+      flexGrow: 1,
+    },
+    emptyState: {
+      alignItems: 'center',
+      gap: 12,
+      paddingTop: 60,
+      paddingHorizontal: 24,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.foreground,
+      textAlign: 'center',
+    },
+    emptyDesc: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      lineHeight: 21,
+      textAlign: 'center',
+    },
+    emptyButtons: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 8,
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      height: 40,
+      borderRadius: 8,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primaryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    outlineButton: {
+      height: 40,
+      borderRadius: 8,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    outlineButtonText: {
+      color: colors.foreground,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      gap: 6,
+      ...cardShadow,
+    },
+    cardTypeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      marginBottom: 2,
+    },
+    cardTypeLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+    },
+    cardTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    cardSummary: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      lineHeight: 19,
+    },
+    cardFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 4,
+    },
+    cardFooterLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      flex: 1,
+    },
+    cardDate: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+    },
+    statusBadge: {
+      borderRadius: 99,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    statusBadgeText: {
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    deleteButton: {
+      padding: 4,
+    },
+  });
+}

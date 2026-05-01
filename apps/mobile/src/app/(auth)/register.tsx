@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,15 @@ import {
 import { router } from 'expo-router';
 import { authApi } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { AuthBackground } from '@/components/AuthBackground';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
 export default function RegisterScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -251,192 +254,194 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 48,
-  },
-  cardWrapper: {
-    width: '100%',
-    maxWidth: 400,
-    marginHorizontal: 20,
-    paddingHorizontal: 20,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 28,
-    ...cardShadow,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: colors.foreground,
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  fieldsContainer: {
-    gap: 14,
-    marginBottom: 16,
-  },
-  fieldGroup: {
-    gap: 0,
-  },
-  label: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    fontWeight: '500',
-    marginBottom: 6,
-  },
-  input: {
-    height: 40,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    color: colors.foreground,
-    backgroundColor: 'transparent',
-  },
-  inputError: {
-    borderColor: colors.destructive,
-  },
-  consentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    marginBottom: 12,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-    flexShrink: 0,
-  },
-  checkboxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  checkmark: {
-    color: colors.primaryForeground,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  consentText: {
-    flex: 1,
-    fontSize: 12,
-    color: colors.mutedForeground,
-    lineHeight: 18,
-  },
-  consentLink: {
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  errorBanner: {
-    backgroundColor: colors.destructiveSubtle,
-    borderColor: colors.destructive,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  errorBannerText: {
-    fontSize: 13,
-    color: colors.destructive,
-  },
-  successBanner: {
-    backgroundColor: colors.successSubtle,
-    borderColor: colors.success,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-  },
-  successBannerText: {
-    fontSize: 13,
-    color: colors.success,
-  },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.primaryForeground,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  footerLinkContainer: {
-    marginTop: 14,
-    alignItems: 'center',
-  },
-  footerLink: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 14,
-  },
-  footerText: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-  },
-  footerRowLink: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  glowDecoration: {
-    position: 'absolute',
-    top: -60,
-    right: -60,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: colors.primary,
-    opacity: 0.06,
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 48,
+    },
+    cardWrapper: {
+      width: '100%',
+      maxWidth: 400,
+      marginHorizontal: 20,
+      paddingHorizontal: 20,
+    },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 24,
+      paddingTop: 28,
+      paddingBottom: 28,
+      ...cardShadow,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '600',
+      color: colors.foreground,
+      textAlign: 'center',
+      letterSpacing: -0.3,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      marginTop: 4,
+      marginBottom: 20,
+    },
+    fieldsContainer: {
+      gap: 14,
+      marginBottom: 16,
+    },
+    fieldGroup: {
+      gap: 0,
+    },
+    label: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      fontWeight: '500',
+      marginBottom: 6,
+    },
+    input: {
+      height: 40,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      fontSize: 15,
+      color: colors.foreground,
+      backgroundColor: 'transparent',
+    },
+    inputError: {
+      borderColor: colors.destructive,
+    },
+    consentRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      marginBottom: 12,
+    },
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      borderRadius: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 1,
+      flexShrink: 0,
+    },
+    checkboxChecked: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    checkmark: {
+      color: colors.primaryForeground,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    consentText: {
+      flex: 1,
+      fontSize: 12,
+      color: colors.mutedForeground,
+      lineHeight: 18,
+    },
+    consentLink: {
+      color: colors.primary,
+      fontWeight: '500',
+    },
+    errorBanner: {
+      backgroundColor: colors.destructiveSubtle,
+      borderColor: colors.destructive,
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 12,
+    },
+    errorBannerText: {
+      fontSize: 13,
+      color: colors.destructive,
+    },
+    successBanner: {
+      backgroundColor: colors.successSubtle,
+      borderColor: colors.success,
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 20,
+    },
+    successBannerText: {
+      fontSize: 13,
+      color: colors.success,
+    },
+    button: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    buttonDisabled: {
+      opacity: 0.5,
+    },
+    buttonText: {
+      color: colors.primaryForeground,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    footerLinkContainer: {
+      marginTop: 14,
+      alignItems: 'center',
+    },
+    footerLink: {
+      fontSize: 13,
+      color: colors.primary,
+      fontWeight: '500',
+      textAlign: 'center',
+    },
+    footerRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 14,
+    },
+    footerText: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+    },
+    footerRowLink: {
+      fontSize: 13,
+      color: colors.primary,
+      fontWeight: '500',
+    },
+    glowDecoration: {
+      position: 'absolute',
+      top: -60,
+      right: -60,
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      backgroundColor: colors.primary,
+      opacity: 0.06,
+    },
+  });
+}

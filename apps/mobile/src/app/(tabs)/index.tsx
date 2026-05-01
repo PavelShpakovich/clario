@@ -1,13 +1,7 @@
-import { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native';
+import { useState, useMemo, useCallback, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   profileApi,
@@ -20,7 +14,7 @@ import {
 } from '@clario/api-client';
 import type { ChartRecord, ReadingRecord, TodaySkyResponse } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 
@@ -59,6 +53,9 @@ interface ForecastWidget {
 }
 
 function DashboardSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -161,8 +158,12 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [balance, setBalance] = useState(0);
   const [charts, setCharts] = useState<ChartRecord[]>([]);
@@ -184,52 +185,66 @@ export default function DashboardScreen() {
   const tCredits = useTranslations('credits');
   const tNav = useTranslations('navigation');
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [profileData, chartsData, readingsData, balanceData, compatData] = await Promise.all([
-          profileApi.getProfile(true),
-          chartsApi.listCharts(),
-          readingsApi.listReadings(),
-          creditsApi.getBalance(true),
-          compatibilityApi.listReports(),
-        ]);
+  const load = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
+    try {
+      const [profileData, chartsData, readingsData, balanceData, compatData] = await Promise.all([
+        profileApi.getProfile(true),
+        chartsApi.listCharts(),
+        readingsApi.listReadings(),
+        creditsApi.getBalance(true),
+        compatibilityApi.listReports(),
+      ]);
 
-        setDisplayName(profileData.display_name ?? '');
-        setBalance(balanceData.balance);
-        setTotalCharts(chartsData.charts.length);
-        setTotalReadings(readingsData.readings.length);
-        setTotalCompatibility(compatData.reports.length);
-        setCharts(chartsData.charts.slice(0, 3));
-        setReadings(readingsData.readings.slice(0, 4));
+      setDisplayName(profileData.display_name ?? '');
+      setBalance(balanceData.balance);
+      setTotalCharts(chartsData.charts.length);
+      setTotalReadings(readingsData.readings.length);
+      setTotalCompatibility(compatData.reports.length);
+      setCharts(chartsData.charts.slice(0, 3));
+      setReadings(readingsData.readings.slice(0, 4));
 
-        const primary =
-          chartsData.charts.find((c) => c.status === 'ready' && c.subject_type === 'self') ??
-          chartsData.charts.find((c) => c.status === 'ready');
-        setHasPrimaryChart(!!primary);
+      const primary =
+        chartsData.charts.find((c) => c.status === 'ready' && c.subject_type === 'self') ??
+        chartsData.charts.find((c) => c.status === 'ready');
+      setHasPrimaryChart(!!primary);
 
-        // Load widgets in parallel, non-blocking
-        const [skyData, forecastData] = await Promise.all([
-          skyApi.getToday().catch(() => ({ sun: null, moon: null, mercury: null })),
-          primary ? forecastsApi.getDailyForecast().catch(() => null) : Promise.resolve(null),
-        ]);
+      // Load widgets in parallel, non-blocking
+      const [skyData, forecastData] = await Promise.all([
+        skyApi.getToday().catch(() => ({ sun: null, moon: null, mercury: null })),
+        primary ? forecastsApi.getDailyForecast().catch(() => null) : Promise.resolve(null),
+      ]);
 
-        setTodaySky(skyData);
+      setTodaySky(skyData);
 
-        if (forecastData?.forecast?.rendered_content_json) {
-          const fc = forecastData.forecast.rendered_content_json as Record<string, unknown>;
-          setForecast({
-            keyTheme: typeof fc.keyTheme === 'string' ? fc.keyTheme : undefined,
-            advice: typeof fc.advice === 'string' ? fc.advice : undefined,
-            hasContent: typeof fc.interpretation === 'string',
-          });
-        }
-      } finally {
-        setLoading(false);
+      if (forecastData?.forecast?.rendered_content_json) {
+        const fc = forecastData.forecast.rendered_content_json as Record<string, unknown>;
+        setForecast({
+          keyTheme: typeof fc.keyTheme === 'string' ? fc.keyTheme : undefined,
+          advice: typeof fc.advice === 'string' ? fc.advice : undefined,
+          hasContent: typeof fc.interpretation === 'string',
+        });
       }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    void load();
   }, []);
+
+  const isFirstLoad = useRef(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      const refresh = !isFirstLoad.current;
+      isFirstLoad.current = false;
+      void load(refresh);
+    }, [load]),
+  );
+
+  function handleRefresh() {
+    setRefreshing(true);
+    void load(true);
+  }
 
   const hasSky = !!(todaySky.sun ?? todaySky.moon);
 
@@ -238,7 +253,17 @@ export default function DashboardScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+        />
+      }
+    >
       {/* Header */}
       <View style={[styles.header, { marginTop: insets.top + 12 }]}>
         <View style={styles.headerLeft}>
@@ -456,395 +481,397 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 48,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 48,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
 
-  // ── Header ──────────────────────────────────────────────────────────────────
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  headerLeft: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  greeting: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.5,
-  },
-  balanceChip: {
-    backgroundColor: colors.primaryTint,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  balanceText: {
-    color: colors.primary,
-    fontWeight: '700',
-    fontSize: 13,
-  },
+    // ── Header ──────────────────────────────────────────────────────────────────
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 20,
+    },
+    headerLeft: {
+      flex: 1,
+      paddingRight: 12,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 4,
+    },
+    greeting: {
+      fontSize: 26,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.5,
+    },
+    balanceChip: {
+      backgroundColor: colors.primaryTint,
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      alignSelf: 'flex-start',
+      marginTop: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    balanceText: {
+      color: colors.primary,
+      fontWeight: '700',
+      fontSize: 13,
+    },
 
-  // ── Today's Sky ─────────────────────────────────────────────────────────────
-  skyWidget: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 12,
-    ...cardShadow,
-  },
-  skyWidgetEyebrow: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 12,
-  },
-  skyPlanets: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  skyPlanetItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  skyPlanetSymbol: {
-    fontSize: 22,
-  },
-  skyPlanetName: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    lineHeight: 14,
-  },
-  skySignName: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 18,
-  },
+    // ── Today's Sky ─────────────────────────────────────────────────────────────
+    skyWidget: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      marginBottom: 12,
+      ...cardShadow,
+    },
+    skyWidgetEyebrow: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 12,
+    },
+    skyPlanets: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 16,
+    },
+    skyPlanetItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    skyPlanetSymbol: {
+      fontSize: 22,
+    },
+    skyPlanetName: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      lineHeight: 14,
+    },
+    skySignName: {
+      fontSize: 14,
+      fontWeight: '500',
+      lineHeight: 18,
+    },
 
-  // ── Horoscope widget ────────────────────────────────────────────────────────
-  horoscopeWidget: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    ...cardShadow,
-  },
-  horoscopeLeft: {
-    flex: 1,
-    gap: 3,
-  },
-  horoscopeEyebrow: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
-  horoscopeTheme: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  horoscopeDesc: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  horoscopeAdvice: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-    lineHeight: 16,
-  },
-  horoscopeButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    flexShrink: 0,
-  },
-  horoscopeButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
+    // ── Horoscope widget ────────────────────────────────────────────────────────
+    horoscopeWidget: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      marginBottom: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      ...cardShadow,
+    },
+    horoscopeLeft: {
+      flex: 1,
+      gap: 3,
+    },
+    horoscopeEyebrow: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 1.5,
+    },
+    horoscopeTheme: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    horoscopeDesc: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    horoscopeAdvice: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+      lineHeight: 16,
+    },
+    horoscopeButton: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 7,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      flexShrink: 0,
+    },
+    horoscopeButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
 
-  // ── Stats row ───────────────────────────────────────────────────────────────
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 12,
-    ...cardShadow,
-  },
-  statCard: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  statCardMiddle: {
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: colors.border,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.foreground,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-    marginTop: 2,
-  },
+    // ── Stats row ───────────────────────────────────────────────────────────────
+    statsRow: {
+      flexDirection: 'row',
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 12,
+      ...cardShadow,
+    },
+    statCard: {
+      flex: 1,
+      paddingVertical: 14,
+      alignItems: 'center',
+    },
+    statCardMiddle: {
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: colors.border,
+    },
+    statValue: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.foreground,
+    },
+    statLabel: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+      marginTop: 2,
+    },
 
-  // ── Quick actions ────────────────────────────────────────────────────────────
-  quickActionsCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-    marginBottom: 24,
-    gap: 12,
-    ...cardShadow,
-  },
-  quickActionsLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.foreground,
-  },
-  quickActionsButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  quickActionButton: {
-    flex: 1,
-    borderRadius: 8,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  quickActionPrimary: {
-    backgroundColor: colors.primary,
-  },
-  quickActionOutline: {
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  quickActionPrimaryText: {
-    color: colors.primaryForeground,
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  quickActionOutlineText: {
-    color: colors.foreground,
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+    // ── Quick actions ────────────────────────────────────────────────────────────
+    quickActionsCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      marginBottom: 24,
+      gap: 12,
+      ...cardShadow,
+    },
+    quickActionsLabel: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.foreground,
+    },
+    quickActionsButtons: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    quickActionButton: {
+      flex: 1,
+      borderRadius: 8,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 6,
+    },
+    quickActionPrimary: {
+      backgroundColor: colors.primary,
+    },
+    quickActionOutline: {
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    quickActionPrimaryText: {
+      color: colors.primaryForeground,
+      fontSize: 12,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    quickActionOutlineText: {
+      color: colors.foreground,
+      fontSize: 12,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
 
-  // ── Section header ───────────────────────────────────────────────────────────
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  sectionLink: {
-    fontSize: 13,
-    color: colors.primary,
-  },
+    // ── Section header ───────────────────────────────────────────────────────────
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    sectionTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    sectionLink: {
+      fontSize: 13,
+      color: colors.primary,
+    },
 
-  // ── Chart cards ──────────────────────────────────────────────────────────────
-  chartCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-    ...cardShadow,
-  },
-  chartCardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  avatarText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  chartCardInfo: {
-    flex: 1,
-    gap: 1,
-  },
-  chartCardLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  chartCardSub: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-  },
-  subjectBadge: {
-    backgroundColor: colors.muted,
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    flexShrink: 0,
-  },
-  subjectBadgeText: {
-    fontSize: 10,
-    color: colors.mutedForeground,
-    textTransform: 'capitalize',
-  },
+    // ── Chart cards ──────────────────────────────────────────────────────────────
+    chartCard: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 8,
+      ...cardShadow,
+    },
+    chartCardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    avatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primaryTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    avatarText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    chartCardInfo: {
+      flex: 1,
+      gap: 1,
+    },
+    chartCardLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    chartCardSub: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+    },
+    subjectBadge: {
+      backgroundColor: colors.muted,
+      borderRadius: 20,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      flexShrink: 0,
+    },
+    subjectBadgeText: {
+      fontSize: 10,
+      color: colors.mutedForeground,
+      textTransform: 'capitalize',
+    },
 
-  // ── Reading cards ────────────────────────────────────────────────────────────
-  readingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 8,
-    ...cardShadow,
-  },
-  readingIcon: {
-    fontSize: 16,
-    color: colors.primary,
-    flexShrink: 0,
-  },
-  readingInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  readingTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.foreground,
-  },
-  readingMeta: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-  },
-  statusChip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    flexShrink: 0,
-  },
-  statusChipText: {
-    fontSize: 10,
-    color: colors.mutedForeground,
-    fontWeight: '500',
-  },
+    // ── Reading cards ────────────────────────────────────────────────────────────
+    readingCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      marginBottom: 8,
+      ...cardShadow,
+    },
+    readingIcon: {
+      fontSize: 16,
+      color: colors.primary,
+      flexShrink: 0,
+    },
+    readingInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    readingTitle: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.foreground,
+    },
+    readingMeta: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+    },
+    statusChip: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      flexShrink: 0,
+    },
+    statusChipText: {
+      fontSize: 10,
+      color: colors.mutedForeground,
+      fontWeight: '500',
+    },
 
-  // ── Empty state ───────────────────────────────────────────────────────────────
-  emptyState: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-  },
+    // ── Empty state ───────────────────────────────────────────────────────────────
+    emptyState: {
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 24,
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    emptyStateText: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+    },
 
-  // ── Store banner ──────────────────────────────────────────────────────────────
-  storeBanner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.primarySubtle,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.primaryTint,
-    padding: 14,
-    marginTop: 16,
-  },
-  storeBannerLeft: {
-    fontSize: 14,
-    color: colors.foreground,
-    fontWeight: '600',
-  },
-  storeBannerRight: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-});
+    // ── Store banner ──────────────────────────────────────────────────────────────
+    storeBanner: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.primarySubtle,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primaryTint,
+      padding: 14,
+      marginTop: 16,
+    },
+    storeBannerLeft: {
+      fontSize: 14,
+      color: colors.foreground,
+      fontWeight: '600',
+    },
+    storeBannerRight: {
+      fontSize: 13,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+  });
+}

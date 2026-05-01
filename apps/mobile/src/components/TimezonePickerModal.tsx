@@ -10,7 +10,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/lib/colors';
+import { useColors } from '@/lib/colors';
 
 export const TIMEZONES = [
   { value: 'Pacific/Honolulu', label: 'Гонолулу (UTC−10)' },
@@ -97,6 +97,9 @@ interface Props {
 }
 
 export function TimezonePickerModal({ visible, value, placeholder, onSelect, onClose }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -174,63 +177,65 @@ export function TimezonePickerModal({ visible, value, placeholder, onSelect, onC
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    margin: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.foreground,
-    padding: 0,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  itemPressed: {
-    backgroundColor: colors.muted,
-  },
-  itemText: {
-    fontSize: 15,
-    color: colors.foreground,
-  },
-  itemTextSelected: {
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginLeft: 20,
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      margin: 16,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.foreground,
+      padding: 0,
+    },
+    item: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+    },
+    itemPressed: {
+      backgroundColor: colors.muted,
+    },
+    itemText: {
+      fontSize: 15,
+      color: colors.foreground,
+    },
+    itemTextSelected: {
+      color: colors.primary,
+      fontWeight: '500',
+    },
+    separator: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginLeft: 20,
+    },
+  });
+}

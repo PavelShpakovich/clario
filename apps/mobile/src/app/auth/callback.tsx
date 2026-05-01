@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { AuthBackground } from '@/components/AuthBackground';
-import { colors } from '@/lib/colors';
+import { useColors } from '@/lib/colors';
 
 /**
  * Handles clario://auth/callback?access_token=...&refresh_token=...&type=recovery
@@ -15,6 +15,9 @@ import { colors } from '@/lib/colors';
  * no Linking.getInitialURL() race condition, works for both cold and warm start.
  */
 export default function AuthCallbackScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const params = useLocalSearchParams<{
     access_token?: string;
     refresh_token?: string;
@@ -80,11 +83,13 @@ export default function AuthCallbackScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });
+}

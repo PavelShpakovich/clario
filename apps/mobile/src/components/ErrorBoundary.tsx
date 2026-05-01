@@ -1,7 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { messages } from '@clario/i18n';
-import { colors } from '@/lib/colors';
+import { useColors, colors as staticColors } from '@/lib/colors';
+
+// Module-level styles for the class component (uses static light theme)
+const styles = createStyles(staticColors);
 
 interface Props {
   children: React.ReactNode;
@@ -34,7 +37,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
           <Text style={styles.title}>{messages.errors.generic as string}</Text>
           <Text style={styles.message}>{this.state.message}</Text>
           <TouchableOpacity style={styles.button} onPress={this.handleReset}>
-            <Text style={styles.buttonText}>{messages.readingGenerating.retryButton as string}</Text>
+            <Text style={styles.buttonText}>
+              {messages.readingGenerating.retryButton as string}
+            </Text>
           </TouchableOpacity>
         </View>
       );
@@ -43,35 +48,37 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: colors.background,
-    gap: 12,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.foreground,
-    textAlign: 'center',
-  },
-  message: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+      backgroundColor: colors.background,
+      gap: 12,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.foreground,
+      textAlign: 'center',
+    },
+    message: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+    },
+    button: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+    },
+    buttonText: {
+      color: '#fff',
+      fontSize: 15,
+      fontWeight: '600',
+    },
+  });
+}

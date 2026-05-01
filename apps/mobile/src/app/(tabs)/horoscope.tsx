@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,13 @@ import { forecastsApi } from '@clario/api-client';
 import type { DailyForecastRecord, DailyForecastResponse } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HoroscopeScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const [forecast, setForecast] = useState<DailyForecastRecord | null>(null);
   const [preview, setPreview] = useState(false);
@@ -318,285 +321,287 @@ export default function HoroscopeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 48,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    gap: 12,
-    padding: 24,
-  },
-  generatingContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: 20,
-  },
-  generatingBack: {
-    alignSelf: 'flex-start',
-    marginBottom: 0,
-  },
-  generatingContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 60,
-  },
-  progressDots: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 8,
-  },
-  progressDot: {
-    width: 24,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.primaryTint,
-  },
-  progressDotActive: {
-    backgroundColor: colors.primary,
-  },
-  // Header row: back link on left, regenerate on right
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 20,
-  },
-  backRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backText: {
-    color: colors.mutedForeground,
-    fontSize: 14,
-  },
-  // Regenerate — small outline button (height:36)
-  regenerateButton: {
-    height: 36,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  regenerateText: {
-    color: colors.foreground,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  // Page heading
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 16,
-  },
-  date: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    textTransform: 'capitalize',
-  },
-  // Key theme chip
-  keyThemeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: colors.primaryTint,
-    backgroundColor: colors.primarySubtle,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 12,
-  },
-  keyThemeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  // Moon phase — left border italic
-  moonPhaseRow: {
-    borderLeftWidth: 2,
-    borderLeftColor: colors.primaryTint,
-    paddingLeft: 12,
-    marginBottom: 12,
-  },
-  moonPhaseText: {
-    fontSize: 13,
-    fontStyle: 'italic',
-    color: colors.mutedForeground,
-    lineHeight: 20,
-  },
-  // Interpretation — card style
-  interpretationBlock: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...cardShadow,
-    padding: 16,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  interpretationText: {
-    fontSize: 15,
-    color: colors.foreground,
-    lineHeight: 26,
-  },
-  // Preview fade overlay
-  previewFade: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-    backgroundColor: colors.card,
-    opacity: 0.9,
-  },
-  // Unlock CTA card
-  unlockCta: {
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: 1,
-    borderColor: colors.primaryTint,
-    backgroundColor: colors.primarySubtle,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  unlockCtaNote: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  // Unlock — primary full-width button
-  unlockButton: {
-    backgroundColor: colors.primary,
-    height: 40,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  unlockButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  // Advice — left border accent
-  adviceBlock: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
-    paddingLeft: 14,
-    marginBottom: 20,
-  },
-  adviceLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 6,
-  },
-  adviceText: {
-    fontSize: 14,
-    color: colors.foreground,
-    lineHeight: 22,
-  },
-  // Calendar link — outline button full-width
-  calendarLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 8,
-    height: 40,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-  },
-  calendarLinkText: {
-    color: colors.foreground,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  // Empty / error states
-  noChartText: {
-    fontSize: 16,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-  },
-  linkText: {
-    color: colors.primary,
-    fontSize: 15,
-  },
-  generatingTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.foreground,
-    textAlign: 'center',
-  },
-  generatingStep: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    minHeight: 20,
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.error,
-    textAlign: 'center',
-  },
-  errorDesc: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  retryButton: {
-    backgroundColor: colors.primary,
-    height: 40,
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  retryButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 48,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+      gap: 12,
+      padding: 24,
+    },
+    generatingContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: 20,
+    },
+    generatingBack: {
+      alignSelf: 'flex-start',
+      marginBottom: 0,
+    },
+    generatingContent: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 16,
+      paddingHorizontal: 20,
+      paddingBottom: 60,
+    },
+    progressDots: {
+      flexDirection: 'row',
+      gap: 6,
+      marginTop: 8,
+    },
+    progressDot: {
+      width: 24,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.primaryTint,
+    },
+    progressDotActive: {
+      backgroundColor: colors.primary,
+    },
+    // Header row: back link on left, regenerate on right
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 40,
+      marginBottom: 20,
+    },
+    backRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    backText: {
+      color: colors.mutedForeground,
+      fontSize: 14,
+    },
+    // Regenerate — small outline button (height:36)
+    regenerateButton: {
+      height: 36,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    regenerateText: {
+      color: colors.foreground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    // Page heading
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 4,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.5,
+      marginBottom: 4,
+    },
+    dateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 16,
+    },
+    date: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      textTransform: 'capitalize',
+    },
+    // Key theme chip
+    keyThemeChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderColor: colors.primaryTint,
+      backgroundColor: colors.primarySubtle,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginBottom: 12,
+    },
+    keyThemeText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    // Moon phase — left border italic
+    moonPhaseRow: {
+      borderLeftWidth: 2,
+      borderLeftColor: colors.primaryTint,
+      paddingLeft: 12,
+      marginBottom: 12,
+    },
+    moonPhaseText: {
+      fontSize: 13,
+      fontStyle: 'italic',
+      color: colors.mutedForeground,
+      lineHeight: 20,
+    },
+    // Interpretation — card style
+    interpretationBlock: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...cardShadow,
+      padding: 16,
+      marginBottom: 16,
+      overflow: 'hidden',
+    },
+    interpretationText: {
+      fontSize: 15,
+      color: colors.foreground,
+      lineHeight: 26,
+    },
+    // Preview fade overlay
+    previewFade: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 80,
+      backgroundColor: colors.card,
+      opacity: 0.9,
+    },
+    // Unlock CTA card
+    unlockCta: {
+      alignItems: 'center',
+      gap: 10,
+      borderWidth: 1,
+      borderColor: colors.primaryTint,
+      backgroundColor: colors.primarySubtle,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 16,
+    },
+    unlockCtaNote: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    // Unlock — primary full-width button
+    unlockButton: {
+      backgroundColor: colors.primary,
+      height: 40,
+      borderRadius: 8,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    unlockButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    // Advice — left border accent
+    adviceBlock: {
+      borderLeftWidth: 3,
+      borderLeftColor: colors.primary,
+      paddingLeft: 14,
+      marginBottom: 20,
+    },
+    adviceLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 6,
+    },
+    adviceText: {
+      fontSize: 14,
+      color: colors.foreground,
+      lineHeight: 22,
+    },
+    // Calendar link — outline button full-width
+    calendarLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      marginTop: 8,
+      height: 40,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+    },
+    calendarLinkText: {
+      color: colors.foreground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    // Empty / error states
+    noChartText: {
+      fontSize: 16,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+    },
+    linkText: {
+      color: colors.primary,
+      fontSize: 15,
+    },
+    generatingTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.foreground,
+      textAlign: 'center',
+    },
+    generatingStep: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      minHeight: 20,
+    },
+    errorTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.error,
+      textAlign: 'center',
+    },
+    errorDesc: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    retryButton: {
+      backgroundColor: colors.primary,
+      height: 40,
+      borderRadius: 8,
+      paddingHorizontal: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 8,
+    },
+    retryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+  });
+}

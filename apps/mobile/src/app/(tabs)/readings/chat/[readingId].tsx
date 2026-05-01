@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,13 +15,14 @@ import { goBack } from '@/lib/navigation';
 import { MarkdownText } from '@/components/MarkdownText';
 import { Skeleton } from '@/components/Skeleton';
 import { Ionicons } from '@expo/vector-icons';
-import { chatApi } from '@clario/api-client';
+import { chatApi, ApiClientError } from '@clario/api-client';
 import type { UnlockFollowUpResponse } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import { messages } from '@clario/i18n';
-import { colors } from '@/lib/colors';
+import { useColors } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useInsufficientCredits } from '@/lib/insufficient-credits-context';
 
 const chatStarters =
   (messages.chat.starters as Record<string, Record<string, string>>).default ?? {};
@@ -35,6 +36,9 @@ interface Message {
 const MAX_MESSAGES_FALLBACK = 5;
 
 export default function ChatScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const { readingId } = useLocalSearchParams<{ readingId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -48,6 +52,7 @@ export default function ChatScreen() {
   const listRef = useRef<FlatList<Message>>(null);
 
   const tChat = useTranslations('chat');
+  const { showInsufficientCredits } = useInsufficientCredits();
 
   const limitReached = messagesUsed >= messagesLimit;
 
@@ -129,8 +134,16 @@ export default function ChatScreen() {
       const result: UnlockFollowUpResponse = await chatApi.unlockFollowUp(readingId);
       setMessagesLimit(result.messagesLimit);
       toast.success(tChat('unlockSuccess').replace('{count}', String(result.addedMessages)));
-    } catch {
-      toast.error(tChat('unlockFailed'));
+    } catch (err) {
+      if (
+        err instanceof ApiClientError &&
+        (err.status === 402 || err.code === 'insufficient_credits')
+      ) {
+        const data = err.data as { required?: number; balance?: number } | undefined;
+        showInsufficientCredits({ required: data?.required, balance: data?.balance });
+      } else {
+        toast.error(tChat('unlockFailed'));
+      }
     } finally {
       setUnlocking(false);
     }
@@ -297,166 +310,168 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 56,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backText: {
-    color: colors.mutedForeground,
-    fontSize: 14,
-  },
-  limitChip: {
-    backgroundColor: colors.muted,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  limitChipText: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-  },
-  messagesList: {
-    padding: 16,
-    gap: 12,
-    flexGrow: 1,
-  },
-  emptyState: {
-    gap: 10,
-    paddingTop: 24,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.foreground,
-    marginBottom: 4,
-  },
-  starterButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: 12,
-  },
-  starterText: {
-    fontSize: 14,
-    color: colors.foreground,
-  },
-  messageBubble: {
-    maxWidth: '85%',
-    borderRadius: 12,
-    padding: 12,
-    gap: 4,
-  },
-  userBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: colors.primary,
-  },
-  assistantBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.muted,
-  },
-  messageRole: {
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  messageRoleUser: {
-    color: 'rgba(255,255,255,0.6)',
-  },
-  messageRoleAssistant: {
-    color: colors.mutedForeground,
-  },
-  userText: {
-    fontSize: 15,
-    color: '#fff',
-    lineHeight: 22,
-  },
-  limitBanner: {
-    margin: 16,
-    backgroundColor: '#fef3c7',
-    borderRadius: 10,
-    padding: 12,
-    gap: 8,
-  },
-  limitBannerText: {
-    fontSize: 14,
-    color: '#92400e',
-    textAlign: 'center',
-  },
-  unlockButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  unlockButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    padding: 12,
-    gap: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: colors.foreground,
-    maxHeight: 100,
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sendDisabled: {
-    opacity: 0.4,
-  },
-  skeletonMessages: {
-    flex: 1,
-    padding: 16,
-    gap: 16,
-  },
-  skeletonRowRight: {
-    alignItems: 'flex-end',
-  },
-  skeletonRowLeft: {
-    alignItems: 'flex-start',
-  },
-  skeletonInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    gap: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingTop: 56,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    backText: {
+      color: colors.mutedForeground,
+      fontSize: 14,
+    },
+    limitChip: {
+      backgroundColor: colors.muted,
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    limitChipText: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+    },
+    messagesList: {
+      padding: 16,
+      gap: 12,
+      flexGrow: 1,
+    },
+    emptyState: {
+      gap: 10,
+      paddingTop: 24,
+    },
+    emptyTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.foreground,
+      marginBottom: 4,
+    },
+    starterButton: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+    },
+    starterText: {
+      fontSize: 14,
+      color: colors.foreground,
+    },
+    messageBubble: {
+      maxWidth: '85%',
+      borderRadius: 12,
+      padding: 12,
+      gap: 4,
+    },
+    userBubble: {
+      alignSelf: 'flex-end',
+      backgroundColor: colors.primary,
+    },
+    assistantBubble: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.muted,
+    },
+    messageRole: {
+      fontSize: 10,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 2,
+    },
+    messageRoleUser: {
+      color: 'rgba(255,255,255,0.6)',
+    },
+    messageRoleAssistant: {
+      color: colors.mutedForeground,
+    },
+    userText: {
+      fontSize: 15,
+      color: '#fff',
+      lineHeight: 22,
+    },
+    limitBanner: {
+      margin: 16,
+      backgroundColor: '#fef3c7',
+      borderRadius: 10,
+      padding: 12,
+      gap: 8,
+    },
+    limitBannerText: {
+      fontSize: 14,
+      color: '#92400e',
+      textAlign: 'center',
+    },
+    unlockButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 10,
+      alignItems: 'center',
+    },
+    unlockButtonText: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      padding: 12,
+      gap: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    input: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 15,
+      color: colors.foreground,
+      maxHeight: 100,
+    },
+    sendButton: {
+      width: 40,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    sendDisabled: {
+      opacity: 0.4,
+    },
+    skeletonMessages: {
+      flex: 1,
+      padding: 16,
+      gap: 16,
+    },
+    skeletonRowRight: {
+      alignItems: 'flex-end',
+    },
+    skeletonRowLeft: {
+      alignItems: 'flex-start',
+    },
+    skeletonInputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      gap: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+  });
+}

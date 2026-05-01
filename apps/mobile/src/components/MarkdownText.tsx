@@ -1,10 +1,11 @@
+import { useMemo } from 'react';
 /**
  * Lightweight markdown renderer for chat messages.
  * Handles: **bold**, *italic*, `code`, # headings, bullet/numbered lists.
  * No external dependencies — pure React Native Text.
  */
 import { Text, View, StyleSheet } from 'react-native';
-import { colors } from '@/lib/colors';
+import { useColors } from '@/lib/colors';
 
 interface Props {
   children: string;
@@ -45,6 +46,9 @@ function parseInline(line: string): Segment[] {
 }
 
 function InlineText({ segments }: { segments: Segment[] }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <>
       {segments.map((seg, i) => (
@@ -64,6 +68,9 @@ function InlineText({ segments }: { segments: Segment[] }) {
 }
 
 export function MarkdownText({ children, style }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const lines = children.split('\n');
   const elements: React.ReactNode[] = [];
   let i = 0;
@@ -134,57 +141,59 @@ export function MarkdownText({ children, style }: Props) {
   return <View>{elements}</View>;
 }
 
-const styles = StyleSheet.create({
-  base: {
-    fontSize: 15,
-    color: colors.foreground,
-    lineHeight: 22,
-  },
-  bold: {
-    fontWeight: '700',
-  },
-  italic: {
-    fontStyle: 'italic',
-  },
-  inlineCode: {
-    fontFamily: 'monospace',
-    backgroundColor: 'rgba(0,0,0,0.08)',
-    borderRadius: 3,
-    paddingHorizontal: 3,
-    fontSize: 13,
-  },
-  h1: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  h2: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 6,
-    marginBottom: 3,
-  },
-  h3: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  listRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 3,
-    gap: 6,
-  },
-  bullet: {
-    lineHeight: 22,
-    color: colors.foreground,
-  },
-  listText: {
-    flex: 1,
-  },
-  spacer: {
-    height: 6,
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    base: {
+      fontSize: 15,
+      color: colors.foreground,
+      lineHeight: 22,
+    },
+    bold: {
+      fontWeight: '700',
+    },
+    italic: {
+      fontStyle: 'italic',
+    },
+    inlineCode: {
+      fontFamily: 'monospace',
+      backgroundColor: 'rgba(0,0,0,0.08)',
+      borderRadius: 3,
+      paddingHorizontal: 3,
+      fontSize: 13,
+    },
+    h1: {
+      fontSize: 18,
+      fontWeight: '700',
+      marginTop: 8,
+      marginBottom: 4,
+    },
+    h2: {
+      fontSize: 16,
+      fontWeight: '700',
+      marginTop: 6,
+      marginBottom: 3,
+    },
+    h3: {
+      fontSize: 15,
+      fontWeight: '600',
+      marginTop: 4,
+      marginBottom: 2,
+    },
+    listRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: 3,
+      gap: 6,
+    },
+    bullet: {
+      lineHeight: 22,
+      color: colors.foreground,
+    },
+    listText: {
+      flex: 1,
+    },
+    spacer: {
+      height: 6,
+    },
+  });
+}

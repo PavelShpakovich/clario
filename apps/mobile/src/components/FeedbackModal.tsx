@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { feedbackApi } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
-import { colors } from '@/lib/colors';
+import { useColors } from '@/lib/colors';
 
 type FormState = 'idle' | 'submitting' | 'success';
 
@@ -24,6 +24,9 @@ interface Props {
 }
 
 export function FeedbackModal({ visible, onClose }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const t = useTranslations('feedback');
   const tCommon = useTranslations('common');
   const [formState, setFormState] = useState<FormState>('idle');
@@ -158,85 +161,87 @@ export function FeedbackModal({ visible, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 0,
-  },
-  sheet: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 32,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    padding: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: { fontSize: 15, fontWeight: '600', color: colors.foreground },
-  subtitle: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
-  textarea: {
-    margin: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: colors.background,
-    fontSize: 14,
-    color: colors.foreground,
-    minHeight: 120,
-    lineHeight: 20,
-  },
-  errorText: {
-    fontSize: 12,
-    color: colors.destructive,
-    marginHorizontal: 16,
-    marginTop: -8,
-    marginBottom: 8,
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginTop: 4,
-  },
-  charCount: { fontSize: 11, color: colors.mutedForeground },
-  submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 8,
-    minWidth: 90,
-    justifyContent: 'center',
-  },
-  submitDisabled: { opacity: 0.5 },
-  submitText: { fontSize: 13, fontWeight: '600', color: colors.primaryForeground },
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      justifyContent: 'flex-end',
+      paddingHorizontal: 0,
+    },
+    sheet: {
+      backgroundColor: colors.card,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingBottom: 32,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      padding: 20,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    title: { fontSize: 15, fontWeight: '600', color: colors.foreground },
+    subtitle: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
+    textarea: {
+      margin: 16,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      backgroundColor: colors.background,
+      fontSize: 14,
+      color: colors.foreground,
+      minHeight: 120,
+      lineHeight: 20,
+    },
+    errorText: {
+      fontSize: 12,
+      color: colors.destructive,
+      marginHorizontal: 16,
+      marginTop: -8,
+      marginBottom: 8,
+    },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      marginTop: 4,
+    },
+    charCount: { fontSize: 11, color: colors.mutedForeground },
+    submitButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 16,
+      paddingVertical: 9,
+      borderRadius: 8,
+      minWidth: 90,
+      justifyContent: 'center',
+    },
+    submitDisabled: { opacity: 0.5 },
+    submitText: { fontSize: 13, fontWeight: '600', color: colors.primaryForeground },
 
-  // Success state
-  successState: {
-    alignItems: 'center',
-    padding: 40,
-    gap: 12,
-  },
-  successIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#DCFCE7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  successTitle: { fontSize: 16, fontWeight: '600', color: colors.foreground },
-  successDetail: { fontSize: 13, color: colors.mutedForeground, textAlign: 'center' },
-});
+    // Success state
+    successState: {
+      alignItems: 'center',
+      padding: 40,
+      gap: 12,
+    },
+    successIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#DCFCE7',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    successTitle: { fontSize: 16, fontWeight: '600', color: colors.foreground },
+    successDetail: { fontSize: 13, color: colors.mutedForeground, textAlign: 'center' },
+  });
+}

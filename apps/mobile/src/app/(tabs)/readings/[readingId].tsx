@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,27 +18,115 @@ import { useTranslations } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import { messages } from '@clario/i18n';
 const notifMessages = messages.notifications;
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleReadyNotification } from '@/lib/notifications';
+import { Skeleton } from '@/components/Skeleton';
 
 const readingTypeLabelsMap = messages.readingDetail.readingTypes as Record<string, string>;
 
 const POLL_INTERVAL_MS = 3000;
 
+function ReadingDetailSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8 }]}
+      scrollEnabled={false}
+    >
+      {/* Back */}
+      <Skeleton width={120} height={16} borderRadius={8} style={{ marginBottom: 20 }} />
+
+      {/* Title block */}
+      <View style={[styles.titleBlock, { gap: 8 }]}>
+        <Skeleton width={100} height={12} borderRadius={6} />
+        <Skeleton width={'80%'} height={22} borderRadius={6} />
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 2 }}>
+          <Skeleton width={90} height={13} borderRadius={6} />
+          <Skeleton width={70} height={22} borderRadius={11} />
+        </View>
+      </View>
+
+      {/* Action buttons */}
+      <View style={[styles.actionsRow, { marginBottom: 20 }]}>
+        <Skeleton width={110} height={36} borderRadius={10} />
+        <Skeleton width={130} height={36} borderRadius={10} />
+      </View>
+
+      {/* Summary card */}
+      <View style={[styles.summaryCard, { gap: 8 }]}>
+        <Skeleton width={'100%'} height={14} borderRadius={6} />
+        <Skeleton width={'95%'} height={14} borderRadius={6} />
+        <Skeleton width={'80%'} height={14} borderRadius={6} />
+      </View>
+
+      {/* Key takeaways card */}
+      <View style={[styles.takeawaysCard, { gap: 12 }]}>
+        <Skeleton width={130} height={16} borderRadius={6} />
+        {[0, 1, 2].map((i) => (
+          <View key={i} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+            <Skeleton width={28} height={28} borderRadius={14} />
+            <View style={{ flex: 1, gap: 6 }}>
+              <Skeleton width={'90%'} height={13} borderRadius={6} />
+              <Skeleton width={'70%'} height={13} borderRadius={6} />
+            </View>
+          </View>
+        ))}
+      </View>
+
+      {/* Section cards */}
+      {[0, 1].map((i) => (
+        <View key={i} style={[styles.sectionItem, { gap: 10 }]}>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+            <Skeleton width={28} height={28} borderRadius={14} />
+            <Skeleton width={'60%'} height={16} borderRadius={6} />
+          </View>
+          <Skeleton width={'100%'} height={13} borderRadius={6} />
+          <Skeleton width={'90%'} height={13} borderRadius={6} />
+          <Skeleton width={'75%'} height={13} borderRadius={6} />
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
 export default function ReadingDetailScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const { readingId } = useLocalSearchParams<{ readingId: string }>();
   const [reading, setReading] = useState<ReadingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
   const prevStatusRef = useRef<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stepTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const tDetail = useTranslations('readingDetail');
   const tGenerating = useTranslations('readingGenerating');
   const tNav = useTranslations('navigation');
+
+  // Advance step indicator while generating
+  useEffect(() => {
+    if (reading?.status !== 'pending' && reading?.status !== 'generating') {
+      stepTimers.current.forEach(clearTimeout);
+      stepTimers.current = [];
+      setStepIndex(0);
+      return;
+    }
+    setStepIndex(0);
+    const delays = [5000, 15000, 28000];
+    stepTimers.current = delays.map((delay, i) => setTimeout(() => setStepIndex(i + 1), delay));
+    return () => {
+      stepTimers.current.forEach(clearTimeout);
+    };
+  }, [reading?.status]);
 
   useEffect(() => {
     if (!readingId) return;
@@ -148,11 +236,7 @@ export default function ReadingDetailScreen() {
   const readingTypeLabels: Record<string, string> = readingTypeLabelsMap;
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <ReadingDetailSkeleton />;
   }
 
   if (!reading) {
@@ -289,7 +373,24 @@ export default function ReadingDetailScreen() {
         <View style={styles.generatingBlock}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.generatingTitle}>{tGenerating('title')}</Text>
-          <Text style={styles.generatingDesc}>{tGenerating('analyzing')}</Text>
+          <Text style={styles.generatingStep}>
+            {
+              [
+                tGenerating('analyzing'),
+                tGenerating('writing'),
+                tGenerating('reviewing'),
+                tGenerating('finalizing'),
+              ][stepIndex]
+            }
+          </Text>
+          <View style={styles.progressDots}>
+            {[0, 1, 2, 3].map((i) => (
+              <View
+                key={i}
+                style={[styles.progressDot, i <= stepIndex && styles.progressDotActive]}
+              />
+            ))}
+          </View>
         </View>
       ) : null}
 
@@ -378,330 +479,346 @@ export default function ReadingDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 48,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    gap: 12,
-    backgroundColor: colors.background,
-  },
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 48,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+      gap: 12,
+      backgroundColor: colors.background,
+    },
 
-  // ── Back ─────────────────────────────────────────────────────────────────────
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 20,
-    alignSelf: 'flex-start',
-  },
-  backText: {
-    color: colors.mutedForeground,
-    fontSize: 14,
-  },
+    // ── Back ─────────────────────────────────────────────────────────────────────
+    backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginBottom: 20,
+      alignSelf: 'flex-start',
+    },
+    backText: {
+      color: colors.mutedForeground,
+      fontSize: 14,
+    },
 
-  // ── Title block ───────────────────────────────────────────────────────────────
-  titleBlock: {
-    gap: 6,
-    marginBottom: 20,
-  },
-  typeLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.5,
-    lineHeight: 32,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-  dateText: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  statusBadge: {
-    borderRadius: 99,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  statusBadgeError: {
-    backgroundColor: colors.destructiveSubtle,
-  },
-  statusBadgePending: {
-    backgroundColor: '#FEF3C7',
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  statusBadgeTextError: {
-    color: colors.destructive,
-  },
-  statusBadgeTextPending: {
-    color: '#92400E',
-  },
+    // ── Title block ───────────────────────────────────────────────────────────────
+    titleBlock: {
+      gap: 6,
+      marginBottom: 20,
+    },
+    typeLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.5,
+      lineHeight: 32,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flexWrap: 'wrap',
+    },
+    dateText: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    statusBadge: {
+      borderRadius: 99,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    statusBadgeError: {
+      backgroundColor: colors.destructiveSubtle,
+    },
+    statusBadgePending: {
+      backgroundColor: '#FEF3C7',
+    },
+    statusBadgeText: {
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    statusBadgeTextError: {
+      color: colors.destructive,
+    },
+    statusBadgeTextPending: {
+      color: '#92400E',
+    },
 
-  // ── Action buttons ────────────────────────────────────────────────────────────
-  actionsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
-  },
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    height: 36,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-  },
-  primaryButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  outlineButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-    height: 36,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-  },
-  outlineButtonText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
+    // ── Action buttons ────────────────────────────────────────────────────────────
+    actionsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 20,
+    },
+    primaryButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      backgroundColor: colors.primary,
+      height: 36,
+      borderRadius: 8,
+      paddingHorizontal: 14,
+    },
+    primaryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    outlineButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+      height: 36,
+      borderRadius: 8,
+      paddingHorizontal: 14,
+    },
+    outlineButtonText: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
 
-  // ── Generating ────────────────────────────────────────────────────────────────
-  generatingBlock: {
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 40,
-  },
-  generatingTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.foreground,
-    textAlign: 'center',
-  },
-  generatingDesc: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    lineHeight: 21,
-    textAlign: 'center',
-  },
+    // ── Generating ────────────────────────────────────────────────────────────────
+    generatingBlock: {
+      alignItems: 'center',
+      gap: 16,
+      paddingVertical: 48,
+    },
+    generatingTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.foreground,
+      textAlign: 'center',
+    },
+    generatingStep: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      minHeight: 20,
+    },
+    progressDots: {
+      flexDirection: 'row',
+      gap: 6,
+      marginTop: 8,
+    },
+    progressDot: {
+      width: 24,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.primaryTint,
+    },
+    progressDotActive: {
+      backgroundColor: colors.primary,
+    },
 
-  // ── Error banner ──────────────────────────────────────────────────────────────
-  errorBanner: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fca5a5',
-    backgroundColor: colors.destructiveSubtle,
-    padding: 16,
-    gap: 4,
-    marginBottom: 20,
-  },
-  errorBannerTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.destructive,
-  },
-  errorBannerDesc: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    lineHeight: 19,
-  },
+    // ── Error banner ──────────────────────────────────────────────────────────────
+    errorBanner: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#fca5a5',
+      backgroundColor: colors.destructiveSubtle,
+      padding: 16,
+      gap: 4,
+      marginBottom: 20,
+    },
+    errorBannerTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.destructive,
+    },
+    errorBannerDesc: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      lineHeight: 19,
+    },
 
-  // ── Summary ───────────────────────────────────────────────────────────────────
-  summaryCard: {
-    backgroundColor: colors.primarySubtle,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.primaryTint,
-    padding: 20,
-    marginBottom: 20,
-  },
-  summaryText: {
-    fontSize: 15,
-    color: colors.foreground,
-    lineHeight: 26,
-    fontStyle: 'italic',
-  },
+    // ── Summary ───────────────────────────────────────────────────────────────────
+    summaryCard: {
+      backgroundColor: colors.primarySubtle,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primaryTint,
+      padding: 20,
+      marginBottom: 20,
+    },
+    summaryText: {
+      fontSize: 15,
+      color: colors.foreground,
+      lineHeight: 26,
+      fontStyle: 'italic',
+    },
 
-  // ── Key Takeaways ─────────────────────────────────────────────────────────────
-  takeawaysCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.primaryTint,
-    padding: 16,
-    gap: 12,
-    marginBottom: 20,
-  },
-  takeawaysHeading: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  numberedRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  numberCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.primaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    marginTop: 1,
-  },
-  numberCircleText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  numberedRowText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.foreground,
-    lineHeight: 21,
-  },
+    // ── Key Takeaways ─────────────────────────────────────────────────────────────
+    takeawaysCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primaryTint,
+      padding: 16,
+      gap: 12,
+      marginBottom: 20,
+    },
+    takeawaysHeading: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 4,
+    },
+    numberedRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+    },
+    numberCircle: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: colors.primaryTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      marginTop: 1,
+    },
+    numberCircleText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    numberedRowText: {
+      flex: 1,
+      fontSize: 14,
+      color: colors.foreground,
+      lineHeight: 21,
+    },
 
-  // ── Sections ──────────────────────────────────────────────────────────────────
-  sectionsBlock: {
-    gap: 28,
-    marginBottom: 20,
-  },
-  sectionItem: {
-    gap: 10,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  sectionNumberCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  sectionNumberText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.foreground,
-    flex: 1,
-    letterSpacing: -0.3,
-  },
-  sectionBody: {
-    paddingLeft: 38,
-    gap: 10,
-  },
-  sectionParagraph: {
-    fontSize: 15,
-    color: colors.foreground,
-    lineHeight: 26,
-  },
+    // ── Sections ──────────────────────────────────────────────────────────────────
+    sectionsBlock: {
+      gap: 28,
+      marginBottom: 20,
+    },
+    sectionItem: {
+      gap: 10,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    sectionNumberCircle: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.primaryTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    sectionNumberText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    sectionTitle: {
+      fontSize: 17,
+      fontWeight: '600',
+      color: colors.foreground,
+      flex: 1,
+      letterSpacing: -0.3,
+    },
+    sectionBody: {
+      paddingLeft: 38,
+      gap: 10,
+    },
+    sectionParagraph: {
+      fontSize: 15,
+      color: colors.foreground,
+      lineHeight: 26,
+    },
 
-  // ── Placement Highlights ──────────────────────────────────────────────────────
-  highlightsBlock: {
-    gap: 10,
-    marginBottom: 20,
-  },
-  highlightsTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  highlightsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  highlightCell: {
-    width: '48%',
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    ...cardShadow,
-  },
-  highlightText: {
-    fontSize: 13,
-    color: colors.foreground,
-    lineHeight: 19,
-  },
+    // ── Placement Highlights ──────────────────────────────────────────────────────
+    highlightsBlock: {
+      gap: 10,
+      marginBottom: 20,
+    },
+    highlightsTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    highlightsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    highlightCell: {
+      width: '48%',
+      backgroundColor: colors.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      ...cardShadow,
+    },
+    highlightText: {
+      fontSize: 13,
+      color: colors.foreground,
+      lineHeight: 19,
+    },
 
-  // ── Disclaimers ───────────────────────────────────────────────────────────────
-  disclaimersCard: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-    marginBottom: 8,
-  },
-  disclaimersText: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-    lineHeight: 17,
-  },
+    // ── Disclaimers ───────────────────────────────────────────────────────────────
+    disclaimersCard: {
+      backgroundColor: colors.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      marginBottom: 8,
+    },
+    disclaimersText: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+      lineHeight: 17,
+    },
 
-  // ── Misc ──────────────────────────────────────────────────────────────────────
-  errorText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.destructive,
-    textAlign: 'center',
-  },
-  linkText: {
-    color: colors.primary,
-    fontSize: 14,
-  },
-});
+    // ── Misc ──────────────────────────────────────────────────────────────────────
+    errorText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.destructive,
+      textAlign: 'center',
+    },
+    linkText: {
+      color: colors.primary,
+      fontSize: 14,
+    },
+  });
+}

@@ -1,11 +1,10 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   TextInput,
   ScrollView,
 } from 'react-native';
@@ -17,11 +16,14 @@ import { READING_TYPES } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { messages } from '@clario/i18n';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 
 function ReadingsListSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.container}>
@@ -74,27 +76,62 @@ function ReadingsListSkeleton() {
 const readingTypeLabelsMap = messages.readingsPage.readingTypes as Record<string, string>;
 
 export default function ReadingsListScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const [readings, setReadings] = useState<ReadingRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const tReadings = useTranslations('readingsPage');
   const tCommon = useTranslations('common');
   const confirm = useConfirm();
 
-  useEffect(() => {
-    void loadReadings();
-  }, []);
-
-  async function loadReadings() {
+  const loadReadings = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
     try {
       const { readings: data } = await readingsApi.listReadings();
       setReadings(data);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  useEffect(() => {
+    void loadReadings();
+  }, [loadReadings]);
+
+  // Poll every 4s while any reading is still generating/pending
+  useEffect(() => {
+    const hasInProgress = readings.some((r) => r.status === 'pending' || r.status === 'generating');
+    if (hasInProgress) {
+      if (!pollRef.current) {
+        pollRef.current = setInterval(() => {
+          void loadReadings(true);
+        }, 4000);
+      }
+    } else {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    }
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [readings, loadReadings]);
+
+  function handleRefresh() {
+    setRefreshing(true);
+    void loadReadings(true);
   }
 
   async function confirmDelete(reading: ReadingRecord) {
@@ -241,6 +278,8 @@ export default function ReadingsListScreen() {
           data={filtered}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
           renderItem={({ item }) => {
             const statusStyle = getStatusStyle(item.status);
             return (
@@ -301,234 +340,236 @@ export default function ReadingsListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  headerBar: {
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 12,
-  },
-  pageDesc: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    lineHeight: 19,
-    marginTop: 4,
-    paddingBottom: 4,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.5,
-  },
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    headerBar: {
+      paddingHorizontal: 20,
+      paddingTop: 56,
+      paddingBottom: 12,
+    },
+    pageDesc: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      lineHeight: 19,
+      marginTop: 4,
+      paddingBottom: 4,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 4,
+    },
+    pageTitle: {
+      fontSize: 26,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.5,
+    },
 
-  // ── Search ───────────────────────────────────────────────────────────────────
-  searchWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 10,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    height: 40,
-  },
-  searchIcon: {
-    marginRight: 6,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.foreground,
-    height: 40,
-  },
+    // ── Search ───────────────────────────────────────────────────────────────────
+    searchWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginHorizontal: 20,
+      marginBottom: 10,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      height: 40,
+    },
+    searchIcon: {
+      marginRight: 6,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 14,
+      color: colors.foreground,
+      height: 40,
+    },
 
-  // ── Type filter chips ────────────────────────────────────────────────────────
-  filterScroll: {
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  filterRow: {
-    paddingLeft: 20,
-    paddingRight: 12,
-    paddingBottom: 10,
-    alignItems: 'center',
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 99,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: 8,
-  },
-  filterChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterChipText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.mutedForeground,
-  },
-  filterChipTextActive: {
-    color: colors.primaryForeground,
-    fontWeight: '600',
-  },
+    // ── Type filter chips ────────────────────────────────────────────────────────
+    filterScroll: {
+      flexGrow: 0,
+      flexShrink: 0,
+    },
+    filterRow: {
+      paddingLeft: 20,
+      paddingRight: 12,
+      paddingBottom: 10,
+      alignItems: 'center',
+    },
+    filterChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 99,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginRight: 8,
+    },
+    filterChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    filterChipText: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.mutedForeground,
+    },
+    filterChipTextActive: {
+      color: colors.primaryForeground,
+      fontWeight: '600',
+    },
 
-  // ── List ─────────────────────────────────────────────────────────────────────
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 32,
-    paddingTop: 4,
-    gap: 12,
-  },
-  noResultsContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  noResultsText: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-  },
+    // ── List ─────────────────────────────────────────────────────────────────────
+    listContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 32,
+      paddingTop: 4,
+      gap: 12,
+    },
+    noResultsContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 32,
+    },
+    noResultsText: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+    },
 
-  // ── Card ─────────────────────────────────────────────────────────────────────
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    gap: 6,
-    ...cardShadow,
-  },
-  cardTypeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginBottom: 2,
-  },
-  cardTypeLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  cardSummary: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    lineHeight: 19,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  cardFooterLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  cardDate: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-  },
-  statusBadge: {
-    borderRadius: 99,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  deleteButton: {
-    padding: 4,
-  },
+    // ── Card ─────────────────────────────────────────────────────────────────────
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      gap: 6,
+      ...cardShadow,
+    },
+    cardTypeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      marginBottom: 2,
+    },
+    cardTypeLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+    },
+    cardTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    cardSummary: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      lineHeight: 19,
+    },
+    cardFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 4,
+    },
+    cardFooterLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      flex: 1,
+    },
+    cardDate: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+    },
+    statusBadge: {
+      borderRadius: 99,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    statusBadgeText: {
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    deleteButton: {
+      padding: 4,
+    },
 
-  // ── Empty state ───────────────────────────────────────────────────────────────
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.foreground,
-    textAlign: 'center',
-  },
-  emptyDesc: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    lineHeight: 21,
-    textAlign: 'center',
-  },
-  emptyButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    height: 40,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  outlineButton: {
-    height: 40,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  outlineButtonText: {
-    color: colors.foreground,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-});
+    // ── Empty state ───────────────────────────────────────────────────────────────
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 32,
+      gap: 12,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.foreground,
+      textAlign: 'center',
+    },
+    emptyDesc: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      lineHeight: 21,
+      textAlign: 'center',
+    },
+    emptyButtons: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 8,
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      height: 40,
+      borderRadius: 8,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primaryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    outlineButton: {
+      height: 40,
+      borderRadius: 8,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    outlineButtonText: {
+      color: colors.foreground,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+  });
+}

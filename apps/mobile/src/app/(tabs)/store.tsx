@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,27 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { goBack } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { creditsApi } from '@clario/api-client';
-import type { CreditsStoreSnapshot } from '@clario/api-client';
+import type {
+  CreditBalanceSnapshot,
+  CreditsPricingSnapshot,
+  CreditPack,
+  CreditHistorySnapshot,
+} from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 
 function StoreSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -106,9 +115,20 @@ const COST_KEYS: Record<string, string> = {
 };
 
 export default function StoreScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
-  const [data, setData] = useState<CreditsStoreSnapshot | null>(null);
+  // Static data loaded once on focus (balance, packs, pricing)
+  const [balance, setBalance] = useState<CreditBalanceSnapshot | null>(null);
+  const [pricing, setPricing] = useState<CreditsPricingSnapshot | null>(null);
+  const [packs, setPacks] = useState<CreditPack[]>([]);
+  // History loaded separately per page
+  const [history, setHistory] = useState<CreditHistorySnapshot | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 5;
 
@@ -116,23 +136,53 @@ export default function StoreScreen() {
   const tErrors = useTranslations('errors');
   const tNav = useTranslations('navigation');
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const snapshot = await creditsApi.getStoreSnapshot({ page, pageSize: PAGE_SIZE });
-        setData(snapshot);
-      } finally {
-        setLoading(false);
-      }
+  // Load static parts (balance, packs, pricing) + first page of history
+  const loadStatic = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
+    try {
+      const [balanceData, pricingData, packsData, historyData] = await Promise.all([
+        creditsApi.getBalance(true),
+        creditsApi.getPricing(true),
+        creditsApi.getPacks({ noCache: true }),
+        creditsApi.getHistory({ page: 1, pageSize: PAGE_SIZE, noCache: true }),
+      ]);
+      setBalance(balanceData);
+      setPricing(pricingData);
+      setPacks(packsData.packs);
+      setHistory(historyData);
+      setPage(1);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    void load();
-  }, [page]);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadStatic();
+    }, [loadStatic]),
+  );
+
+  // Load only history when page changes (after initial load)
+  useEffect(() => {
+    if (!balance || page === 1) return; // page 1 is already loaded by loadStatic
+    setHistoryLoading(true);
+    creditsApi
+      .getHistory({ page, pageSize: PAGE_SIZE, noCache: true })
+      .then((data) => setHistory(data))
+      .finally(() => setHistoryLoading(false));
+  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleRefresh() {
+    setRefreshing(true);
+    void loadStatic(true);
+  }
 
   if (loading) {
     return <StoreSkeleton />;
   }
 
-  if (!data) {
+  if (!balance || !pricing) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>{tErrors('generic')}</Text>
@@ -140,11 +190,20 @@ export default function StoreScreen() {
     );
   }
 
-  const { balance, pricing, packs, history } = data;
-  const totalPages = Math.max(1, Math.ceil(history.total / PAGE_SIZE));
+  const totalPages = history ? Math.max(1, Math.ceil(history.total / PAGE_SIZE)) : 1;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+        />
+      }
+    >
       {/* Back row + page title */}
       <View style={[styles.backRow, { marginTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => goBack('/(tabs)/index')} style={styles.backButton}>
@@ -233,34 +292,48 @@ export default function StoreScreen() {
       <View style={styles.sectionHeader}>
         <Ionicons name="time-outline" size={18} color={colors.foreground} />
         <Text style={styles.sectionTitle}>{tCredits('purchaseHistory')}</Text>
-        {history.total > 0 && (
+        {history && history.total > 0 && (
           <View style={styles.pagination}>
             <TouchableOpacity
-              style={[styles.pageChevron, page <= 1 && styles.pageButtonDisabled]}
+              style={[
+                styles.pageChevron,
+                (page <= 1 || historyLoading) && styles.pageButtonDisabled,
+              ]}
               onPress={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
+              disabled={page <= 1 || historyLoading}
             >
               <Ionicons name="chevron-back" size={16} color={colors.foreground} />
             </TouchableOpacity>
-            <Text style={styles.pageLabel}>
-              {tCredits('pageLabel')
-                .replace('{current}', String(page))
-                .replace('{total}', String(totalPages))}
-            </Text>
+            {historyLoading ? (
+              <ActivityIndicator
+                size="small"
+                color={colors.primary}
+                style={{ marginHorizontal: 8 }}
+              />
+            ) : (
+              <Text style={styles.pageLabel}>
+                {tCredits('pageLabel')
+                  .replace('{current}', String(page))
+                  .replace('{total}', String(totalPages))}
+              </Text>
+            )}
             <TouchableOpacity
-              style={[styles.pageChevron, page >= totalPages && styles.pageButtonDisabled]}
+              style={[
+                styles.pageChevron,
+                (page >= totalPages || historyLoading) && styles.pageButtonDisabled,
+              ]}
               onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
+              disabled={page >= totalPages || historyLoading}
             >
               <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
             </TouchableOpacity>
           </View>
         )}
       </View>
-      {history.transactions.length === 0 ? (
+      {!history || history.transactions.length === 0 ? (
         <Text style={styles.emptyText}>{tCredits('noTransactions')}</Text>
       ) : (
-        <View style={styles.historyCard}>
+        <View style={[styles.historyCard, historyLoading && { opacity: 0.5 }]}>
           {history.transactions.map((tx, index) => {
             const reasonKey = REASON_KEYS[tx.reason];
             const reasonLabel = reasonKey
@@ -297,286 +370,288 @@ export default function StoreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 48,
-  },
-  // Back row
-  backRow: {
-    marginTop: 40,
-    marginBottom: 20,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backText: {
-    color: colors.mutedForeground,
-    fontSize: 14,
-  },
-  // Page title
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  storeDesc: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  // Balance card
-  balanceCard: {
-    backgroundColor: colors.primarySubtle,
-    borderRadius: 14,
-    padding: 20,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: colors.primaryTint,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  balanceIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  balanceInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  balanceLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.primary,
-    marginBottom: 2,
-  },
-  balanceValue: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: colors.primary,
-    lineHeight: 38,
-  },
-  balanceUnit: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  forecastAccess: {
-    fontSize: 12,
-    color: colors.primary,
-    marginTop: 4,
-  },
-  // Section headers with icon
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.foreground,
-    flex: 1,
-  },
-  sectionDesc: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    marginBottom: 12,
-    lineHeight: 18,
-  },
-  // Costs card — card style with row dividers
-  costsCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...cardShadow,
-    marginBottom: 24,
-    overflow: 'hidden',
-  },
-  costRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  costRowLast: {
-    borderBottomWidth: 0,
-  },
-  costLabel: {
-    fontSize: 14,
-    color: colors.foreground,
-  },
-  costValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  // Pack cards — card style
-  packCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...cardShadow,
-    padding: 16,
-    marginBottom: 8,
-  },
-  packInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  packName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  packCredits: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  packAction: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  packPrice: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.foreground,
-  },
-  comingSoonText: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  packsEmpty: {
-    marginBottom: 16,
-  },
-  // Transaction history — card style with row dividers
-  historyCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...cardShadow,
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  txRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 8,
-  },
-  txRowLast: {
-    borderBottomWidth: 0,
-  },
-  txLeft: {
-    flex: 1,
-    gap: 2,
-  },
-  txReason: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  txNote: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-  },
-  txDate: {
-    fontSize: 12,
-    color: colors.placeholder,
-  },
-  txRight: {
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-  txAmount: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  txPositive: {
-    color: colors.success,
-  },
-  txNegative: {
-    color: colors.error,
-  },
-  // Pagination (inline in section header)
-  pagination: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  pageChevron: {
-    padding: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pageButtonDisabled: {
-    opacity: 0.4,
-  },
-  pageLabel: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    minWidth: 50,
-    textAlign: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: colors.error,
-  },
-  historyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 8,
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 48,
+    },
+    // Back row
+    backRow: {
+      marginTop: 40,
+      marginBottom: 20,
+    },
+    backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    backText: {
+      color: colors.mutedForeground,
+      fontSize: 14,
+    },
+    // Page title
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 4,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.5,
+      marginBottom: 4,
+    },
+    storeDesc: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      marginBottom: 20,
+      lineHeight: 20,
+    },
+    // Balance card
+    balanceCard: {
+      backgroundColor: colors.primarySubtle,
+      borderRadius: 14,
+      padding: 20,
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: colors.primaryTint,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    balanceIconWrap: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.primaryTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    balanceInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    balanceLabel: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.primary,
+      marginBottom: 2,
+    },
+    balanceValue: {
+      fontSize: 32,
+      fontWeight: '800',
+      color: colors.primary,
+      lineHeight: 38,
+    },
+    balanceUnit: {
+      fontSize: 13,
+      color: colors.primary,
+      fontWeight: '500',
+    },
+    forecastAccess: {
+      fontSize: 12,
+      color: colors.primary,
+      marginTop: 4,
+    },
+    // Section headers with icon
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 12,
+      marginTop: 8,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.foreground,
+      flex: 1,
+    },
+    sectionDesc: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      marginBottom: 12,
+      lineHeight: 18,
+    },
+    // Costs card — card style with row dividers
+    costsCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...cardShadow,
+      marginBottom: 24,
+      overflow: 'hidden',
+    },
+    costRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    costRowLast: {
+      borderBottomWidth: 0,
+    },
+    costLabel: {
+      fontSize: 14,
+      color: colors.foreground,
+    },
+    costValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    // Pack cards — card style
+    packCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...cardShadow,
+      padding: 16,
+      marginBottom: 8,
+    },
+    packInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    packName: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    packCredits: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    packAction: {
+      alignItems: 'flex-end',
+      gap: 4,
+    },
+    packPrice: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.foreground,
+    },
+    comingSoonText: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    packsEmpty: {
+      marginBottom: 16,
+    },
+    // Transaction history — card style with row dividers
+    historyCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...cardShadow,
+      marginBottom: 8,
+      overflow: 'hidden',
+    },
+    txRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      gap: 8,
+    },
+    txRowLast: {
+      borderBottomWidth: 0,
+    },
+    txLeft: {
+      flex: 1,
+      gap: 2,
+    },
+    txReason: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    txNote: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+    },
+    txDate: {
+      fontSize: 12,
+      color: colors.placeholder,
+    },
+    txRight: {
+      alignItems: 'flex-end',
+      gap: 2,
+    },
+    txAmount: {
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    txPositive: {
+      color: colors.success,
+    },
+    txNegative: {
+      color: colors.error,
+    },
+    // Pagination (inline in section header)
+    pagination: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    pageChevron: {
+      padding: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pageButtonDisabled: {
+      opacity: 0.4,
+    },
+    pageLabel: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      minWidth: 50,
+      textAlign: 'center',
+    },
+    emptyText: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    errorText: {
+      fontSize: 16,
+      color: colors.error,
+    },
+    historyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      gap: 8,
+    },
+  });
+}

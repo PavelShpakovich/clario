@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import { calendarApi } from '@clario/api-client';
 import type { CalendarDay } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { messages } from '@clario/i18n';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const signLabels = messages.chartDetail.signs as Record<string, string>;
@@ -58,6 +58,9 @@ const MONTH_KEYS = [
 const todayStr = new Date().toISOString().slice(0, 10);
 
 export default function CalendarScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const [days, setDays] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState(true);
@@ -202,160 +205,162 @@ export default function CalendarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 48,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  // Header
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 16,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  heading: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    lineHeight: 20,
-  },
-  horoscopeLink: {
-    marginTop: 24,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  horoscopeLinkText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.foreground,
-  },
-  // Legend
-  legend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendEmoji: {
-    fontSize: 12,
-    lineHeight: 14,
-  },
-  legendText: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-  },
-  // Month sections
-  monthSection: {
-    marginBottom: 24,
-  },
-  monthHeading: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.foreground,
-    marginBottom: 10,
-  },
-  monthGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  // Day card
-  dayCard: {
-    width: '48%',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...cardShadow,
-    padding: 12,
-    gap: 4,
-  },
-  dayCardToday: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySubtle,
-  },
-  dayCardSpecial: {
-    borderColor: colors.border,
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  dayNumber: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.foreground,
-  },
-  dayNumberToday: {
-    color: colors.primary,
-  },
-  phaseEmoji: {
-    fontSize: 14,
-  },
-  signRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  signDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    flexShrink: 0,
-  },
-  signText: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-    flex: 1,
-  },
-  specialPhaseLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.primary,
-    marginTop: 2,
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 48,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    // Header
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: 12,
+      marginBottom: 16,
+    },
+    headerLeft: {
+      flex: 1,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 4,
+    },
+    heading: {
+      fontSize: 26,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.5,
+      marginBottom: 4,
+    },
+    description: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      lineHeight: 20,
+    },
+    horoscopeLink: {
+      marginTop: 24,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+    },
+    horoscopeLinkText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.foreground,
+    },
+    // Legend
+    legend: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginBottom: 24,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    legendDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    legendEmoji: {
+      fontSize: 12,
+      lineHeight: 14,
+    },
+    legendText: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+    },
+    // Month sections
+    monthSection: {
+      marginBottom: 24,
+    },
+    monthHeading: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.foreground,
+      marginBottom: 10,
+    },
+    monthGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    // Day card
+    dayCard: {
+      width: '48%',
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...cardShadow,
+      padding: 12,
+      gap: 4,
+    },
+    dayCardToday: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySubtle,
+    },
+    dayCardSpecial: {
+      borderColor: colors.border,
+    },
+    cardTopRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    dayNumber: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.foreground,
+    },
+    dayNumberToday: {
+      color: colors.primary,
+    },
+    phaseEmoji: {
+      fontSize: 14,
+    },
+    signRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    signDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      flexShrink: 0,
+    },
+    signText: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+      flex: 1,
+    },
+    specialPhaseLabel: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: colors.primary,
+      marginTop: 2,
+    },
+  });
+}

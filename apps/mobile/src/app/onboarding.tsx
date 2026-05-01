@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,16 @@ import { router } from 'expo-router';
 import { profileApi, preferencesApi } from '@clario/api-client';
 import { TONE_STYLES } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FOCUS_OPTIONS = ['love', 'career', 'growth', 'all'] as const;
 type FocusOption = (typeof FOCUS_OPTIONS)[number];
 
 export default function OnboardingScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState<1 | 2>(1);
   const [focus, setFocus] = useState<FocusOption | null>(null);
@@ -86,7 +89,10 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
+    >
       {/* Step indicator dots */}
       <View style={styles.progress}>
         <View style={[styles.dot, step >= 1 && styles.dotActive]} />
@@ -161,7 +167,11 @@ export default function OnboardingScreen() {
               <Text style={styles.backButtonText}>← {tNav('back')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.primaryButton, styles.primaryButtonFlex, (!toneStyle || saving) && styles.disabled]}
+              style={[
+                styles.primaryButton,
+                styles.primaryButtonFlex,
+                (!toneStyle || saving) && styles.disabled,
+              ]}
               onPress={handleFinish}
               disabled={!toneStyle || saving}
               activeOpacity={0.85}
@@ -189,143 +199,145 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: 24,
-    paddingTop: 64,
-    paddingBottom: 48,
-  },
-  // Step indicator
-  progress: {
-    flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'center',
-    marginBottom: 40,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    backgroundColor: colors.primary,
-    width: 24,
-  },
-  // Page header
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.5,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  desc: {
-    fontSize: 15,
-    color: colors.mutedForeground,
-    lineHeight: 22,
-    marginBottom: 28,
-    textAlign: 'center',
-  },
-  // Option cards — selectable card buttons
-  optionsGap: {
-    gap: 10,
-    marginBottom: 28,
-  },
-  optionCard: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 16,
-    gap: 4,
-    backgroundColor: colors.card,
-    ...cardShadow,
-  },
-  optionCardActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySubtle,
-  },
-  optionLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  optionLabelActive: {
-    color: colors.primary,
-  },
-  optionDesc: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  optionDescActive: {
-    color: colors.primary,
-  },
-  // Primary button
-  primaryButton: {
-    backgroundColor: colors.primary,
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonFlex: {
-    flex: 1,
-  },
-  primaryButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  disabled: {
-    opacity: 0.6,
-  },
-  // Step 2 button row
-  step2Buttons: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-  },
-  backButton: {
-    height: 40,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonText: {
-    fontSize: 14,
-    color: colors.foreground,
-    fontWeight: '500',
-  },
-  // Outline skip button
-  skipButton: {
-    height: 40,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  skipText: {
-    color: colors.foreground,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: 24,
+      paddingTop: 64,
+      paddingBottom: 48,
+    },
+    // Step indicator
+    progress: {
+      flexDirection: 'row',
+      gap: 8,
+      justifyContent: 'center',
+      marginBottom: 40,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.border,
+    },
+    dotActive: {
+      backgroundColor: colors.primary,
+      width: 24,
+    },
+    // Page header
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 6,
+      textAlign: 'center',
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.5,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    desc: {
+      fontSize: 15,
+      color: colors.mutedForeground,
+      lineHeight: 22,
+      marginBottom: 28,
+      textAlign: 'center',
+    },
+    // Option cards — selectable card buttons
+    optionsGap: {
+      gap: 10,
+      marginBottom: 28,
+    },
+    optionCard: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 16,
+      gap: 4,
+      backgroundColor: colors.card,
+      ...cardShadow,
+    },
+    optionCardActive: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySubtle,
+    },
+    optionLabel: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    optionLabelActive: {
+      color: colors.primary,
+    },
+    optionDesc: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    optionDescActive: {
+      color: colors.primary,
+    },
+    // Primary button
+    primaryButton: {
+      backgroundColor: colors.primary,
+      height: 40,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primaryButtonFlex: {
+      flex: 1,
+    },
+    primaryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    disabled: {
+      opacity: 0.6,
+    },
+    // Step 2 button row
+    step2Buttons: {
+      flexDirection: 'row',
+      gap: 10,
+      alignItems: 'center',
+    },
+    backButton: {
+      height: 40,
+      paddingHorizontal: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backButtonText: {
+      fontSize: 14,
+      color: colors.foreground,
+      fontWeight: '500',
+    },
+    // Outline skip button
+    skipButton: {
+      height: 40,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 12,
+    },
+    skipText: {
+      color: colors.foreground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+  });
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,13 +23,16 @@ import type {
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { toast } from '@/lib/toast';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 
 // ─── Skeletons ───────────────────────────────────────────────────────────────
 
 function AnalyticsSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -55,6 +58,9 @@ function AnalyticsSkeleton() {
 }
 
 function UserRowSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={[styles.userCard, { padding: 14 }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -81,6 +87,9 @@ function UserRowSkeleton() {
 // ─── Pricing Section ─────────────────────────────────────────────────────────
 
 function PricingSection() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const t = useTranslations('adminCredits');
   const [products, setProducts] = useState<AdminPricingProduct[]>([]);
   const [packs, setPacks] = useState<CreditPack[]>([]);
@@ -392,6 +401,9 @@ interface CreditFormProps {
 }
 
 function CreditForm({ user, mode, onClose, onDone }: CreditFormProps) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const t = useTranslations('adminCredits');
   const tc = useTranslations('common');
   const [amount, setAmount] = useState('');
@@ -479,6 +491,9 @@ function UserRow({
   onCreditClose,
   onCreditDone,
 }: UserRowProps) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const isExpanded = creditTarget !== null && creditTarget.user.id === user.id;
 
   return (
@@ -552,6 +567,9 @@ function UserRow({
 const PER_PAGE = 20;
 
 export default function AdminScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
@@ -843,280 +861,282 @@ export default function AdminScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 8,
-  },
-  backBtn: { padding: 4 },
-  title: { flex: 1, fontSize: 18, fontWeight: '700', color: colors.foreground },
-  refreshBtn: { padding: 4 },
-  listContent: { padding: 16, paddingBottom: 48 },
-  headerSection: { gap: 12, marginBottom: 12 },
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      gap: 8,
+    },
+    backBtn: { padding: 4 },
+    title: { flex: 1, fontSize: 18, fontWeight: '700', color: colors.foreground },
+    refreshBtn: { padding: 4 },
+    listContent: { padding: 16, paddingBottom: 48 },
+    headerSection: { gap: 12, marginBottom: 12 },
 
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    gap: 12,
-    ...cardShadow,
-  },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  cardTitle: { fontSize: 14, fontWeight: '600', color: colors.foreground, flex: 1 },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      gap: 12,
+      ...cardShadow,
+    },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    cardTitle: { fontSize: 14, fontWeight: '600', color: colors.foreground, flex: 1 },
 
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statCard: {
-    backgroundColor: colors.muted,
-    borderRadius: 10,
-    padding: 12,
-    width: '47%',
-    flexGrow: 1,
-    gap: 2,
-  },
-  statCardWide: { width: '100%', flexGrow: 0 },
-  statIcon: { marginBottom: 2 },
-  statValue: { fontSize: 22, fontWeight: '700', color: colors.foreground },
-  statLabel: { fontSize: 11, color: colors.mutedForeground },
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    statCard: {
+      backgroundColor: colors.muted,
+      borderRadius: 10,
+      padding: 12,
+      width: '47%',
+      flexGrow: 1,
+      gap: 2,
+    },
+    statCardWide: { width: '100%', flexGrow: 0 },
+    statIcon: { marginBottom: 2 },
+    statValue: { fontSize: 22, fontWeight: '700', color: colors.foreground },
+    statLabel: { fontSize: 11, color: colors.mutedForeground },
 
-  countPill: {
-    backgroundColor: colors.muted,
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  countPillText: { fontSize: 12, color: colors.mutedForeground, fontWeight: '600' },
+    countPill: {
+      backgroundColor: colors.muted,
+      borderRadius: 20,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    countPillText: { fontSize: 12, color: colors.mutedForeground, fontWeight: '600' },
 
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.muted,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 12,
-    gap: 8,
-    height: 42,
-  },
-  searchInput: { flex: 1, fontSize: 14, color: colors.foreground },
+    searchBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.muted,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 12,
+      gap: 8,
+      height: 42,
+    },
+    searchInput: { flex: 1, fontSize: 14, color: colors.foreground },
 
-  userCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    marginBottom: 8,
-    ...cardShadow,
-  },
-  userRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.muted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  avatarAdmin: { backgroundColor: colors.primaryTint },
-  avatarText: { fontSize: 15, fontWeight: '700', color: colors.mutedForeground },
-  avatarTextAdmin: { color: colors.primary },
-  userInfo: { flex: 1, gap: 2 },
-  userNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  userName: { fontSize: 14, fontWeight: '600', color: colors.foreground, flexShrink: 1 },
-  adminPill: {
-    backgroundColor: colors.primarySubtle,
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  adminPillText: { fontSize: 10, fontWeight: '700', color: colors.primary },
-  userEmail: { fontSize: 12, color: colors.mutedForeground },
-  userStats: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  statChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  statChipText: { fontSize: 11, color: colors.mutedForeground },
-  userActions: { flexDirection: 'row', gap: 2 },
-  actionBtn: { padding: 6 },
+    userCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      marginBottom: 8,
+      ...cardShadow,
+    },
+    userRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
+    avatar: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: colors.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    avatarAdmin: { backgroundColor: colors.primaryTint },
+    avatarText: { fontSize: 15, fontWeight: '700', color: colors.mutedForeground },
+    avatarTextAdmin: { color: colors.primary },
+    userInfo: { flex: 1, gap: 2 },
+    userNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    userName: { fontSize: 14, fontWeight: '600', color: colors.foreground, flexShrink: 1 },
+    adminPill: {
+      backgroundColor: colors.primarySubtle,
+      borderRadius: 4,
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+    },
+    adminPillText: { fontSize: 10, fontWeight: '700', color: colors.primary },
+    userEmail: { fontSize: 12, color: colors.mutedForeground },
+    userStats: { flexDirection: 'row', gap: 8, marginTop: 4 },
+    statChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+    statChipText: { fontSize: 11, color: colors.mutedForeground },
+    userActions: { flexDirection: 'row', gap: 2 },
+    actionBtn: { padding: 6 },
 
-  creditForm: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.muted,
-    padding: 14,
-    gap: 12,
-  },
-  creditFormHeader: { gap: 2 },
-  creditFormTitle: { fontSize: 14, fontWeight: '600', color: colors.foreground },
-  creditFormSub: { fontSize: 12, color: colors.mutedForeground },
-  creditInput: {
-    height: 44,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    color: colors.foreground,
-    backgroundColor: colors.card,
-  },
-  creditFormButtons: { flexDirection: 'row', gap: 10 },
-  cancelBtn: {
-    flex: 1,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelBtnText: { fontSize: 14, fontWeight: '500', color: colors.foreground },
-  confirmBtn: {
-    flex: 1,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnDisabled: { opacity: 0.5 },
-  confirmBtnText: { fontSize: 14, fontWeight: '600', color: colors.primaryForeground },
+    creditForm: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.muted,
+      padding: 14,
+      gap: 12,
+    },
+    creditFormHeader: { gap: 2 },
+    creditFormTitle: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+    creditFormSub: { fontSize: 12, color: colors.mutedForeground },
+    creditInput: {
+      height: 44,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      fontSize: 16,
+      color: colors.foreground,
+      backgroundColor: colors.card,
+    },
+    creditFormButtons: { flexDirection: 'row', gap: 10 },
+    cancelBtn: {
+      flex: 1,
+      height: 40,
+      borderRadius: 8,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cancelBtnText: { fontSize: 14, fontWeight: '500', color: colors.foreground },
+    confirmBtn: {
+      flex: 1,
+      height: 40,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    btnDisabled: { opacity: 0.5 },
+    confirmBtnText: { fontSize: 14, fontWeight: '600', color: colors.primaryForeground },
 
-  emptyBox: { alignItems: 'center', paddingVertical: 40, gap: 10 },
-  emptyText: { fontSize: 14, color: colors.mutedForeground },
+    emptyBox: { alignItems: 'center', paddingVertical: 40, gap: 10 },
+    emptyText: { fontSize: 14, color: colors.mutedForeground },
 
-  pagination: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-    paddingVertical: 12,
-  },
-  pageBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-  },
-  pageBtnDisabled: { opacity: 0.35 },
-  pageLabel: { fontSize: 14, color: colors.foreground, fontWeight: '500' },
+    pagination: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 20,
+      paddingVertical: 12,
+    },
+    pageBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+    },
+    pageBtnDisabled: { opacity: 0.35 },
+    pageLabel: { fontSize: 14, color: colors.foreground, fontWeight: '500' },
 
-  pricingSectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  pricingRow: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: colors.background,
-    gap: 6,
-  },
-  pricingRowLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.foreground,
-  },
-  pricingRowControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  freeBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderWidth: 1,
-  },
-  freeBadgeOn: {
-    backgroundColor: colors.primarySubtle,
-    borderColor: colors.primary,
-  },
-  freeBadgeOff: {
-    backgroundColor: colors.muted,
-    borderColor: colors.border,
-  },
-  freeBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  freeBadgeTextOn: { color: colors.primary },
-  freeBadgeTextOff: { color: colors.mutedForeground },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: colors.card,
-    height: 34,
-    overflow: 'hidden',
-  },
-  stepperBtn: {
-    width: 32,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.muted,
-  },
-  stepperBtnText: {
-    fontSize: 18,
-    lineHeight: 20,
-    color: colors.foreground,
-    fontWeight: '400',
-  },
-  stepperValue: {
-    minWidth: 36,
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  packEmptyText: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    paddingVertical: 10,
-  },
-  retryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 16,
-  },
-  retryText: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  savePricingBtn: {
-    height: 42,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  savePricingBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primaryForeground,
-  },
-});
+    pricingSectionLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 4,
+    },
+    pricingRow: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: colors.background,
+      gap: 6,
+    },
+    pricingRowLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.foreground,
+    },
+    pricingRowControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    freeBadge: {
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderWidth: 1,
+    },
+    freeBadgeOn: {
+      backgroundColor: colors.primarySubtle,
+      borderColor: colors.primary,
+    },
+    freeBadgeOff: {
+      backgroundColor: colors.muted,
+      borderColor: colors.border,
+    },
+    freeBadgeText: {
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    freeBadgeTextOn: { color: colors.primary },
+    freeBadgeTextOff: { color: colors.mutedForeground },
+    stepper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      backgroundColor: colors.card,
+      height: 34,
+      overflow: 'hidden',
+    },
+    stepperBtn: {
+      width: 32,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.muted,
+    },
+    stepperBtnText: {
+      fontSize: 18,
+      lineHeight: 20,
+      color: colors.foreground,
+      fontWeight: '400',
+    },
+    stepperValue: {
+      minWidth: 36,
+      textAlign: 'center',
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    packEmptyText: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      paddingVertical: 10,
+    },
+    retryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 16,
+    },
+    retryText: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    savePricingBtn: {
+      height: 42,
+      borderRadius: 10,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    savePricingBtnText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primaryForeground,
+    },
+  });
+}

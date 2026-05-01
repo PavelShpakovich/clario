@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { supabase } from '@/lib/supabase';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { toast } from '@/lib/toast';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useTheme } from '@/lib/theme-context';
 import type { ThemePreference } from '@/lib/theme-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +27,9 @@ import { FeedbackModal } from '@/components/FeedbackModal';
 import { Skeleton } from '@/components/Skeleton';
 
 function SettingsSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -87,6 +90,9 @@ function SettingsSkeleton() {
 }
 
 export default function SettingsScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -484,324 +490,326 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: 48,
-    gap: 12,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  headerBar: {
-    paddingTop: 56,
-    paddingBottom: 8,
-    gap: 4,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.5,
-  },
-  pageDesc: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    lineHeight: 20,
-    marginTop: 4,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    gap: 8,
-    ...cardShadow,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  cardSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  cardSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.foreground,
-    flex: 1,
-  },
-  cardDesc: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    lineHeight: 17,
-    marginBottom: 4,
-  },
-  // Privacy card
-  fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: 8,
-  },
-  fieldLabel: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  consentBadge: {
-    borderRadius: 99,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  consentBadgeActive: {
-    backgroundColor: colors.primarySubtle,
-  },
-  consentBadgeMuted: {
-    backgroundColor: colors.muted,
-  },
-  consentBadgeText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  consentBadgeTextActive: {
-    color: colors.primary,
-  },
-  consentBadgeTextMuted: {
-    color: colors.mutedForeground,
-  },
-  prefsHint: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    lineHeight: 17,
-    marginTop: 4,
-  },
-  label: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    marginTop: 4,
-  },
-  readOnly: {
-    fontSize: 15,
-    color: colors.foreground,
-    paddingVertical: 2,
-  },
-  input: {
-    height: 40,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    color: colors.foreground,
-    backgroundColor: colors.background,
-  },
-  pickerButton: {
-    height: 40,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.background,
-  },
-  pickerButtonText: {
-    fontSize: 15,
-    color: colors.foreground,
-    flex: 1,
-    marginRight: 8,
-  },
-  pickerButtonPlaceholder: {
-    color: colors.placeholder,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  primaryButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  savingHint: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 4,
-  },
-  toneRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  toneChip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 99,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  toneChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  toneChipText: {
-    fontSize: 13,
-    color: colors.foreground,
-  },
-  toneChipTextActive: {
-    color: colors.primaryForeground,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  toggleLabel: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  outlineButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    height: 40,
-    borderRadius: 8,
-  },
-  outlineButtonText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  dangerCard: {
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    backgroundColor: '#FFF5F5',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-  },
-  dangerCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  dangerTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.destructive,
-  },
-  dangerDesc: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    lineHeight: 17,
-  },
-  dangerAccountLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.foreground,
-    marginTop: 4,
-  },
-  dangerHint: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    lineHeight: 19,
-  },
-  destructiveOutlineButton: {
-    borderWidth: 1,
-    borderColor: colors.destructive,
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  destructiveOutlineButtonText: {
-    color: colors.destructive,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    height: 40,
-    borderRadius: 8,
-  },
-  signOutText: {
-    color: colors.destructive,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  themeButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
-  },
-  themeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.muted,
-  },
-  themeButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  themeButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.mutedForeground,
-  },
-  themeButtonTextActive: {
-    color: colors.primaryForeground,
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      paddingHorizontal: 20,
+      paddingBottom: 48,
+      gap: 12,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    headerBar: {
+      paddingTop: 56,
+      paddingBottom: 8,
+      gap: 4,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+    },
+    pageTitle: {
+      fontSize: 26,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.5,
+    },
+    pageDesc: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      lineHeight: 20,
+      marginTop: 4,
+    },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      gap: 8,
+      ...cardShadow,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      flex: 1,
+    },
+    cardSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    cardSectionTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.foreground,
+      flex: 1,
+    },
+    cardDesc: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+      lineHeight: 17,
+      marginBottom: 4,
+    },
+    // Privacy card
+    fieldRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: 8,
+    },
+    fieldLabel: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    consentBadge: {
+      borderRadius: 99,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+    },
+    consentBadgeActive: {
+      backgroundColor: colors.primarySubtle,
+    },
+    consentBadgeMuted: {
+      backgroundColor: colors.muted,
+    },
+    consentBadgeText: {
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    consentBadgeTextActive: {
+      color: colors.primary,
+    },
+    consentBadgeTextMuted: {
+      color: colors.mutedForeground,
+    },
+    prefsHint: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+      lineHeight: 17,
+      marginTop: 4,
+    },
+    label: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      marginTop: 4,
+    },
+    readOnly: {
+      fontSize: 15,
+      color: colors.foreground,
+      paddingVertical: 2,
+    },
+    input: {
+      height: 40,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      fontSize: 15,
+      color: colors.foreground,
+      backgroundColor: colors.background,
+    },
+    pickerButton: {
+      height: 40,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.background,
+    },
+    pickerButtonText: {
+      fontSize: 15,
+      color: colors.foreground,
+      flex: 1,
+      marginRight: 8,
+    },
+    pickerButtonPlaceholder: {
+      color: colors.placeholder,
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      height: 40,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    primaryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    savingHint: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: 4,
+    },
+    toneRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 4,
+    },
+    toneChip: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 99,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    toneChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    toneChipText: {
+      fontSize: 13,
+      color: colors.foreground,
+    },
+    toneChipTextActive: {
+      color: colors.primaryForeground,
+    },
+    toggleRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 4,
+    },
+    toggleLabel: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    outlineButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      height: 40,
+      borderRadius: 8,
+    },
+    outlineButtonText: {
+      color: colors.primary,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    dangerCard: {
+      borderWidth: 1,
+      borderColor: colors.destructive,
+      backgroundColor: colors.destructiveSubtle,
+      borderRadius: 12,
+      padding: 16,
+      gap: 8,
+    },
+    dangerCardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    dangerTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.destructive,
+    },
+    dangerDesc: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+      lineHeight: 17,
+    },
+    dangerAccountLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.foreground,
+      marginTop: 4,
+    },
+    dangerHint: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      lineHeight: 19,
+    },
+    destructiveOutlineButton: {
+      borderWidth: 1,
+      borderColor: colors.destructive,
+      height: 40,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    destructiveOutlineButtonText: {
+      color: colors.destructive,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    signOutButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      height: 40,
+      borderRadius: 8,
+    },
+    signOutText: {
+      color: colors.destructive,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    themeButtons: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 4,
+    },
+    themeButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 9,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.muted,
+    },
+    themeButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    themeButtonText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.mutedForeground,
+    },
+    themeButtonTextActive: {
+      color: colors.primaryForeground,
+    },
+  });
+}

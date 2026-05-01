@@ -1,14 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { profileApi } from '@clario/api-client';
-import { colors } from '@/lib/colors';
+import { useColors } from '@/lib/colors';
 
 export default function Index() {
+  const colors = useColors();
+
   useEffect(() => {
     async function check() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         router.replace('/(auth)/login');
         return;
@@ -31,7 +35,14 @@ export default function Index() {
   }, []);
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.background,
+      }}
+    >
       <ActivityIndicator size="large" color={colors.primary} />
     </View>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,13 @@ import {
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useTranslations } from '@/lib/i18n';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { AuthBackground } from '@/components/AuthBackground';
 
 export default function SetPasswordScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,10 +64,7 @@ export default function SetPasswordScreen() {
       {/* Radial glow decoration */}
       <AuthBackground />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.cardWrapper}>
           <View style={styles.card}>
             {/* Eyebrow */}
@@ -146,132 +146,134 @@ export default function SetPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 48,
-  },
-  cardWrapper: {
-    width: '100%',
-    maxWidth: 400,
-    marginHorizontal: 20,
-    paddingHorizontal: 20,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 28,
-    ...cardShadow,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: colors.foreground,
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  fieldsContainer: {
-    gap: 14,
-    marginBottom: 16,
-  },
-  fieldGroup: {
-    gap: 0,
-  },
-  label: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    fontWeight: '500',
-    marginBottom: 6,
-  },
-  input: {
-    height: 40,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    color: colors.foreground,
-    backgroundColor: 'transparent',
-  },
-  inputError: {
-    borderColor: colors.destructive,
-  },
-  errorBanner: {
-    backgroundColor: colors.destructiveSubtle,
-    borderColor: colors.destructive,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  errorBannerText: {
-    fontSize: 13,
-    color: colors.destructive,
-  },
-  successBanner: {
-    backgroundColor: colors.successSubtle,
-    borderColor: colors.success,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  successBannerText: {
-    fontSize: 13,
-    color: colors.success,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.primaryForeground,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  footerLinkContainer: {
-    marginTop: 14,
-    alignItems: 'center',
-  },
-  footerLink: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 48,
+    },
+    cardWrapper: {
+      width: '100%',
+      maxWidth: 400,
+      marginHorizontal: 20,
+      paddingHorizontal: 20,
+    },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 24,
+      paddingTop: 28,
+      paddingBottom: 28,
+      ...cardShadow,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '600',
+      color: colors.foreground,
+      textAlign: 'center',
+      letterSpacing: -0.3,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      marginTop: 4,
+      marginBottom: 20,
+    },
+    fieldsContainer: {
+      gap: 14,
+      marginBottom: 16,
+    },
+    fieldGroup: {
+      gap: 0,
+    },
+    label: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      fontWeight: '500',
+      marginBottom: 6,
+    },
+    input: {
+      height: 40,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      fontSize: 15,
+      color: colors.foreground,
+      backgroundColor: 'transparent',
+    },
+    inputError: {
+      borderColor: colors.destructive,
+    },
+    errorBanner: {
+      backgroundColor: colors.destructiveSubtle,
+      borderColor: colors.destructive,
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 12,
+    },
+    errorBannerText: {
+      fontSize: 13,
+      color: colors.destructive,
+    },
+    successBanner: {
+      backgroundColor: colors.successSubtle,
+      borderColor: colors.success,
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 16,
+    },
+    successBannerText: {
+      fontSize: 13,
+      color: colors.success,
+      textAlign: 'center',
+      fontWeight: '500',
+    },
+    button: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    buttonDisabled: {
+      opacity: 0.5,
+    },
+    buttonText: {
+      color: colors.primaryForeground,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    footerLinkContainer: {
+      marginTop: 14,
+      alignItems: 'center',
+    },
+    footerLink: {
+      fontSize: 13,
+      color: colors.primary,
+      fontWeight: '500',
+      textAlign: 'center',
+    },
+  });
+}

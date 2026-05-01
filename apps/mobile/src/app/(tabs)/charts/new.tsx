@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,8 +18,9 @@ import { chartsApi, locationsApi } from '@clario/api-client';
 import type { CityOption } from '@clario/api-client';
 import { CHART_SUBJECT_TYPES, HOUSE_SYSTEMS } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
-import { colors } from '@/lib/colors';
+import { useColors } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CityPickerModal } from '@/components/CityPickerModal';
 
 type SubjectType = (typeof CHART_SUBJECT_TYPES)[number];
 type HouseSystem = (typeof HOUSE_SYSTEMS)[number];
@@ -42,6 +43,9 @@ interface FormData {
 const TOTAL_STEPS = 3;
 
 export default function NewChartScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>({
@@ -58,69 +62,26 @@ export default function NewChartScreen() {
     lon: null,
     timezone: '',
   });
-  const [cityQuery, setCityQuery] = useState('');
-  const [cityResults, setCityResults] = useState<CityOption[]>([]);
-  const [citySearching, setCitySearching] = useState(false);
+  const [cityDisplay, setCityDisplay] = useState('');
+  const [cityModalOpen, setCityModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const tForm = useTranslations('chartForm');
   const tNav = useTranslations('navigation');
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Prevents the search effect from firing after a programmatic setCityQuery call
-  const skipSearchRef = useRef(false);
-
   function update<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (skipSearchRef.current) {
-      skipSearchRef.current = false;
-      setCityResults([]);
-      return;
-    }
-    if (cityQuery.length < 2) {
-      setCityResults([]);
-      return;
-    }
-    debounceRef.current = setTimeout(async () => {
-      setCitySearching(true);
-      try {
-        const results = await locationsApi.searchCities(cityQuery);
-        setCityResults(results);
-      } finally {
-        setCitySearching(false);
-      }
-    }, 400);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [cityQuery]);
-
   async function handleCitySelect(city: CityOption) {
-    skipSearchRef.current = true;
-    setCityQuery(city.city);
-    setCityResults([]);
+    setCityDisplay(city.displayName);
     update('city', city.city);
     update('country', city.country);
     update('lat', city.lat);
     update('lon', city.lon);
     const tz = await locationsApi.lookupTimezone(city.lat, city.lon);
     if (tz) update('timezone', tz);
-  }
-
-  function handleCityClear() {
-    skipSearchRef.current = true;
-    setCityQuery('');
-    setCityResults([]);
-    update('city', '');
-    update('country', '');
-    update('lat', null);
-    update('lon', null);
-    update('timezone', '');
   }
 
   function validateStep(): string | null {
@@ -320,68 +281,22 @@ export default function NewChartScreen() {
             <Text style={styles.stepDesc}>{tForm('stepLocationDesc')}</Text>
 
             <Text style={styles.label}>{tForm('city')}</Text>
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={16} color={colors.placeholder} />
-              <TextInput
-                style={styles.searchInput}
-                value={cityQuery}
-                onChangeText={(v) => {
-                  // If user edits after a city was already selected, clear stale location data
-                  if (form.city) {
-                    update('city', '');
-                    update('country', '');
-                    update('lat', null);
-                    update('lon', null);
-                    update('timezone', '');
-                  }
-                  setCityQuery(v);
-                }}
-                placeholder={tForm('citySearchPlaceholder')}
-                placeholderTextColor={colors.placeholder}
-                autoCorrect={false}
-              />
-              {cityQuery.length > 0 && (
-                <TouchableOpacity onPress={handleCityClear} hitSlop={8}>
-                  <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {citySearching && (
-              <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 4 }} />
-            )}
-
-            {cityResults.length > 0 && (
-              <View style={styles.cityDropdown}>
-                {cityResults.map((city) => (
-                  <TouchableOpacity
-                    key={`${city.lat}-${city.lon}`}
-                    style={styles.cityItem}
-                    onPress={() => handleCitySelect(city)}
-                  >
-                    <Text style={styles.cityItemText} numberOfLines={1}>
-                      {city.displayName}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {form.city ? (
-              <View style={styles.summaryBox}>
-                <Text style={styles.summaryText}>
-                  {tForm('city')}: {form.city}
-                </Text>
-                <Text style={styles.summaryText}>
-                  {tForm('country')}: {form.country}
-                </Text>
-                {form.timezone ? (
-                  <Text style={styles.summaryText}>
-                    {tForm('timezone')}: {form.timezone}
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
+            <TouchableOpacity style={styles.pickerButton} onPress={() => setCityModalOpen(true)}>
+              <Text
+                style={[styles.pickerButtonText, !cityDisplay && styles.pickerButtonPlaceholder]}
+                numberOfLines={1}
+              >
+                {cityDisplay || tForm('citySearchPlaceholder')}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+            <CityPickerModal
+              visible={cityModalOpen}
+              value={cityDisplay}
+              placeholder={tForm('citySearchPlaceholder')}
+              onSelect={handleCitySelect}
+              onClose={() => setCityModalOpen(false)}
+            />
           </View>
         )}
 
@@ -409,160 +324,140 @@ export default function NewChartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  headerBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 12,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backText: {
-    color: colors.mutedForeground,
-    fontSize: 14,
-  },
-  stepLabel: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 48,
-  },
-  stepContainer: {
-    gap: 10,
-  },
-  stepTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.foreground,
-    marginBottom: 2,
-  },
-  stepDesc: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    marginTop: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: colors.foreground,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.foreground,
-    padding: 0,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  switchLabel: {
-    fontSize: 15,
-    color: colors.foreground,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    fontSize: 13,
-    color: colors.foreground,
-  },
-  chipTextActive: {
-    color: '#fff',
-  },
-  cityDropdown: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginTop: 4,
-  },
-  cityItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  cityItemText: {
-    fontSize: 14,
-    color: colors.foreground,
-  },
-  summaryBox: {
-    backgroundColor: colors.muted,
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 8,
-    gap: 4,
-  },
-  summaryText: {
-    fontSize: 14,
-    color: colors.foreground,
-  },
-  error: {
-    color: colors.error,
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    headerBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 56,
+      paddingBottom: 12,
+    },
+    backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    backText: {
+      color: colors.mutedForeground,
+      fontSize: 14,
+    },
+    stepLabel: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 48,
+    },
+    stepContainer: {
+      gap: 10,
+    },
+    stepTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.foreground,
+      marginBottom: 2,
+    },
+    stepDesc: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      marginBottom: 8,
+    },
+    label: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      marginTop: 6,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 15,
+      color: colors.foreground,
+    },
+    pickerButton: {
+      height: 44,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.background,
+    },
+    pickerButtonText: {
+      fontSize: 15,
+      color: colors.foreground,
+      flex: 1,
+      marginRight: 8,
+    },
+    pickerButtonPlaceholder: {
+      color: colors.placeholder,
+    },
+    switchRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    switchLabel: {
+      fontSize: 15,
+      color: colors.foreground,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 4,
+    },
+    chip: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    chipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    chipText: {
+      fontSize: 13,
+      color: colors.foreground,
+    },
+    chipTextActive: {
+      color: '#fff',
+    },
+
+    error: {
+      color: colors.error,
+      fontSize: 14,
+      textAlign: 'center',
+      marginTop: 8,
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 20,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    primaryButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ import type { CompatibilityReport } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import { messages } from '@clario/i18n';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleReadyNotification } from '@/lib/notifications';
 
@@ -48,6 +48,9 @@ interface GaugeProps {
 }
 
 function SpeedometerGauge({ score, accent }: GaugeProps) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const cx = 130,
     cy = 130,
     r = 90,
@@ -208,6 +211,9 @@ function SpeedometerGauge({ score, accent }: GaugeProps) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CompatibilityDetailScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const { reportId } = useLocalSearchParams<{ reportId: string }>();
   const [report, setReport] = useState<CompatibilityReport | null>(null);
@@ -622,331 +628,333 @@ export default function CompatibilityDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 48 },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    gap: 12,
-    padding: 24,
-  },
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    scrollContent: { paddingHorizontal: 20, paddingBottom: 48 },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+      gap: 12,
+      padding: 24,
+    },
 
-  // ── Top bar ───────────────────────────────────────────────────────────────────
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    gap: 8,
-  },
-  backButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { color: colors.mutedForeground, fontSize: 14 },
-  chartLinks: { flexDirection: 'row', gap: 6, flexShrink: 1 },
-  chartLinkButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    maxWidth: 120,
-  },
-  chartLinkText: { fontSize: 12, color: colors.primary, fontWeight: '500' },
+    // ── Top bar ───────────────────────────────────────────────────────────────────
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 20,
+      gap: 8,
+    },
+    backButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    backText: { color: colors.mutedForeground, fontSize: 14 },
+    chartLinks: { flexDirection: 'row', gap: 6, flexShrink: 1 },
+    chartLinkButton: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      maxWidth: 120,
+    },
+    chartLinkText: { fontSize: 12, color: colors.primary, fontWeight: '500' },
 
-  // ── Title block ───────────────────────────────────────────────────────────────
-  titleBlock: { gap: 6, marginBottom: 20 },
-  typeLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  reportTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.5,
-    lineHeight: 30,
-  },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  dateText: { fontSize: 13, color: colors.mutedForeground },
-  statusBadge: { borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
-  statusBadgeError: { backgroundColor: colors.destructiveSubtle },
-  statusBadgePending: { backgroundColor: '#FEF3C7' },
-  statusBadgeText: { fontSize: 11, fontWeight: '600' },
-  statusBadgeTextError: { color: colors.destructive },
-  statusBadgeTextPending: { color: '#92400E' },
+    // ── Title block ───────────────────────────────────────────────────────────────
+    titleBlock: { gap: 6, marginBottom: 20 },
+    typeLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+    },
+    reportTitle: {
+      fontSize: 24,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.5,
+      lineHeight: 30,
+    },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+    dateText: { fontSize: 13, color: colors.mutedForeground },
+    statusBadge: { borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
+    statusBadgeError: { backgroundColor: colors.destructiveSubtle },
+    statusBadgePending: { backgroundColor: '#FEF3C7' },
+    statusBadgeText: { fontSize: 11, fontWeight: '600' },
+    statusBadgeTextError: { color: colors.destructive },
+    statusBadgeTextPending: { color: '#92400E' },
 
-  // ── Generating ────────────────────────────────────────────────────────────────
-  generatingBlock: { alignItems: 'center', gap: 10, paddingVertical: 40 },
-  generatingTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.foreground,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  generatingStep: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    lineHeight: 20,
-    textAlign: 'center',
-  },
+    // ── Generating ────────────────────────────────────────────────────────────────
+    generatingBlock: { alignItems: 'center', gap: 10, paddingVertical: 40 },
+    generatingTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.foreground,
+      textAlign: 'center',
+      marginTop: 8,
+    },
+    generatingStep: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      lineHeight: 20,
+      textAlign: 'center',
+    },
 
-  // ── Error ─────────────────────────────────────────────────────────────────────
-  errorBanner: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fca5a5',
-    backgroundColor: colors.destructiveSubtle,
-    padding: 20,
-    gap: 8,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  errorBannerTitle: { fontSize: 14, fontWeight: '600', color: colors.destructive },
-  errorBannerDesc: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    lineHeight: 19,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: colors.primary,
-    height: 36,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  retryButtonText: { color: colors.primaryForeground, fontSize: 14, fontWeight: '600' },
-  buttonDisabled: { opacity: 0.6 },
+    // ── Error ─────────────────────────────────────────────────────────────────────
+    errorBanner: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#fca5a5',
+      backgroundColor: colors.destructiveSubtle,
+      padding: 20,
+      gap: 8,
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    errorBannerTitle: { fontSize: 14, fontWeight: '600', color: colors.destructive },
+    errorBannerDesc: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      lineHeight: 19,
+      textAlign: 'center',
+    },
+    retryButton: {
+      backgroundColor: colors.primary,
+      height: 36,
+      borderRadius: 8,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    retryButtonText: { color: colors.primaryForeground, fontSize: 14, fontWeight: '600' },
+    buttonDisabled: { opacity: 0.6 },
 
-  // ── Harmony card ─────────────────────────────────────────────────────────────
-  harmonyCard: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    marginBottom: 20,
-    ...cardShadow,
-  },
+    // ── Harmony card ─────────────────────────────────────────────────────────────
+    harmonyCard: {
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      marginBottom: 20,
+      ...cardShadow,
+    },
 
-  // Person pair header
-  personPairRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 8,
-  },
-  personCell: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  personCellRight: { flexDirection: 'row-reverse' },
-  personAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  personInitial: { fontSize: 15, fontWeight: '700' },
-  personInfo: { flex: 1, minWidth: 0 },
-  personInfoRight: { alignItems: 'flex-end' },
-  personName: { fontSize: 13, fontWeight: '600', color: colors.foreground },
-  personNameRight: { textAlign: 'right' },
-  personRole: { fontSize: 11, color: colors.mutedForeground },
-  personRoleRight: { textAlign: 'right' },
-  crossSign: { fontSize: 18, color: colors.mutedForeground, fontWeight: '300', flexShrink: 0 },
+    // Person pair header
+    personPairRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      gap: 8,
+    },
+    personCell: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    personCellRight: { flexDirection: 'row-reverse' },
+    personAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    personInitial: { fontSize: 15, fontWeight: '700' },
+    personInfo: { flex: 1, minWidth: 0 },
+    personInfoRight: { alignItems: 'flex-end' },
+    personName: { fontSize: 13, fontWeight: '600', color: colors.foreground },
+    personNameRight: { textAlign: 'right' },
+    personRole: { fontSize: 11, color: colors.mutedForeground },
+    personRoleRight: { textAlign: 'right' },
+    crossSign: { fontSize: 18, color: colors.mutedForeground, fontWeight: '300', flexShrink: 0 },
 
-  // Gauge section
-  gaugeSection: { paddingHorizontal: 16, paddingTop: 16, alignItems: 'center', gap: 8 },
-  harmonyIndexLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  scoreRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  scoreNumber: { fontSize: 48, fontWeight: '600', color: colors.foreground, letterSpacing: -1 },
-  scoreOutOf: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  harmonyPill: {
-    borderWidth: 1,
-    borderRadius: 99,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  harmonyPillText: { fontSize: 13, fontWeight: '600' },
-  harmonyDesc: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    lineHeight: 20,
-    textAlign: 'center',
-    paddingHorizontal: 8,
-    paddingBottom: 4,
-  },
+    // Gauge section
+    gaugeSection: { paddingHorizontal: 16, paddingTop: 16, alignItems: 'center', gap: 8 },
+    harmonyIndexLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+    },
+    scoreRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+    scoreNumber: { fontSize: 48, fontWeight: '600', color: colors.foreground, letterSpacing: -1 },
+    scoreOutOf: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    harmonyPill: {
+      borderWidth: 1,
+      borderRadius: 99,
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+    },
+    harmonyPillText: { fontSize: 13, fontWeight: '600' },
+    harmonyDesc: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+      lineHeight: 20,
+      textAlign: 'center',
+      paddingHorizontal: 8,
+      paddingBottom: 4,
+    },
 
-  // Info boxes
-  infoBoxes: { paddingHorizontal: 12, paddingBottom: 16, gap: 8 },
-  infoBox: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 12,
-    gap: 4,
-  },
-  infoBoxTitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
-  infoBoxBody: { fontSize: 12, color: colors.foreground, lineHeight: 18 },
+    // Info boxes
+    infoBoxes: { paddingHorizontal: 12, paddingBottom: 16, gap: 8 },
+    infoBox: {
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 12,
+      gap: 4,
+    },
+    infoBoxTitle: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.mutedForeground,
+      textTransform: 'uppercase',
+      letterSpacing: 1.5,
+    },
+    infoBoxBody: { fontSize: 12, color: colors.foreground, lineHeight: 18 },
 
-  // ── Summary ───────────────────────────────────────────────────────────────────
-  summaryCard: {
-    backgroundColor: colors.primarySubtle,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.primaryTint,
-    padding: 20,
-    marginBottom: 20,
-  },
-  summaryText: { fontSize: 15, color: colors.foreground, lineHeight: 26, fontStyle: 'italic' },
+    // ── Summary ───────────────────────────────────────────────────────────────────
+    summaryCard: {
+      backgroundColor: colors.primarySubtle,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primaryTint,
+      padding: 20,
+      marginBottom: 20,
+    },
+    summaryText: { fontSize: 15, color: colors.foreground, lineHeight: 26, fontStyle: 'italic' },
 
-  // ── Key Aspects ───────────────────────────────────────────────────────────────
-  sectionBlock: { marginBottom: 20 },
-  sectionHeading: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 10,
-  },
-  aspectCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-    marginBottom: 8,
-    gap: 4,
-    ...cardShadow,
-  },
-  aspectHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  aspectPlanets: { fontSize: 13, fontWeight: '600', color: colors.foreground },
-  aspectKey: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  aspectHeadline: { fontSize: 13, fontWeight: '600', color: colors.foreground },
-  aspectBody: { fontSize: 13, color: colors.mutedForeground, lineHeight: 19 },
+    // ── Key Aspects ───────────────────────────────────────────────────────────────
+    sectionBlock: { marginBottom: 20 },
+    sectionHeading: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 10,
+    },
+    aspectCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      marginBottom: 8,
+      gap: 4,
+      ...cardShadow,
+    },
+    aspectHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 2,
+    },
+    aspectPlanets: { fontSize: 13, fontWeight: '600', color: colors.foreground },
+    aspectKey: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    aspectHeadline: { fontSize: 13, fontWeight: '600', color: colors.foreground },
+    aspectBody: { fontSize: 13, color: colors.mutedForeground, lineHeight: 19 },
 
-  // ── Placement highlights ──────────────────────────────────────────────────────
-  highlightsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  highlightCell: {
-    width: '48%',
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    ...cardShadow,
-  },
-  highlightText: { fontSize: 13, color: colors.foreground, lineHeight: 19 },
+    // ── Placement highlights ──────────────────────────────────────────────────────
+    highlightsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    highlightCell: {
+      width: '48%',
+      backgroundColor: colors.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      ...cardShadow,
+    },
+    highlightText: { fontSize: 13, color: colors.foreground, lineHeight: 19 },
 
-  // ── Sections ──────────────────────────────────────────────────────────────────
-  sectionsBlock: { gap: 24, marginBottom: 20 },
-  sectionItem: { gap: 10 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sectionCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  sectionCircleText: { fontSize: 12, fontWeight: '700', color: colors.primary },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.foreground,
-    flex: 1,
-    letterSpacing: -0.3,
-  },
-  sectionBody: { paddingLeft: 38, gap: 10 },
-  sectionParagraph: { fontSize: 15, color: colors.foreground, lineHeight: 26 },
+    // ── Sections ──────────────────────────────────────────────────────────────────
+    sectionsBlock: { gap: 24, marginBottom: 20 },
+    sectionItem: { gap: 10 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    sectionCircle: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.primaryTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    sectionCircleText: { fontSize: 12, fontWeight: '700', color: colors.primary },
+    sectionTitle: {
+      fontSize: 17,
+      fontWeight: '600',
+      color: colors.foreground,
+      flex: 1,
+      letterSpacing: -0.3,
+    },
+    sectionBody: { paddingLeft: 38, gap: 10 },
+    sectionParagraph: { fontSize: 15, color: colors.foreground, lineHeight: 26 },
 
-  // ── Advice ────────────────────────────────────────────────────────────────────
-  adviceCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.primaryTint,
-    padding: 16,
-    gap: 12,
-    marginBottom: 20,
-  },
-  adviceHeading: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  numberedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  numberCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.primaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    marginTop: 1,
-  },
-  numberCircleText: { fontSize: 10, fontWeight: '700', color: colors.primary },
-  numberedText: { flex: 1, fontSize: 14, color: colors.foreground, lineHeight: 21 },
+    // ── Advice ────────────────────────────────────────────────────────────────────
+    adviceCard: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primaryTint,
+      padding: 16,
+      gap: 12,
+      marginBottom: 20,
+    },
+    adviceHeading: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      marginBottom: 4,
+    },
+    numberedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+    numberCircle: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: colors.primaryTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      marginTop: 1,
+    },
+    numberCircleText: { fontSize: 10, fontWeight: '700', color: colors.primary },
+    numberedText: { flex: 1, fontSize: 14, color: colors.foreground, lineHeight: 21 },
 
-  // ── Disclaimers ───────────────────────────────────────────────────────────────
-  disclaimersCard: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-  },
-  disclaimersText: { fontSize: 11, color: colors.mutedForeground, lineHeight: 17 },
+    // ── Disclaimers ───────────────────────────────────────────────────────────────
+    disclaimersCard: {
+      backgroundColor: colors.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+    },
+    disclaimersText: { fontSize: 11, color: colors.mutedForeground, lineHeight: 17 },
 
-  // ── Misc ──────────────────────────────────────────────────────────────────────
-  errorText: { fontSize: 16, fontWeight: '600', color: colors.destructive },
-  linkText: { color: colors.primary, fontSize: 14 },
-});
+    // ── Misc ──────────────────────────────────────────────────────────────────────
+    errorText: { fontSize: 16, fontWeight: '600', color: colors.destructive },
+    linkText: { color: colors.primary, fontSize: 14 },
+  });
+}

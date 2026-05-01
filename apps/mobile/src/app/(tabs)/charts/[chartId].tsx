@@ -1,5 +1,13 @@
-import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'react-native';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Modal,
+} from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { goBack } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,13 +17,18 @@ import { READING_TYPES } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import { messages } from '@clario/i18n';
-import { colors, cardShadow } from '@/lib/colors';
+import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChartWheel } from '@/components/ChartWheel';
 import type { WheelPosition, WheelAspect } from '@/components/ChartWheel';
 import { Skeleton } from '@/components/Skeleton';
+import { ApiClientError } from '@clario/api-client';
+import { useInsufficientCredits } from '@/lib/insufficient-credits-context';
 
 function ChartDetailSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   return (
     <ScrollView
@@ -193,9 +206,9 @@ const ASPECT_SYMBOLS: Record<string, string> = {
 };
 
 const ASPECT_COLORS_HEX: Record<string, string> = {
-  conjunction: colors.primary,
+  conjunction: '#D4A017', // primary gold
   sextile: '#0EA5E9',
-  square: colors.destructive,
+  square: '#F85149', // destructive red
   trine: '#10B981',
   opposition: '#F97316',
 };
@@ -279,8 +292,13 @@ function formatDeg(degreeDecimal: number): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ChartDetailScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const insets = useSafeAreaInsets();
   const { chartId } = useLocalSearchParams<{ chartId: string }>();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const readingsSectionY = useRef(0);
   const PAGE_SIZE = 5;
 
   const [detail, setDetail] = useState<ChartDetail | null>(null);
@@ -296,6 +314,7 @@ export default function ChartDetailScreen() {
   const tCreateReading = useTranslations('createReading');
   const tWorkspace = useTranslations('workspace');
   const tCommon = useTranslations('common');
+  const { showInsufficientCredits } = useInsufficientCredits();
 
   useEffect(() => {
     if (!chartId) return;
@@ -324,6 +343,9 @@ export default function ChartDetailScreen() {
       setLinkedReadings(data.readings);
       setReadingsTotal(data.total);
       setReadingsPage(data.page);
+      scrollViewRef.current?.scrollTo({ y: readingsSectionY.current, animated: true });
+    } catch {
+      toast.error(tChart('loadError' as Parameters<typeof tChart>[0]));
     } finally {
       setReadingsLoading(false);
     }
@@ -336,8 +358,17 @@ export default function ChartDetailScreen() {
       const { reading } = await readingsApi.createReading({ chartId, readingType });
       setShowReadingModal(false);
       router.push(`/(tabs)/readings/${reading.id}`);
-    } catch {
-      toast.error(tCreateReading('error'));
+    } catch (err) {
+      if (
+        err instanceof ApiClientError &&
+        (err.status === 402 || err.code === 'insufficient_credits')
+      ) {
+        setShowReadingModal(false);
+        const data = err.data as { required?: number; balance?: number } | undefined;
+        showInsufficientCredits({ required: data?.required, balance: data?.balance });
+      } else {
+        toast.error(tCreateReading('error'));
+      }
     } finally {
       setCreatingReading(null);
     }
@@ -490,7 +521,11 @@ export default function ChartDetailScreen() {
 
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.container}
+        contentContainerStyle={styles.content}
+      >
         {/* ── Nav row ──────────────────────────────────────────────────────── */}
         <View style={[styles.navRow, { marginTop: insets.top + 12 }]}>
           <TouchableOpacity style={styles.navLink} onPress={() => goBack('/(tabs)/charts')}>
@@ -1008,17 +1043,20 @@ export default function ChartDetailScreen() {
         ) : null}
 
         {/* ── Linked readings ──────────────────────────────────────────────── */}
-        <View style={styles.section}>
+        <View
+          style={styles.section}
+          onLayout={(e) => {
+            readingsSectionY.current = e.nativeEvent.layout.y;
+          }}
+        >
           <Text style={styles.sectionTitle}>{tChart('linkedReadings')}</Text>
-          {readingsLoading ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 16 }} />
-          ) : linkedReadings.length === 0 ? (
+          {linkedReadings.length === 0 && !readingsLoading ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>{tChart('noReadingsYet')}</Text>
               <Text style={styles.emptyStateHint}>{tChart('noReadingsHint')}</Text>
             </View>
           ) : (
-            <>
+            <View style={readingsLoading ? { opacity: 0.5, gap: 8 } : { gap: 8 }}>
               {linkedReadings.map((r) => {
                 const readingTypeLabel =
                   (messages.chartDetail.readingTypes as Record<string, string>)[r.reading_type] ??
@@ -1065,7 +1103,10 @@ export default function ChartDetailScreen() {
               {Math.ceil(readingsTotal / PAGE_SIZE) > 1 ? (
                 <View style={styles.pagination}>
                   <TouchableOpacity
-                    style={[styles.pageBtn, readingsPage <= 1 && styles.pageBtnDisabled]}
+                    style={[
+                      styles.pageBtn,
+                      (readingsPage <= 1 || readingsLoading) && styles.pageBtnDisabled,
+                    ]}
                     onPress={() => loadReadingsPage(readingsPage - 1)}
                     disabled={readingsPage <= 1 || readingsLoading}
                   >
@@ -1075,16 +1116,24 @@ export default function ChartDetailScreen() {
                       color={readingsPage <= 1 ? colors.mutedForeground : colors.foreground}
                     />
                   </TouchableOpacity>
-                  <Text style={styles.pageLabel}>
-                    {tChart('pageLabel', {
-                      current: readingsPage,
-                      total: Math.ceil(readingsTotal / PAGE_SIZE),
-                    })}
-                  </Text>
+                  {readingsLoading ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={colors.primary}
+                      style={{ marginHorizontal: 8 }}
+                    />
+                  ) : (
+                    <Text style={styles.pageLabel}>
+                      {tChart('pageLabel', {
+                        current: readingsPage,
+                        total: Math.ceil(readingsTotal / PAGE_SIZE),
+                      })}
+                    </Text>
+                  )}
                   <TouchableOpacity
                     style={[
                       styles.pageBtn,
-                      readingsPage >= Math.ceil(readingsTotal / PAGE_SIZE) &&
+                      (readingsPage >= Math.ceil(readingsTotal / PAGE_SIZE) || readingsLoading) &&
                         styles.pageBtnDisabled,
                     ]}
                     onPress={() => loadReadingsPage(readingsPage + 1)}
@@ -1104,7 +1153,7 @@ export default function ChartDetailScreen() {
                   </TouchableOpacity>
                 </View>
               ) : null}
-            </>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -1150,736 +1199,738 @@ export default function ChartDetailScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 56,
-    gap: 12,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    gap: 12,
-  },
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 56,
+      gap: 12,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+      gap: 12,
+    },
 
-  // ── Nav row ──────────────────────────────────────────────────────────────────
-  navRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  navLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  navLinkText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  navLinkTextMuted: {
-    color: colors.mutedForeground,
-    fontSize: 14,
-    fontWeight: '500',
-  },
+    // ── Nav row ──────────────────────────────────────────────────────────────────
+    navRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    navLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    navLinkText: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    navLinkTextMuted: {
+      color: colors.mutedForeground,
+      fontSize: 14,
+      fontWeight: '500',
+    },
 
-  // ── Hero card ─────────────────────────────────────────────────────────────────
-  heroCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    ...cardShadow,
-  },
-  heroRow: {
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  avatarText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  heroInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  personName: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: colors.foreground,
-    letterSpacing: -0.3,
-  },
-  chartLabel: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-  },
-  subjectTypeBadge: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  bigThreeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 6,
-  },
-  bigThreeBadge: {
-    borderRadius: 99,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  bigThreeText: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  sunBadge: { backgroundColor: '#FEF3C7' },
-  sunText: { color: '#92400E' },
-  moonBadge: { backgroundColor: '#E0F2FE' },
-  moonText: { color: '#075985' },
-  ascBadge: { backgroundColor: '#EEF2FF' },
-  ascText: { color: '#4338CA' },
+    // ── Hero card ─────────────────────────────────────────────────────────────────
+    heroCard: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      ...cardShadow,
+    },
+    heroRow: {
+      flexDirection: 'row',
+      gap: 14,
+      alignItems: 'flex-start',
+      marginBottom: 14,
+    },
+    avatar: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.primaryTint,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    avatarText: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    heroInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    personName: {
+      fontSize: 22,
+      fontWeight: '600',
+      color: colors.foreground,
+      letterSpacing: -0.3,
+    },
+    chartLabel: {
+      fontSize: 13,
+      color: colors.mutedForeground,
+    },
+    subjectTypeBadge: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginTop: 2,
+    },
+    bigThreeRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
+      marginTop: 6,
+    },
+    bigThreeBadge: {
+      borderRadius: 99,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    bigThreeText: {
+      fontSize: 11,
+      fontWeight: '500',
+    },
+    sunBadge: { backgroundColor: '#FEF3C7' },
+    sunText: { color: '#92400E' },
+    moonBadge: { backgroundColor: '#E0F2FE' },
+    moonText: { color: '#075985' },
+    ascBadge: { backgroundColor: '#EEF2FF' },
+    ascText: { color: '#4338CA' },
 
-  // Birth details grid
-  detailsGrid: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 14,
-    gap: 10,
-  },
-  detailItem: {
-    gap: 2,
-  },
-  detailLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: colors.mutedForeground,
-  },
-  detailValue: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.foreground,
-  },
+    // Birth details grid
+    detailsGrid: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: 14,
+      gap: 10,
+    },
+    detailItem: {
+      gap: 2,
+    },
+    detailLabel: {
+      fontSize: 10,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      color: colors.mutedForeground,
+    },
+    detailValue: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.foreground,
+    },
 
-  // ── Actions ───────────────────────────────────────────────────────────────────
-  actionsGroup: {
-    gap: 8,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonDisabled: {
-    opacity: 0.5,
-  },
-  primaryButtonText: {
-    color: colors.primaryForeground,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  notReadyHint: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-  },
-  outlineButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    height: 44,
-    backgroundColor: colors.card,
-  },
-  outlineButtonText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
+    // ── Actions ───────────────────────────────────────────────────────────────────
+    actionsGroup: {
+      gap: 8,
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primaryButtonDisabled: {
+      opacity: 0.5,
+    },
+    primaryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    notReadyHint: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+    },
+    outlineButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      height: 44,
+      backgroundColor: colors.card,
+    },
+    outlineButtonText: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: '500',
+    },
 
-  // ── Status banners ────────────────────────────────────────────────────────────
-  infoBanner: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.primary + '50',
-    backgroundColor: colors.primarySubtle,
-    padding: 14,
-    gap: 4,
-  },
-  infoBannerTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  infoBannerDesc: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-  },
-  errorBanner: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.destructive + '50',
-    backgroundColor: colors.destructiveSubtle,
-    padding: 14,
-    gap: 4,
-  },
-  errorBannerTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.destructive,
-  },
-  errorBannerDesc: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-  },
+    // ── Status banners ────────────────────────────────────────────────────────────
+    infoBanner: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primary + '50',
+      backgroundColor: colors.primarySubtle,
+      padding: 14,
+      gap: 4,
+    },
+    infoBannerTitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    infoBannerDesc: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+    },
+    errorBanner: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.destructive + '50',
+      backgroundColor: colors.destructiveSubtle,
+      padding: 14,
+      gap: 4,
+    },
+    errorBannerTitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.destructive,
+    },
+    errorBannerDesc: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+    },
 
-  // ── Notes ─────────────────────────────────────────────────────────────────────
-  notesBlock: {
-    backgroundColor: colors.muted,
-    borderRadius: 12,
-    padding: 14,
-    gap: 4,
-  },
-  notesLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: colors.mutedForeground,
-  },
-  notesText: {
-    fontSize: 13,
-    color: colors.foreground,
-    lineHeight: 20,
-  },
+    // ── Notes ─────────────────────────────────────────────────────────────────────
+    notesBlock: {
+      backgroundColor: colors.muted,
+      borderRadius: 12,
+      padding: 14,
+      gap: 4,
+    },
+    notesLabel: {
+      fontSize: 10,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      color: colors.mutedForeground,
+    },
+    notesText: {
+      fontSize: 13,
+      color: colors.foreground,
+      lineHeight: 20,
+    },
 
-  // ── Section ───────────────────────────────────────────────────────────────────
-  section: {
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
+    // ── Section ───────────────────────────────────────────────────────────────────
+    section: {
+      gap: 8,
+    },
+    sectionTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
 
-  // ── Chart wheel ───────────────────────────────────────────────────────────────
-  wheelContainer: {
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 8,
-    ...cardShadow,
-  },
+    // ── Chart wheel ───────────────────────────────────────────────────────────────
+    wheelContainer: {
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 8,
+      ...cardShadow,
+    },
 
-  // ── Stats section (all stat cards) ───────────────────────────────────────────
-  statsSection: {
-    gap: 10,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-    gap: 8,
-    ...cardShadow,
-  },
-  statCardTitle: {
-    fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: colors.mutedForeground,
-    marginBottom: 2,
-  },
-  statRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-    width: 55,
-    flexShrink: 0,
-  },
-  dotRow: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 2,
-    alignItems: 'center',
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  statCount: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.foreground,
-    width: 14,
-    textAlign: 'right',
-  },
-  statCardDesc: {
-    fontSize: 10,
-    color: colors.mutedForeground + 'AA',
-    marginTop: -4,
-    marginBottom: 4,
-    lineHeight: 14,
-  },
-  statEmptyText: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    fontStyle: 'italic',
-    lineHeight: 18,
-  },
+    // ── Stats section (all stat cards) ───────────────────────────────────────────
+    statsSection: {
+      gap: 10,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      gap: 8,
+      ...cardShadow,
+    },
+    statCardTitle: {
+      fontSize: 10,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      color: colors.mutedForeground,
+      marginBottom: 2,
+    },
+    statRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    statLabel: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+      width: 55,
+      flexShrink: 0,
+    },
+    dotRow: {
+      flex: 1,
+      flexDirection: 'row',
+      gap: 2,
+      alignItems: 'center',
+    },
+    dot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+    },
+    statCount: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.foreground,
+      width: 14,
+      textAlign: 'right',
+    },
+    statCardDesc: {
+      fontSize: 10,
+      color: colors.mutedForeground + 'AA',
+      marginTop: -4,
+      marginBottom: 4,
+      lineHeight: 14,
+    },
+    statEmptyText: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+      fontStyle: 'italic',
+      lineHeight: 18,
+    },
 
-  // ── About Chart ──────────────────────────────────────────────────────────────
-  aboutRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    marginTop: 6,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  aboutIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  aboutIconText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  aboutInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  aboutMeta: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-    lineHeight: 16,
-  },
-  aboutValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  aboutValueMuted: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: colors.mutedForeground,
-  },
-  aboutHint: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    fontStyle: 'italic',
-    marginTop: 6,
-  },
+    // ── About Chart ──────────────────────────────────────────────────────────────
+    aboutRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      marginTop: 6,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    aboutIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    aboutIconText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    aboutInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    aboutMeta: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+      lineHeight: 16,
+    },
+    aboutValue: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    aboutValueMuted: {
+      fontSize: 13,
+      fontWeight: '400',
+      color: colors.mutedForeground,
+    },
+    aboutHint: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+      fontStyle: 'italic',
+      marginTop: 6,
+    },
 
-  // ── Stelliums ─────────────────────────────────────────────────────────────────
-  stelliumItem: {
-    backgroundColor: colors.primarySubtle,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 2,
-    marginTop: 4,
-  },
-  stelliumTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  stelliumBodies: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-  },
+    // ── Stelliums ─────────────────────────────────────────────────────────────────
+    stelliumItem: {
+      backgroundColor: colors.primarySubtle,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      gap: 2,
+      marginTop: 4,
+    },
+    stelliumTitle: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    stelliumBodies: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+    },
 
-  // ── Dignities ─────────────────────────────────────────────────────────────────
-  dignityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginTop: 4,
-  },
-  dignitySymbol: {
-    fontSize: 15,
-    fontWeight: '600',
-    width: 22,
-    textAlign: 'center',
-  },
-  dignityPlanet: {
-    fontSize: 12,
-    fontWeight: '600',
-    flex: 1,
-  },
-  dignityType: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  dignityShort: {
-    fontSize: 10,
-    opacity: 0.7,
-  },
+    // ── Dignities ─────────────────────────────────────────────────────────────────
+    dignityRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      marginTop: 4,
+    },
+    dignitySymbol: {
+      fontSize: 15,
+      fontWeight: '600',
+      width: 22,
+      textAlign: 'center',
+    },
+    dignityPlanet: {
+      fontSize: 12,
+      fontWeight: '600',
+      flex: 1,
+    },
+    dignityType: {
+      fontSize: 11,
+      fontWeight: '500',
+    },
+    dignityShort: {
+      fontSize: 10,
+      opacity: 0.7,
+    },
 
-  // ── Unaspected ────────────────────────────────────────────────────────────────
-  unaspectedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.muted,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginTop: 4,
-  },
-  unaspectedPlanet: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.foreground,
-    flex: 1,
-  },
-  unaspectedSign: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-  },
+    // ── Unaspected ────────────────────────────────────────────────────────────────
+    unaspectedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: colors.muted,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      marginTop: 4,
+    },
+    unaspectedPlanet: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.foreground,
+      flex: 1,
+    },
+    unaspectedSign: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+    },
 
-  // ── Positions ─────────────────────────────────────────────────────────────────
-  positionRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 12,
-  },
-  anglesStrip: {
-    gap: 8,
-    marginTop: 4,
-  },
-  angleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: colors.muted,
-    borderRadius: 12,
-    padding: 12,
-  },
-  planetSymbol: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  planetSymbolText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  positionInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  positionNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  positionPlanetName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  positionMeaning: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-    flex: 1,
-  },
-  rxBadge: {
-    backgroundColor: '#FFEDD5',
-    borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-  },
-  rxBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#C2410C',
-  },
-  positionSignRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flexWrap: 'wrap',
-  },
-  positionSign: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    fontWeight: '500',
-  },
-  positionHouse: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-  },
-  positionKeyword: {
-    fontSize: 11,
-    color: colors.mutedForeground + 'AA',
-    fontStyle: 'italic',
-  },
-  dignityBadge: {
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  dignityBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
+    // ── Positions ─────────────────────────────────────────────────────────────────
+    positionRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 12,
+    },
+    anglesStrip: {
+      gap: 8,
+      marginTop: 4,
+    },
+    angleRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      backgroundColor: colors.muted,
+      borderRadius: 12,
+      padding: 12,
+    },
+    planetSymbol: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    planetSymbolText: {
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    positionInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    positionNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      flexWrap: 'wrap',
+    },
+    positionPlanetName: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    positionMeaning: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+      flex: 1,
+    },
+    rxBadge: {
+      backgroundColor: '#FFEDD5',
+      borderRadius: 4,
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+    },
+    rxBadgeText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: '#C2410C',
+    },
+    positionSignRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      flexWrap: 'wrap',
+    },
+    positionSign: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+      fontWeight: '500',
+    },
+    positionHouse: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+    },
+    positionKeyword: {
+      fontSize: 11,
+      color: colors.mutedForeground + 'AA',
+      fontStyle: 'italic',
+    },
+    dignityBadge: {
+      borderRadius: 4,
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+    },
+    dignityBadgeText: {
+      fontSize: 10,
+      fontWeight: '600',
+    },
 
-  // ── Aspects ───────────────────────────────────────────────────────────────────
-  aspectRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 12,
-  },
-  aspectSymbolBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  aspectSymbol: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  aspectInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  aspectPlanets: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  aspectMeta: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-  },
+    // ── Aspects ───────────────────────────────────────────────────────────────────
+    aspectRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 12,
+    },
+    aspectSymbolBox: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    aspectSymbol: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    aspectInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    aspectPlanets: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    aspectMeta: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+    },
 
-  // ── Reading cards ─────────────────────────────────────────────────────────────
-  readingCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 14,
-    ...cardShadow,
-  },
-  readingCardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  readingCardLeft: {
-    flex: 1,
-    gap: 2,
-  },
-  readingCardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  readingCardMeta: {
-    fontSize: 11,
-    color: colors.mutedForeground,
-    textTransform: 'capitalize',
-  },
-  readingCardSub: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    marginTop: 2,
-    lineHeight: 17,
-  },
+    // ── Reading cards ─────────────────────────────────────────────────────────────
+    readingCard: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 14,
+      ...cardShadow,
+    },
+    readingCardRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: 8,
+    },
+    readingCardLeft: {
+      flex: 1,
+      gap: 2,
+    },
+    readingCardTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    readingCardMeta: {
+      fontSize: 11,
+      color: colors.mutedForeground,
+      textTransform: 'capitalize',
+    },
+    readingCardSub: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+      marginTop: 2,
+      lineHeight: 17,
+    },
 
-  // ── Pagination ────────────────────────────────────────────────────────────────
-  pagination: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  pageBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pageBtnDisabled: {
-    opacity: 0.4,
-  },
-  pageLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.mutedForeground,
-    paddingHorizontal: 10,
-  },
+    // ── Pagination ────────────────────────────────────────────────────────────────
+    pagination: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      overflow: 'hidden',
+    },
+    pageBtn: {
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pageBtnDisabled: {
+      opacity: 0.4,
+    },
+    pageLabel: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.mutedForeground,
+      paddingHorizontal: 10,
+    },
 
-  // ── Empty state hint ──────────────────────────────────────────────────────────
-  emptyStateHint: {
-    fontSize: 12,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  statusChip: {
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginLeft: 8,
-  },
-  statusChipText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
+    // ── Empty state hint ──────────────────────────────────────────────────────────
+    emptyStateHint: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      marginTop: 4,
+    },
+    statusChip: {
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      marginLeft: 8,
+    },
+    statusChipText: {
+      color: '#fff',
+      fontSize: 11,
+      fontWeight: '600',
+    },
 
-  // ── Empty state ───────────────────────────────────────────────────────────────
-  emptyState: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-  },
+    // ── Empty state ───────────────────────────────────────────────────────────────
+    emptyState: {
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 24,
+      alignItems: 'center',
+    },
+    emptyStateText: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+    },
 
-  // ── Error / link ──────────────────────────────────────────────────────────────
-  errorText: {
-    fontSize: 18,
-    color: colors.error,
-    textAlign: 'center',
-  },
-  linkText: {
-    color: colors.primary,
-    fontSize: 15,
-  },
+    // ── Error / link ──────────────────────────────────────────────────────────────
+    errorText: {
+      fontSize: 18,
+      color: colors.error,
+      textAlign: 'center',
+    },
+    linkText: {
+      color: colors.primary,
+      fontSize: 15,
+    },
 
-  // ── Modal bottom sheet ────────────────────────────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
-    gap: 4,
-  },
-  modalHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    alignSelf: 'center',
-    marginBottom: 12,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.foreground,
-    marginBottom: 8,
-  },
-  modalItem: {
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    alignItems: 'flex-start',
-  },
-  modalItemText: {
-    fontSize: 15,
-    color: colors.foreground,
-  },
-  modalCancel: {
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  modalCancelText: {
-    fontSize: 15,
-    color: colors.mutedForeground,
-    fontWeight: '500',
-  },
-});
+    // ── Modal bottom sheet ────────────────────────────────────────────────────────
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'flex-end',
+    },
+    modalSheet: {
+      backgroundColor: colors.card,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 20,
+      paddingBottom: 40,
+      gap: 4,
+    },
+    modalHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.border,
+      alignSelf: 'center',
+      marginBottom: 12,
+    },
+    modalTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.foreground,
+      marginBottom: 8,
+    },
+    modalItem: {
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      alignItems: 'flex-start',
+    },
+    modalItemText: {
+      fontSize: 15,
+      color: colors.foreground,
+    },
+    modalCancel: {
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    modalCancelText: {
+      fontSize: 15,
+      color: colors.mutedForeground,
+      fontWeight: '500',
+    },
+  });
+}

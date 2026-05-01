@@ -1,101 +1,83 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet } from 'react-native';
 import { useColors } from '@/lib/colors';
-import { useTranslations } from '@/lib/i18n';
 
 /**
- * Full-screen animated splash shown while auth initialises.
+ * Minimal splash shown while auth initialises.
  * Sequence:
- *  0 ms   — background fades in instantly (covers the native splash)
- *  100 ms — logo circle scales up from 0.3 → 1.05, fades in
- *  550 ms — logo settles to scale 1.0 with a soft spring bounce
- *  700 ms — tagline text fades in and slides up 8 px
- * 1 400 ms — everything fades out together (onDone called)
+ *  0 ms   — background appears instantly (covers the native splash)
+ * 100 ms  — inner dot fades in
+ * 200 ms  — ring 1 pulses outward and fades
+ * 500 ms  — ring 2 pulses outward and fades
+ * 900 ms  — ring 3 pulses outward and fades
+ * 1300 ms — everything fades out (onDone called)
  */
 export function SplashAnimation({ onDone }: { onDone: () => void }) {
   const c = useColors();
-  const t = useTranslations('splash');
 
   const bgOpacity = useRef(new Animated.Value(1)).current;
-  const logoScale = useRef(new Animated.Value(0.3)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const textTranslate = useRef(new Animated.Value(12)).current;
-  const ringScale = useRef(new Animated.Value(0.6)).current;
-  const ringOpacity = useRef(new Animated.Value(0)).current;
+  const dotOpacity = useRef(new Animated.Value(0)).current;
+  const ring1Scale = useRef(new Animated.Value(0.3)).current;
+  const ring1Opacity = useRef(new Animated.Value(0)).current;
+  const ring2Scale = useRef(new Animated.Value(0.3)).current;
+  const ring2Opacity = useRef(new Animated.Value(0)).current;
+  const ring3Scale = useRef(new Animated.Value(0.3)).current;
+  const ring3Opacity = useRef(new Animated.Value(0)).current;
+
+  function makePulse(scale: Animated.Value, opacity: Animated.Value, delay: number) {
+    return Animated.sequence([
+      Animated.delay(delay),
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0.6,
+          duration: 120,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 120,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 500,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 2.6,
+          duration: 600,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]);
+  }
 
   useEffect(() => {
     Animated.sequence([
-      // Phase 1 — logo appears
-      Animated.parallel([
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 380,
-          delay: 80,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoScale, {
-          toValue: 1.08,
-          duration: 400,
-          delay: 80,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
+      // Dot appears
+      Animated.timing(dotOpacity, {
+        toValue: 1,
+        duration: 200,
+        delay: 100,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      // 3 staggered pulse rings
+      Animated.stagger(300, [
+        makePulse(ring1Scale, ring1Opacity, 0),
+        makePulse(ring2Scale, ring2Opacity, 0),
+        makePulse(ring3Scale, ring3Opacity, 0),
       ]),
-      // Phase 2 — logo settles + ring pulses out
-      Animated.parallel([
-        Animated.spring(logoScale, {
-          toValue: 1,
-          friction: 5,
-          tension: 120,
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.parallel([
-            Animated.timing(ringOpacity, {
-              toValue: 0.35,
-              duration: 180,
-              easing: Easing.out(Easing.quad),
-              useNativeDriver: true,
-            }),
-            Animated.timing(ringScale, {
-              toValue: 1.7,
-              duration: 500,
-              easing: Easing.out(Easing.cubic),
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.timing(ringOpacity, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-        // tagline slides in
-        Animated.parallel([
-          Animated.timing(textOpacity, {
-            toValue: 1,
-            duration: 320,
-            delay: 100,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(textTranslate, {
-            toValue: 0,
-            duration: 320,
-            delay: 100,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-      // Hold
-      Animated.delay(500),
-      // Phase 3 — fade out
+      // Fade out
       Animated.timing(bgOpacity, {
         toValue: 0,
-        duration: 320,
+        duration: 280,
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
@@ -107,87 +89,47 @@ export function SplashAnimation({ onDone }: { onDone: () => void }) {
       style={[styles.container, { backgroundColor: c.background, opacity: bgOpacity }]}
       pointerEvents="none"
     >
-      {/* Outer decorative circle */}
-      <View style={[styles.outerRing, { borderColor: c.primaryTint }]} />
-
-      {/* Pulse ring */}
+      {/* Pulse ring 3 (outermost) */}
       <Animated.View
         style={[
-          styles.pulseRing,
+          styles.ring,
           {
             borderColor: c.primary,
-            opacity: ringOpacity,
-            transform: [{ scale: ringScale }],
+            opacity: ring3Opacity,
+            transform: [{ scale: ring3Scale }],
           },
         ]}
       />
-
-      {/* Logo circle */}
+      {/* Pulse ring 2 */}
       <Animated.View
         style={[
-          styles.logoCircle,
+          styles.ring,
           {
-            backgroundColor: c.primaryTint,
             borderColor: c.primary,
-            opacity: logoOpacity,
-            transform: [{ scale: logoScale }],
+            opacity: ring2Opacity,
+            transform: [{ scale: ring2Scale }],
           },
         ]}
-      >
-        {/* Stylised star / compass icon made from pure Views */}
-        <StarMark color={c.primary} />
-      </Animated.View>
-
-      {/* App name */}
-      <Animated.Text
+      />
+      {/* Pulse ring 1 (innermost) */}
+      <Animated.View
         style={[
-          styles.appName,
+          styles.ring,
           {
-            color: c.foreground,
-            opacity: textOpacity,
-            transform: [{ translateY: textTranslate }],
+            borderColor: c.primary,
+            opacity: ring1Opacity,
+            transform: [{ scale: ring1Scale }],
           },
         ]}
-      >
-        {t('appName')}
-      </Animated.Text>
-
-      {/* Tagline */}
-      <Animated.Text
-        style={[
-          styles.tagline,
-          {
-            color: c.mutedForeground,
-            opacity: textOpacity,
-            transform: [{ translateY: textTranslate }],
-          },
-        ]}
-      >
-        {t('tagline')}
-      </Animated.Text>
+      />
+      {/* Centre dot */}
+      <Animated.View style={[styles.dot, { backgroundColor: c.primary, opacity: dotOpacity }]} />
     </Animated.View>
   );
 }
 
-/** Simple golden star/asterisk drawn with rotated bars */
-function StarMark({ color }: { color: string }) {
-  const bars = [0, 45, 90, 135];
-  return (
-    <View style={styles.starWrap}>
-      {bars.map((deg) => (
-        <View
-          key={deg}
-          style={[styles.starBar, { backgroundColor: color, transform: [{ rotate: `${deg}deg` }] }]}
-        />
-      ))}
-      {/* centre dot */}
-      <View style={[styles.starDot, { backgroundColor: color }]} />
-    </View>
-  );
-}
-
-const LOGO_SIZE = 96;
-const RING_SIZE = LOGO_SIZE * 1.5;
+const DOT_SIZE = 14;
+const RING_SIZE = 80;
 
 const styles = StyleSheet.create({
   container: {
@@ -196,63 +138,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 999,
   },
-  outerRing: {
+  ring: {
     position: 'absolute',
-    width: RING_SIZE * 1.5,
-    height: RING_SIZE * 1.5,
-    borderRadius: RING_SIZE,
-    borderWidth: 1,
-    opacity: 0.25,
-  },
-  pulseRing: {
-    position: 'absolute',
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-    borderRadius: LOGO_SIZE / 2,
-    borderWidth: 2,
-  },
-  logoCircle: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-    borderRadius: LOGO_SIZE / 2,
+    width: RING_SIZE,
+    height: RING_SIZE,
+    borderRadius: RING_SIZE / 2,
     borderWidth: 1.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#9A6500',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 12,
   },
-  appName: {
-    marginTop: 28,
-    fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-  },
-  tagline: {
-    marginTop: 6,
-    fontSize: 13,
-    fontWeight: '400',
-    letterSpacing: 0.8,
-  },
-  // Star mark
-  starWrap: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  starBar: {
-    position: 'absolute',
-    width: 3,
-    height: 36,
-    borderRadius: 2,
-    opacity: 0.9,
-  },
-  starDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  dot: {
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
   },
 });

@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import React, { createContext, useContext, useRef, useState } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
-import { colors } from '@/lib/colors';
+import { useColors } from '@/lib/colors';
 
 export interface ConfirmOptions {
   title: string;
@@ -35,6 +36,9 @@ const DEFAULT_STATE: DialogState = {
 };
 
 export function ConfirmDialogProvider({ children }: { children: React.ReactNode }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [visible, setVisible] = useState(false);
   const [state, setState] = useState<DialogState>(DEFAULT_STATE);
   const resolveRef = useRef<((value: boolean) => void) | null>(null);
@@ -101,65 +105,67 @@ export function ConfirmDialogProvider({ children }: { children: React.ReactNode 
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  dialog: {
-    width: '100%',
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 24,
-    gap: 8,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  description: {
-    fontSize: 14,
-    color: colors.mutedForeground,
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: colors.muted,
-    alignItems: 'center',
-  },
-  cancelText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: colors.foreground,
-  },
-  confirmButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-  },
-  confirmText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  destructiveButton: {
-    backgroundColor: colors.destructive,
-  },
-  destructiveText: {
-    color: '#fff',
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+    },
+    dialog: {
+      width: '100%',
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 24,
+      gap: 8,
+    },
+    title: {
+      fontSize: 17,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    description: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      lineHeight: 20,
+      marginBottom: 4,
+    },
+    buttons: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 8,
+    },
+    cancelButton: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 10,
+      backgroundColor: colors.muted,
+      alignItems: 'center',
+    },
+    cancelText: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: colors.foreground,
+    },
+    confirmButton: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 10,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+    },
+    confirmText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: '#fff',
+    },
+    destructiveButton: {
+      backgroundColor: colors.destructive,
+    },
+    destructiveText: {
+      color: '#fff',
+    },
+  });
+}
