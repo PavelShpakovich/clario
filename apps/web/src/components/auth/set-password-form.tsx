@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -17,7 +16,6 @@ export function SetPasswordForm() {
   const t = useTranslations('auth');
   const validation = useTranslations('validation');
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const supabase = useMemo(() => createSupabaseClient(), []);
 
   const [password, setPassword] = useState('');
@@ -99,19 +97,18 @@ export function SetPasswordForm() {
         await authApi.confirmPasswordReset(recoverySession.access_token);
       }
 
-      const result = await signIn('password', {
-        email,
-        password,
-        redirect: false,
-        callbackUrl,
-      });
-
-      if (!result?.ok) {
-        throw new Error(result?.error || t('invalidCredentials'));
-      }
+      await supabase.auth.signOut({ scope: 'local' });
 
       toast.success(t('passwordUpdated'));
-      window.location.href = result.url || callbackUrl;
+      const loginUrl = new URL('/login', window.location.origin);
+      loginUrl.searchParams.set('reset', 'success');
+
+      const callbackUrl = searchParams.get('callbackUrl');
+      if (callbackUrl) {
+        loginUrl.searchParams.set('callbackUrl', callbackUrl);
+      }
+
+      window.location.href = loginUrl.toString();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('error'));
     } finally {

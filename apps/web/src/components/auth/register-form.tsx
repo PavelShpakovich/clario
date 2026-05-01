@@ -100,9 +100,7 @@ export function RegisterForm() {
         }
 
         const msg = error.message.toLowerCase();
-        if (msg.includes('already exists')) {
-          toast.error(t('emailAlreadyExists'));
-        } else if (msg.includes('password')) {
+        if (msg.includes('password')) {
           setErrors((prev) => ({ ...prev, password: v('passwordTooShort') }));
         } else if (msg.includes('email')) {
           setErrors((prev) => ({ ...prev, email: v('invalidEmail') }));

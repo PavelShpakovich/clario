@@ -24,6 +24,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const verifiedParam = searchParams.get('verified');
+  const resetParam = searchParams.get('reset');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -130,6 +131,11 @@ export function LoginForm() {
         </div>
       }
     >
+      {resetParam === 'success' && (
+        <p className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-400">
+          {t('passwordUpdated')}
+        </p>
+      )}
       {verifiedParam === 'true' && (
         <p className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-400">
           {t('emailVerified')}

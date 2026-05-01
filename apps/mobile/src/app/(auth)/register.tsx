@@ -65,13 +65,8 @@ export default function RegisterScreen() {
     try {
       await authApi.register(email.trim(), password);
       setSent(true);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('already') || msg.includes('exists') || msg.includes('duplicate')) {
-        setError(tAuth('emailAlreadyExists'));
-      } else {
-        setError(tAuth('error'));
-      }
+    } catch {
+      setError(tAuth('error'));
     } finally {
       setLoading(false);
     }

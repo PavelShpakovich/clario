@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withApiHandler } from '@/lib/api/handler';
 import { clearEmailVerificationTokensForUser } from '@/lib/auth/email-verification';
 import { ValidationError } from '@/lib/errors';
+import { logger } from '@/lib/logger';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 /**
@@ -39,6 +40,20 @@ export const POST = withApiHandler(async (req) => {
     if (updateError) {
       throw new ValidationError({ message: 'Failed to confirm email' });
     }
+  }
+
+  // Revoke any other active sessions while keeping the recovery session alive
+  // long enough for the client to clean up its local state explicitly.
+  const { error: revokeOtherSessionsError } = await supabaseAdmin.auth.admin.signOut(
+    accessToken,
+    'others',
+  );
+
+  if (revokeOtherSessionsError) {
+    logger.warn(
+      { error: revokeOtherSessionsError, userId },
+      'Failed to revoke other sessions after password reset',
+    );
   }
 
   await clearEmailVerificationTokensForUser(userId);

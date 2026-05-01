@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { authApi } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { AuthBackground } from '@/components/AuthBackground';
@@ -52,8 +53,23 @@ export default function SetPasswordScreen() {
       return;
     }
 
+    const {
+      data: { session: recoverySession },
+    } = await supabase.auth.getSession();
+
+    if (recoverySession?.access_token) {
+      try {
+        await authApi.confirmPasswordReset(recoverySession.access_token);
+      } catch {
+        setError(tAuth('error'));
+        return;
+      }
+    }
+
+    await supabase.auth.signOut({ scope: 'local' });
+
     setDone(true);
-    setTimeout(() => router.replace('/(tabs)'), 1500);
+    setTimeout(() => router.replace('/(auth)/login?reset=success'), 1500);
   }
 
   return (

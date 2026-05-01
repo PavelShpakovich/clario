@@ -42,8 +42,9 @@ export const POST = withApiHandler(async (req) => {
   const existingUser = await findAuthUserByEmail(email);
   if (existingUser) {
     if (existingUser.emailConfirmedAt) {
-      // Confirmed account already exists — tell the client to sign in instead.
-      throw new ValidationError({ message: 'An account with this email already exists' });
+      // Return the same public response as the unconfirmed/new-user cases so
+      // callers cannot use registration to enumerate confirmed accounts.
+      return NextResponse.json({ success: true, needsVerification: true });
     }
     // Unconfirmed account exists — resend the verification email and let the
     // client show the "check your inbox" state again.

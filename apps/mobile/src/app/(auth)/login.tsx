@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { profileApi } from '@clario/api-client';
+import { authApi, profileApi } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { AuthBackground } from '@/components/AuthBackground';
@@ -21,11 +21,13 @@ export default function LoginScreen() {
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const { verified } = useLocalSearchParams<{ verified?: string }>();
+  const { verified, reset } = useLocalSearchParams<{ verified?: string; reset?: string }>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showResend, setShowResend] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const tCommon = useTranslations('common');
   const tAuth = useTranslations('auth');
@@ -43,6 +45,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     setError(null);
+    setShowResend(false);
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
@@ -51,7 +54,11 @@ export default function LoginScreen() {
 
     if (signInError) {
       setLoading(false);
-      if (signInError.status === 400) {
+      const message = signInError.message.toLowerCase();
+      if (message.includes('email not confirmed') || message.includes('email_not_confirmed')) {
+        setError(tAuth('emailNotVerified'));
+        setShowResend(true);
+      } else if (signInError.status === 400) {
         setError(tAuth('invalidCredentials'));
       } else {
         setError(tAuth('error'));
@@ -64,6 +71,25 @@ export default function LoginScreen() {
       router.replace('/onboarding');
     } else {
       router.replace('/(tabs)');
+    }
+  }
+
+  async function handleResendVerification() {
+    if (!email.trim()) {
+      setError(tValidation('emailRequired'));
+      return;
+    }
+
+    try {
+      setResending(true);
+      await authApi.resendVerificationEmail(email.trim());
+      setShowResend(false);
+      setError(null);
+      router.replace('/(auth)/login?verified=true');
+    } catch {
+      setError(tAuth('error'));
+    } finally {
+      setResending(false);
     }
   }
 
@@ -118,6 +144,12 @@ export default function LoginScreen() {
             </View>
 
             {/* Verified banner */}
+            {reset === 'success' ? (
+              <View style={styles.successBanner}>
+                <Text style={styles.successBannerText}>{tAuth('passwordUpdated')}</Text>
+              </View>
+            ) : null}
+
             {verified === 'true' ? (
               <View style={styles.successBanner}>
                 <Text style={styles.successBannerText}>{tAuth('emailVerified')}</Text>
@@ -147,6 +179,18 @@ export default function LoginScreen() {
                 <Text style={styles.buttonText}>{tAuth('signIn')}</Text>
               )}
             </TouchableOpacity>
+
+            {showResend ? (
+              <TouchableOpacity
+                style={[styles.secondaryButton, resending && styles.buttonDisabled]}
+                onPress={handleResendVerification}
+                disabled={resending}
+              >
+                <Text style={styles.secondaryButtonText}>
+                  {resending ? tAuth('sending') : tAuth('resendVerification')}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
 
             {/* Forgot password */}
             <TouchableOpacity
@@ -279,11 +323,26 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       justifyContent: 'center',
       marginTop: 4,
     },
+    secondaryButton: {
+      borderRadius: 8,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
     buttonDisabled: {
       opacity: 0.5,
     },
     buttonText: {
       color: colors.primaryForeground,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    secondaryButtonText: {
+      color: colors.foreground,
       fontSize: 15,
       fontWeight: '600',
     },

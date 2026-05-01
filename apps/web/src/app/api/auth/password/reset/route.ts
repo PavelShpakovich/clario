@@ -10,6 +10,7 @@ import {
   RESET_PASSWORD_SUBJECT,
 } from '@/lib/email/templates/reset-password';
 import { logger } from '@/lib/logger';
+import { checkRateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -17,6 +18,12 @@ const bodySchema = z.object({
 });
 
 export const POST = withApiHandler(async (req) => {
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`password-reset:${ip}`, 5, 60 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json({ success: true }, { headers: rateLimitHeaders(rl) });
+  }
+
   const body = bodySchema.safeParse(await req.json());
   if (!body.success) {
     throw new ValidationError({
@@ -57,5 +64,5 @@ export const POST = withApiHandler(async (req) => {
     html: renderResetPasswordHtml({ resetUrl: bounceUrl }),
   });
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true }, { headers: rateLimitHeaders(rl) });
 });
