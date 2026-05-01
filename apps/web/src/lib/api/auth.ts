@@ -19,7 +19,7 @@ export async function requireAuth() {
       data: { user },
       error,
     } = await supabaseAdmin.auth.getUser(token);
-if (user) return { user, supabase: supabaseAdmin };
+    if (user) return { user, supabase: supabaseAdmin };
     throw new AuthError({ message: 'Invalid token', cause: error ?? undefined });
   }
 
@@ -79,9 +79,17 @@ export async function requireAdmin(): Promise<{
 }> {
   const { user } = await requireAuth();
 
-  if (!isAdminUser(user)) {
-    throw new ForbiddenError({ message: 'Admin access required' });
-  }
+  if (isAdminUser(user)) return { user };
 
-  return { user };
+  // For Supabase Bearer token users, isAdminUser() can't check the DB is_admin
+  // column (it's sync and only has the auth user object). Fall back to a DB check.
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.is_admin) return { user };
+
+  throw new ForbiddenError({ message: 'Admin access required' });
 }
