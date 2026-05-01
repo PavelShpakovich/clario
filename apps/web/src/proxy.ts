@@ -14,10 +14,17 @@ const PUBLIC_PAGES = [
   '/forgot-password',
   '/set-password',
   '/auth/callback',
+  '/auth/reset-confirm',
 ];
 
 // Pages allowed when NEXT_PUBLIC_MOBILE_ONLY=true
-const MOBILE_ONLY_ALLOWED_PAGES = ['/', '/privacy', '/terms', '/auth/callback'];
+const MOBILE_ONLY_ALLOWED_PAGES = [
+  '/',
+  '/privacy',
+  '/terms',
+  '/auth/callback',
+  '/auth/reset-confirm',
+];
 
 // Hardcoded: restrict web to mobile-only allowed pages.
 // Set to false to re-enable all pages.

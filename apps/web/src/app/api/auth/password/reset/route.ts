@@ -44,10 +44,17 @@ export const POST = withApiHandler(async (req) => {
     return NextResponse.json({ success: true });
   }
 
+  // Wrap the Supabase one-time verify URL in a bounce page on our domain.
+  // This prevents Microsoft Safe Links from pre-fetching the Supabase endpoint
+  // (which would consume the token before the user clicks), causing otp_expired.
+  // The bounce page uses only JS to navigate — no plain <a href> to Supabase.
+  const encodedLink = Buffer.from(data.properties.action_link).toString('base64url');
+  const bounceUrl = `${env.NEXT_PUBLIC_APP_URL}/auth/reset-confirm?u=${encodedLink}`;
+
   await sendEmail({
     to: email,
     subject: RESET_PASSWORD_SUBJECT,
-    html: renderResetPasswordHtml({ resetUrl: data.properties.action_link }),
+    html: renderResetPasswordHtml({ resetUrl: bounceUrl }),
   });
 
   return NextResponse.json({ success: true });
