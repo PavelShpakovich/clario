@@ -16,7 +16,7 @@ const lightColors = {
   background: '#FAFAFA', // --background
   card: '#FFFFFF', // --card
   muted: '#F1F2F6', // --muted (muted bg)
-  skeleton: '#EDEEF3', // skeleton placeholder (subtle)
+  skeleton: '#EEEEF1', // muted-foreground/8 on light bg — matches web
 
   // Text
   foreground: '#0F1729', // --foreground (primary text)
@@ -60,7 +60,7 @@ const darkColors: ColorScheme = {
   background: '#0D1117',
   card: '#161B22',
   muted: '#21262D',
-  skeleton: 'rgba(255,255,255,0.07)', // subtle on dark bg
+  skeleton: '#1C1E25', // muted-foreground/8 on dark bg — matches web
 
   // Text
   foreground: '#E6EDF3',

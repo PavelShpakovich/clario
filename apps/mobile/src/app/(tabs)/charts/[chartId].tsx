@@ -1,13 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Modal,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { goBack } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +13,59 @@ import { colors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChartWheel } from '@/components/ChartWheel';
 import type { WheelPosition, WheelAspect } from '@/components/ChartWheel';
+import { Skeleton } from '@/components/Skeleton';
+
+function ChartDetailSkeleton() {
+  const insets = useSafeAreaInsets();
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+    >
+      {/* Nav row */}
+      <View style={styles.navRow}>
+        <Skeleton width={90} height={14} />
+        <Skeleton width={70} height={14} />
+      </View>
+      {/* Hero card */}
+      <View style={[styles.heroCard, { gap: 12 }]}>
+        <View style={{ flexDirection: 'row', gap: 14, alignItems: 'flex-start' }}>
+          <Skeleton width={56} height={56} borderRadius={28} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <Skeleton width={'60%'} height={16} />
+            <Skeleton width={'40%'} height={12} />
+            <Skeleton width={80} height={12} />
+            <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+              <Skeleton width={72} height={22} borderRadius={11} />
+              <Skeleton width={72} height={22} borderRadius={11} />
+              <Skeleton width={72} height={22} borderRadius={11} />
+            </View>
+          </View>
+        </View>
+        <Skeleton width={'100%'} height={1} />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+          <Skeleton width={60} height={30} borderRadius={8} />
+          <Skeleton width={60} height={30} borderRadius={8} />
+          <Skeleton width={60} height={30} borderRadius={8} />
+        </View>
+      </View>
+      {/* Wheel placeholder */}
+      <Skeleton width={'100%'} height={300} borderRadius={12} />
+      {/* Section cards */}
+      {[1, 2, 3].map((i) => (
+        <View key={i} style={[styles.heroCard, { gap: 10 }]}>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <Skeleton width={16} height={16} borderRadius={4} />
+            <Skeleton width={120} height={14} />
+          </View>
+          <Skeleton width={'90%'} height={12} />
+          <Skeleton width={'75%'} height={12} />
+          <Skeleton width={'80%'} height={12} />
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
 
 // ── Translation map references ────────────────────────────────────────────────
 const signLabels = messages.chartDetail.signs as Record<string, string>;
@@ -322,11 +367,7 @@ export default function ChartDetailScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <ChartDetailSkeleton />;
   }
 
   if (!detail) {
