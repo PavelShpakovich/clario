@@ -121,6 +121,42 @@ describe('getCreditCosts', () => {
     expect(costs.natal_report).toBe(8);
     expect(mockFrom).toHaveBeenCalledTimes(2);
   });
+
+  it('re-fetches shortly after the costs cache TTL expires', async () => {
+    const originalNow = Date.now;
+
+    try {
+      let now = 1_000;
+      Date.now = jest.fn(() => now);
+
+      mockFrom.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        not: jest.fn().mockResolvedValue({
+          data: [{ kind: 'natal_report', credit_cost: 4 }],
+          error: null,
+        }),
+      });
+
+      const first = await getCreditCosts();
+
+      now += 11_000;
+      mockFrom.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        not: jest.fn().mockResolvedValue({
+          data: [{ kind: 'natal_report', credit_cost: 9 }],
+          error: null,
+        }),
+      });
+
+      const second = await getCreditCosts();
+
+      expect(first.natal_report).toBe(4);
+      expect(second.natal_report).toBe(9);
+      expect(mockFrom).toHaveBeenCalledTimes(2);
+    } finally {
+      Date.now = originalNow;
+    }
+  });
 });
 
 // ── getCreditPacks ─────────────────────────────────────────────────────────
@@ -157,6 +193,54 @@ describe('getCreditPacks', () => {
     expect(packs[0].credits).toBe(3);
     expect(packs[0].priceminor).toBeNull();
     expect(packs[1].priceminor).toBe(1990);
+  });
+
+  it('re-fetches shortly after the pack cache TTL expires', async () => {
+    const originalNow = Date.now;
+
+    try {
+      let now = 1_000;
+      Date.now = jest.fn(() => now);
+
+      mockFrom.mockReturnValueOnce(
+        makeSelectMock([
+          {
+            id: 'starter',
+            name: 'Starter',
+            credits: 3,
+            price_minor: null,
+            currency: 'BYN',
+            active: true,
+            sort_order: 1,
+          },
+        ]),
+      );
+
+      const first = await getCreditPacks();
+
+      now += 6_000;
+      mockFrom.mockReturnValueOnce(
+        makeSelectMock([
+          {
+            id: 'starter',
+            name: 'Starter',
+            credits: 8,
+            price_minor: null,
+            currency: 'BYN',
+            active: true,
+            sort_order: 1,
+          },
+        ]),
+      );
+
+      const second = await getCreditPacks();
+
+      expect(first[0].credits).toBe(3);
+      expect(second[0].credits).toBe(8);
+      expect(mockFrom).toHaveBeenCalledTimes(2);
+    } finally {
+      Date.now = originalNow;
+    }
   });
 
   it('returns empty array on DB error', async () => {

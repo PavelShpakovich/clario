@@ -40,9 +40,15 @@ interface CacheEntry<T> {
 }
 
 const CACHE_TTL_MS = 60_000; // 60 seconds
+// Product costs can change from the admin panel and should propagate quickly
+// across warmed server instances used by store, unlock, and access checks.
+const CREDIT_COSTS_CACHE_TTL_MS = 10_000; // 10 seconds
 // Free-product flag can change any time via the admin panel.
 // Short TTL ensures all server instances see the change quickly.
 const FREE_PRODUCTS_CACHE_TTL_MS = 10_000; // 10 seconds
+// Pack visibility can also change via the admin panel and should appear in
+// the store almost immediately across warmed server instances.
+const CREDIT_PACKS_CACHE_TTL_MS = 5_000; // 5 seconds
 
 let creditCostsCache: CacheEntry<CreditCosts> | null = null;
 let freeProductsCache: CacheEntry<FreeProducts> | null = null;
@@ -85,7 +91,7 @@ export async function getCreditCosts(): Promise<CreditCosts> {
       }
     }
 
-    creditCostsCache = { data: costs, expiresAt: Date.now() + CACHE_TTL_MS };
+    creditCostsCache = { data: costs, expiresAt: Date.now() + CREDIT_COSTS_CACHE_TTL_MS };
     return costs;
   } catch (err) {
     logger.error({ error: err }, 'Failed to load credit costs from DB, using fallback');
@@ -153,7 +159,7 @@ export async function getCreditPacks(): Promise<CreditPack[]> {
       sortOrder: row.sort_order,
     }));
 
-    creditPacksCache = { data: packs, expiresAt: Date.now() + CACHE_TTL_MS };
+    creditPacksCache = { data: packs, expiresAt: Date.now() + CREDIT_PACKS_CACHE_TTL_MS };
     return packs;
   } catch (err) {
     logger.error({ error: err }, 'Failed to load credit packs from DB');
