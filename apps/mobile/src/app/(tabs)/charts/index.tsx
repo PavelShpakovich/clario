@@ -10,6 +10,7 @@ import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
+import { SwipeToDeleteRow } from '@/components/SwipeToDeleteRow';
 
 const subjectTypeLabelsMap = messages.workspace.subjectTypes as Record<string, string>;
 const signsMap = messages.chartDetail.signs as Record<string, string>;
@@ -214,69 +215,70 @@ export default function ChartsListScreen() {
                 : item.birth_date;
 
             return (
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => router.push(`/(tabs)/charts/${item.id}`)}
-                onLongPress={() => confirmDelete(item)}
-              >
-                {/* Element accent bar */}
-                <View style={[styles.cardAccent, { backgroundColor: elementColors.text }]} />
+              <SwipeToDeleteRow onDeletePress={() => confirmDelete(item)}>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => router.push(`/(tabs)/charts/${item.id}`)}
+                >
+                  {/* Element accent bar */}
+                  <View style={[styles.cardAccent, { backgroundColor: elementColors.text }]} />
 
-                <View style={styles.cardBody}>
-                  {/* Avatar */}
-                  <View style={[styles.avatar, { backgroundColor: elementColors.bg }]}>
-                    <Text style={[styles.avatarText, { color: elementColors.text }]}>
-                      {initial}
-                    </Text>
-                  </View>
-
-                  {/* Info */}
-                  <View style={styles.cardInfo}>
-                    <View style={styles.cardHeaderRow}>
-                      <Text style={styles.cardLabel} numberOfLines={1}>
-                        {item.label}
+                  <View style={styles.cardBody}>
+                    {/* Avatar */}
+                    <View style={[styles.avatar, { backgroundColor: elementColors.bg }]}>
+                      <Text style={[styles.avatarText, { color: elementColors.text }]}>
+                        {initial}
                       </Text>
-                      <View style={[styles.typeBadge, { backgroundColor: elementColors.bg }]}>
-                        <Text style={[styles.typeBadgeText, { color: elementColors.text }]}>
-                          {subjectTypeLabels[item.subject_type] ?? item.subject_type}
-                        </Text>
-                      </View>
                     </View>
-                    <Text style={styles.cardSub}>{item.person_name}</Text>
-                    <Text style={styles.cardSub}>
-                      {birthTimeLine}
-                      {item.city ? ` · ${item.city}` : ''}
-                    </Text>
 
-                    {/* Big Three badges */}
-                    {bigThree && (bigThree.sun || bigThree.moon || bigThree.asc) && (
-                      <View style={styles.bigThreeRow}>
-                        {bigThree.sun && (
-                          <View style={[styles.bigThreeBadge, styles.sunBadge]}>
-                            <Text style={[styles.bigThreeText, styles.sunText]}>
-                              {'☉ ' + (signsMap[bigThree.sun] ?? bigThree.sun)}
-                            </Text>
-                          </View>
-                        )}
-                        {bigThree.moon && (
-                          <View style={[styles.bigThreeBadge, styles.moonBadge]}>
-                            <Text style={[styles.bigThreeText, styles.moonText]}>
-                              {'☽ ' + (signsMap[bigThree.moon] ?? bigThree.moon)}
-                            </Text>
-                          </View>
-                        )}
-                        {bigThree.asc && (
-                          <View style={[styles.bigThreeBadge, styles.ascBadge]}>
-                            <Text style={[styles.bigThreeText, styles.ascText]}>
-                              {'↑ ' + (signsMap[bigThree.asc] ?? bigThree.asc)}
-                            </Text>
-                          </View>
-                        )}
+                    {/* Info */}
+                    <View style={styles.cardInfo}>
+                      <View style={styles.cardHeaderRow}>
+                        <Text style={styles.cardLabel} numberOfLines={1}>
+                          {item.label}
+                        </Text>
+                        <View style={[styles.typeBadge, { backgroundColor: elementColors.bg }]}>
+                          <Text style={[styles.typeBadgeText, { color: elementColors.text }]}>
+                            {subjectTypeLabels[item.subject_type] ?? item.subject_type}
+                          </Text>
+                        </View>
                       </View>
-                    )}
+                      <Text style={styles.cardSub}>{item.person_name}</Text>
+                      <Text style={styles.cardSub}>
+                        {birthTimeLine}
+                        {item.city ? ` · ${item.city}` : ''}
+                      </Text>
+
+                      {/* Big Three badges */}
+                      {bigThree && (bigThree.sun || bigThree.moon || bigThree.asc) && (
+                        <View style={styles.bigThreeRow}>
+                          {bigThree.sun && (
+                            <View style={[styles.bigThreeBadge, styles.sunBadge]}>
+                              <Text style={[styles.bigThreeText, styles.sunText]}>
+                                {'☉ ' + (signsMap[bigThree.sun] ?? bigThree.sun)}
+                              </Text>
+                            </View>
+                          )}
+                          {bigThree.moon && (
+                            <View style={[styles.bigThreeBadge, styles.moonBadge]}>
+                              <Text style={[styles.bigThreeText, styles.moonText]}>
+                                {'☽ ' + (signsMap[bigThree.moon] ?? bigThree.moon)}
+                              </Text>
+                            </View>
+                          )}
+                          {bigThree.asc && (
+                            <View style={[styles.bigThreeBadge, styles.ascBadge]}>
+                              <Text style={[styles.bigThreeText, styles.ascText]}>
+                                {'↑ ' + (signsMap[bigThree.asc] ?? bigThree.asc)}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </SwipeToDeleteRow>
             );
           }}
         />

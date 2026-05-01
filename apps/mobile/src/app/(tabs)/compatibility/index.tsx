@@ -17,6 +17,7 @@ import { toast } from '@/lib/toast';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
+import { SwipeToDeleteRow } from '@/components/SwipeToDeleteRow';
 
 function CompatibilityListSkeleton() {
   const colors = useColors();
@@ -209,54 +210,49 @@ export default function CompatibilityListScreen() {
               : (item.title ?? tCompat('synastryLabel'));
 
           return (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => router.push(`/(tabs)/compatibility/${item.id}`)}
-              activeOpacity={0.75}
-            >
-              {/* Type row */}
-              <View style={styles.cardTypeRow}>
-                <Ionicons name={typeIcon} size={12} color={colors.primary} />
-                <Text style={styles.cardTypeLabel}>
-                  {tCompat(`type_${compatType}` as Parameters<typeof tCompat>[0])}
-                </Text>
-              </View>
-
-              {/* Title */}
-              <Text style={styles.cardTitle} numberOfLines={1}>
-                {cardTitle}
-              </Text>
-
-              {/* Summary */}
-              {item.rendered_content_json?.summary ? (
-                <Text style={styles.cardSummary} numberOfLines={2}>
-                  {item.rendered_content_json.summary}
-                </Text>
-              ) : null}
-
-              {/* Footer: status + date + delete */}
-              <View style={styles.cardFooter}>
-                <View style={styles.cardFooterLeft}>
-                  {item.status !== 'ready' ? (
-                    <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                      <Text style={[styles.statusBadgeText, { color: statusStyle.fg }]}>
-                        {getStatusLabel(item.status)}
-                      </Text>
-                    </View>
-                  ) : null}
-                  <Text style={styles.cardDate}>
-                    {new Date(item.created_at).toLocaleDateString('ru-RU')}
+            <SwipeToDeleteRow onDeletePress={() => handleDelete(item)}>
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => router.push(`/(tabs)/compatibility/${item.id}`)}
+                activeOpacity={0.75}
+              >
+                {/* Type row */}
+                <View style={styles.cardTypeRow}>
+                  <Ionicons name={typeIcon} size={12} color={colors.primary} />
+                  <Text style={styles.cardTypeLabel}>
+                    {tCompat(`type_${compatType}` as Parameters<typeof tCompat>[0])}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => handleDelete(item)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
+
+                {/* Title */}
+                <Text style={styles.cardTitle} numberOfLines={1}>
+                  {cardTitle}
+                </Text>
+
+                {/* Summary */}
+                {item.rendered_content_json?.summary ? (
+                  <Text style={styles.cardSummary} numberOfLines={2}>
+                    {item.rendered_content_json.summary}
+                  </Text>
+                ) : null}
+
+                {/* Footer: status + date */}
+                <View style={styles.cardFooter}>
+                  <View style={styles.cardFooterLeft}>
+                    {item.status !== 'ready' ? (
+                      <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                        <Text style={[styles.statusBadgeText, { color: statusStyle.fg }]}>
+                          {getStatusLabel(item.status)}
+                        </Text>
+                      </View>
+                    ) : null}
+                    <Text style={styles.cardDate}>
+                      {new Date(item.created_at).toLocaleDateString('ru-RU')}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </SwipeToDeleteRow>
           );
         }}
       />

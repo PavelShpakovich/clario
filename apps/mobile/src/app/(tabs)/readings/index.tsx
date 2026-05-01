@@ -19,6 +19,7 @@ import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
+import { SwipeToDeleteRow } from '@/components/SwipeToDeleteRow';
 
 function ReadingsListSkeleton() {
   const colors = useColors();
@@ -283,55 +284,49 @@ export default function ReadingsListScreen() {
           renderItem={({ item }) => {
             const statusStyle = getStatusStyle(item.status);
             return (
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => router.push(`/(tabs)/readings/${item.id}`)}
-                onLongPress={() => confirmDelete(item)}
-                activeOpacity={0.75}
-              >
-                {/* Type label row */}
-                <View style={styles.cardTypeRow}>
-                  <Ionicons name="sparkles" size={11} color={colors.primary} />
-                  <Text style={styles.cardTypeLabel}>
-                    {readingTypeLabels[item.reading_type] ?? item.reading_type}
-                  </Text>
-                </View>
-
-                {/* Title */}
-                <Text style={styles.cardTitle}>
-                  {item.title || readingTypeLabels[item.reading_type]}
-                </Text>
-
-                {/* Summary */}
-                {item.summary ? (
-                  <Text style={styles.cardSummary} numberOfLines={2}>
-                    {item.summary}
-                  </Text>
-                ) : null}
-
-                {/* Footer: date + status badge + delete */}
-                <View style={styles.cardFooter}>
-                  <View style={styles.cardFooterLeft}>
-                    {item.status !== 'ready' ? (
-                      <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                        <Text style={[styles.statusBadgeText, { color: statusStyle.fg }]}>
-                          {getStatusLabel(item.status)}
-                        </Text>
-                      </View>
-                    ) : null}
-                    <Text style={styles.cardDate}>
-                      {new Date(item.created_at).toLocaleDateString('ru')}
+              <SwipeToDeleteRow onDeletePress={() => confirmDelete(item)}>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => router.push(`/(tabs)/readings/${item.id}`)}
+                  activeOpacity={0.75}
+                >
+                  {/* Type label row */}
+                  <View style={styles.cardTypeRow}>
+                    <Ionicons name="sparkles" size={11} color={colors.primary} />
+                    <Text style={styles.cardTypeLabel}>
+                      {readingTypeLabels[item.reading_type] ?? item.reading_type}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => confirmDelete(item)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
+
+                  {/* Title */}
+                  <Text style={styles.cardTitle}>
+                    {item.title || readingTypeLabels[item.reading_type]}
+                  </Text>
+
+                  {/* Summary */}
+                  {item.summary ? (
+                    <Text style={styles.cardSummary} numberOfLines={2}>
+                      {item.summary}
+                    </Text>
+                  ) : null}
+
+                  {/* Footer: date + status badge */}
+                  <View style={styles.cardFooter}>
+                    <View style={styles.cardFooterLeft}>
+                      {item.status !== 'ready' ? (
+                        <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                          <Text style={[styles.statusBadgeText, { color: statusStyle.fg }]}>
+                            {getStatusLabel(item.status)}
+                          </Text>
+                        </View>
+                      ) : null}
+                      <Text style={styles.cardDate}>
+                        {new Date(item.created_at).toLocaleDateString('ru')}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </SwipeToDeleteRow>
             );
           }}
         />

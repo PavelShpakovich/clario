@@ -4,6 +4,7 @@ import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import Toast from 'react-native-toast-message';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureApiClient } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { requestNotificationPermissions } from '@/lib/notifications';
@@ -71,28 +72,30 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ThemeProvider>
-      <ErrorBoundary>
-        <ConfirmDialogProvider>
-          <InsufficientCreditsProvider>
-            <View style={{ flex: 1 }}>
-              <OfflineBanner />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: themeColors.background },
-                }}
-              />
-              <StatusBar style={isDark ? 'light' : 'auto'} />
-              {(!authReady || !splashDone) && (
-                <SplashAnimation onDone={() => setSplashDone(true)} />
-              )}
-            </View>
-            <Toast position="bottom" bottomOffset={32} config={toastConfig} />
-          </InsufficientCreditsProvider>
-        </ConfirmDialogProvider>
-      </ErrorBoundary>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <ErrorBoundary>
+          <ConfirmDialogProvider>
+            <InsufficientCreditsProvider>
+              <View style={{ flex: 1 }}>
+                <OfflineBanner />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: themeColors.background },
+                  }}
+                />
+                <StatusBar style={isDark ? 'light' : 'auto'} />
+                {(!authReady || !splashDone) && (
+                  <SplashAnimation onDone={() => setSplashDone(true)} />
+                )}
+              </View>
+              <Toast position="bottom" bottomOffset={32} config={toastConfig} />
+            </InsufficientCreditsProvider>
+          </ConfirmDialogProvider>
+        </ErrorBoundary>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
