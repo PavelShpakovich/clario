@@ -332,11 +332,11 @@ function PricingSection() {
                     {isActive ? t('active') : t('inactive')}
                   </Text>
                 </TouchableOpacity>
-                <View style={styles.stepper}>
+                <View style={[styles.stepper, !isActive && { opacity: 0.35 }]}>
                   <TouchableOpacity
                     style={styles.stepperBtn}
                     onPress={() => setCredits(Math.max(1, credits - 1))}
-                    disabled={saving || credits <= 1}
+                    disabled={saving || credits <= 1 || !isActive}
                     hitSlop={6}
                   >
                     <Text style={styles.stepperBtnText}>−</Text>
@@ -345,7 +345,7 @@ function PricingSection() {
                   <TouchableOpacity
                     style={styles.stepperBtn}
                     onPress={() => setCredits(credits + 1)}
-                    disabled={saving}
+                    disabled={saving || !isActive}
                     hitSlop={6}
                   >
                     <Text style={styles.stepperBtnText}>+</Text>
@@ -829,11 +829,7 @@ export default function AdminScreen() {
                   }}
                   disabled={page <= 1}
                 >
-                  <Ionicons
-                    name="chevron-back"
-                    size={18}
-                    color={page > 1 ? colors.foreground : colors.border}
-                  />
+                  <Ionicons name="chevron-back" size={16} color={colors.foreground} />
                 </TouchableOpacity>
                 <Text style={styles.pageLabel}>
                   {page} / {totalPages}
@@ -845,11 +841,7 @@ export default function AdminScreen() {
                   }}
                   disabled={page >= totalPages}
                 >
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={page < totalPages ? colors.foreground : colors.border}
-                  />
+                  <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
                 </TouchableOpacity>
               </View>
             ) : null}
@@ -1014,22 +1006,26 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     pagination: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: 20,
-      paddingVertical: 12,
+      alignSelf: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      overflow: 'hidden',
+      marginVertical: 12,
     },
     pageBtn: {
       width: 36,
       height: 36,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.card,
     },
-    pageBtnDisabled: { opacity: 0.35 },
-    pageLabel: { fontSize: 14, color: colors.foreground, fontWeight: '500' },
+    pageBtnDisabled: { opacity: 0.4 },
+    pageLabel: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.mutedForeground,
+      paddingHorizontal: 10,
+    },
 
     pricingSectionLabel: {
       fontSize: 12,

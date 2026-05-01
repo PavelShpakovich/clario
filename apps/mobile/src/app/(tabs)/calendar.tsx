@@ -14,9 +14,59 @@ import { useTranslations } from '@/lib/i18n';
 import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Skeleton } from '@/components/Skeleton';
 
 const signLabels = messages.chartDetail.signs as Record<string, string>;
 const phaseLabels = (messages.calendar as { phases: Record<string, string> }).phases;
+
+function CalendarSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  // A day card width: (screenWidth - 40 - 6*4) / 7 ≈ use flex
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 8 }]}
+      scrollEnabled={false}
+    >
+      {/* Header row */}
+      <View style={[styles.headerRow, { marginBottom: 16 }]}>
+        <View style={{ flex: 1, gap: 8 }}>
+          <Skeleton width={80} height={11} borderRadius={4} />
+          <Skeleton width={160} height={26} borderRadius={6} />
+          <Skeleton width={'85%'} height={13} borderRadius={6} />
+          <Skeleton width={'65%'} height={13} borderRadius={6} />
+        </View>
+        <Skeleton width={80} height={34} borderRadius={8} style={{ marginTop: 24 }} />
+      </View>
+
+      {/* Legend */}
+      <View style={[styles.legend, { marginBottom: 20 }]}>
+        {[56, 52, 48, 44].map((w, i) => (
+          <Skeleton key={i} width={w} height={14} borderRadius={6} />
+        ))}
+      </View>
+
+      {/* Month sections ×2 */}
+      {[0, 1].map((mi) => (
+        <View key={mi} style={styles.monthSection}>
+          <Skeleton width={100} height={16} borderRadius={6} style={{ marginBottom: 12 }} />
+          <View style={styles.monthGrid}>
+            {Array.from({ length: 28 }).map((_, i) => (
+              <Skeleton
+                key={i}
+                style={[styles.dayCard, { padding: 0 }]}
+                height={72}
+                borderRadius={10}
+              />
+            ))}
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
 
 const PHASE_EMOJI: Record<string, string> = {
   new: '🌑',
@@ -80,11 +130,7 @@ export default function CalendarScreen() {
   }, []);
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <CalendarSkeleton />;
   }
 
   // Group days by month

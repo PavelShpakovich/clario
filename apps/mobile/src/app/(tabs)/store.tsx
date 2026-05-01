@@ -136,21 +136,19 @@ export default function StoreScreen() {
   const tErrors = useTranslations('errors');
   const tNav = useTranslations('navigation');
 
-  // Load static parts (balance, packs, pricing) + first page of history
+  // Load static parts (balance, packs, pricing) — history is loaded separately
   const loadStatic = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     try {
-      const [balanceData, pricingData, packsData, historyData] = await Promise.all([
+      const [balanceData, pricingData, packsData] = await Promise.all([
         creditsApi.getBalance(true),
         creditsApi.getPricing(true),
         creditsApi.getPacks({ noCache: true }),
-        creditsApi.getHistory({ page: 1, pageSize: PAGE_SIZE, noCache: true }),
       ]);
       setBalance(balanceData);
       setPricing(pricingData);
       setPacks(packsData.packs);
-      setHistory(historyData);
-      setPage(1);
+      setPage(1); // always reset to page 1 on (re)focus
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -163,15 +161,16 @@ export default function StoreScreen() {
     }, [loadStatic]),
   );
 
-  // Load only history when page changes (after initial load)
+  // Load history whenever page or balance changes
   useEffect(() => {
-    if (!balance || page === 1) return; // page 1 is already loaded by loadStatic
+    if (!balance) return;
     setHistoryLoading(true);
     creditsApi
       .getHistory({ page, pageSize: PAGE_SIZE, noCache: true })
       .then((data) => setHistory(data))
+      .catch(() => {})
       .finally(() => setHistoryLoading(false));
-  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [page, balance]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRefresh() {
     setRefreshing(true);
@@ -619,10 +618,15 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     pagination: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      overflow: 'hidden',
     },
     pageChevron: {
-      padding: 4,
+      width: 36,
+      height: 36,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -630,10 +634,10 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       opacity: 0.4,
     },
     pageLabel: {
-      fontSize: 13,
+      fontSize: 12,
+      fontWeight: '500',
       color: colors.mutedForeground,
-      minWidth: 50,
-      textAlign: 'center',
+      paddingHorizontal: 10,
     },
     emptyText: {
       fontSize: 14,
