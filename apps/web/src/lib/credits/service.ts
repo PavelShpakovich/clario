@@ -165,6 +165,12 @@ export interface ChargeResult {
   transactionId?: string;
 }
 
+export interface RefundReferenceResult {
+  refunded: boolean;
+  amount: number;
+  transactionId?: string;
+}
+
 /**
  * Unified credit charge for any product.
  * Checks the free-product flag first; if free, skips deduction.
@@ -192,6 +198,96 @@ export async function chargeForProduct(
     free: false,
     newBalance: result.newBalance,
     transactionId: result.transactionId,
+  };
+}
+
+async function hasRefundForReference(
+  userId: string,
+  referenceType: ReferenceType,
+  referenceId: string,
+  refundReason: 'refund_llm_failure' | 'refund_admin',
+): Promise<boolean> {
+  const { data, error } = await db
+    .from('credit_transactions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('reference_type', referenceType)
+    .eq('reference_id', referenceId)
+    .eq('reason', refundReason)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return Boolean(data?.id);
+}
+
+async function getDebitAmountForReference(
+  userId: string,
+  referenceType: ReferenceType,
+  referenceId: string,
+  debitReason: CreditReason,
+): Promise<number | null> {
+  const { data, error } = await db
+    .from('credit_transactions')
+    .select('amount')
+    .eq('user_id', userId)
+    .eq('reference_type', referenceType)
+    .eq('reference_id', referenceId)
+    .eq('reason', debitReason)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  if (!data || typeof data.amount !== 'number' || data.amount >= 0) {
+    return null;
+  }
+
+  return Math.abs(data.amount);
+}
+
+export async function refundReferenceDebitIfEligible(
+  userId: string,
+  referenceType: ReferenceType,
+  referenceId: string,
+  debitReason: CreditReason,
+  refundReason: 'refund_llm_failure' | 'refund_admin',
+): Promise<RefundReferenceResult> {
+  if (await hasRefundForReference(userId, referenceType, referenceId, refundReason)) {
+    logger.info(
+      { userId, referenceType, referenceId, refundReason },
+      'Skipping duplicate refund for reference',
+    );
+    return { refunded: false, amount: 0 };
+  }
+
+  const debitAmount = await getDebitAmountForReference(
+    userId,
+    referenceType,
+    referenceId,
+    debitReason,
+  );
+
+  if (!debitAmount) {
+    logger.info(
+      { userId, referenceType, referenceId, debitReason },
+      'Skipping refund because no matching debit transaction exists',
+    );
+    return { refunded: false, amount: 0 };
+  }
+
+  const refund = await refundCredits(userId, debitAmount, refundReason, {
+    referenceType,
+    referenceId,
+  });
+
+  return {
+    refunded: true,
+    amount: debitAmount,
+    transactionId: refund.transactionId,
   };
 }
 

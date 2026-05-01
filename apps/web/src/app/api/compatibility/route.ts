@@ -31,10 +31,7 @@ export const GET = withApiHandler(async () => {
   const chartIds = [...new Set(reports.flatMap((r) => [r.primary_chart_id, r.secondary_chart_id]))];
   const chartMap: Record<string, string> = {};
   if (chartIds.length > 0) {
-    const { data: charts } = await db
-      .from('charts')
-      .select('id, person_name')
-      .in('id', chartIds);
+    const { data: charts } = await db.from('charts').select('id, person_name').in('id', chartIds);
     for (const c of charts ?? []) chartMap[c.id] = c.person_name;
   }
 
@@ -60,10 +57,18 @@ export const POST = withApiHandler(async (req) => {
     throw new ValidationError({ message: 'Primary and secondary charts must be different' });
   }
 
+  const report = await createPendingCompatibility(
+    user.id,
+    primaryChartId,
+    secondaryChartId,
+    compatibilityType,
+  );
+
   // Charge credits (respects free-product flag)
   try {
-    await chargeForProduct(user.id, 'compatibility_report');
+    await chargeForProduct(user.id, 'compatibility_report', { referenceId: report.id });
   } catch (err) {
+    await db.from('compatibility_reports').delete().eq('id', report.id).eq('user_id', user.id);
     if (err instanceof InsufficientCreditsError) {
       return NextResponse.json(
         {
@@ -76,13 +81,6 @@ export const POST = withApiHandler(async (req) => {
     }
     throw err;
   }
-
-  const report = await createPendingCompatibility(
-    user.id,
-    primaryChartId,
-    secondaryChartId,
-    compatibilityType,
-  );
 
   return NextResponse.json({ report }, { status: 201 });
 });

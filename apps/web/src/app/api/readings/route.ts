@@ -46,12 +46,15 @@ export const POST = withApiHandler(async (req) => {
     });
   }
 
+  const reading = await createPendingReading(user.id, parsed.data);
+
   // Charge credits (skip for retry of failed reading)
   const isRetry = !!parsed.data.replaceReadingId;
   if (!isRetry) {
     try {
-      await chargeForProduct(user.id, 'natal_report');
+      await chargeForProduct(user.id, 'natal_report', { referenceId: reading.id });
     } catch (err) {
+      await db.from('readings').delete().eq('id', reading.id).eq('user_id', user.id);
       if (err instanceof InsufficientCreditsError) {
         return NextResponse.json(
           {
@@ -65,8 +68,6 @@ export const POST = withApiHandler(async (req) => {
       throw err;
     }
   }
-
-  const reading = await createPendingReading(user.id, parsed.data);
 
   // Delete the old failed reading now that the replacement pending record exists
   if (parsed.data.replaceReadingId) {

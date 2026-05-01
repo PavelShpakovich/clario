@@ -17,6 +17,18 @@ function makeQueryMock(resolvedData: unknown) {
   };
 }
 
+function makeOrderedQueryMock(resolvedData: unknown) {
+  mockMaybeSingle.mockResolvedValue({ data: resolvedData, error: null });
+
+  return {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    maybeSingle: mockMaybeSingle,
+  };
+}
+
 jest.mock('@/lib/supabase/admin', () => ({
   supabaseAdmin: {
     from: jest.fn(),
@@ -38,6 +50,7 @@ import {
   addCredits,
   deductCredits,
   refundCredits,
+  refundReferenceDebitIfEligible,
   hasForecastAccess,
   activateForecastAccess,
   chargeForProduct,
@@ -228,6 +241,68 @@ describe('refundCredits', () => {
       }),
     );
     expect(result.newBalance).toBe(5);
+  });
+});
+
+describe('refundReferenceDebitIfEligible', () => {
+  it('refunds the exact amount of the matching debit transaction', async () => {
+    mockFrom
+      .mockReturnValueOnce(makeOrderedQueryMock(null))
+      .mockReturnValueOnce(makeOrderedQueryMock({ amount: -3 }));
+    (supabaseAdmin.rpc as jest.Mock).mockResolvedValue({
+      data: [{ new_balance: 11, transaction_id: 'txn-refund' }],
+      error: null,
+    });
+
+    const result = await refundReferenceDebitIfEligible(
+      'user-1',
+      'compatibility_report',
+      'report-1',
+      'compatibility_debit',
+      'refund_llm_failure',
+    );
+
+    expect(result).toEqual({ refunded: true, amount: 3, transactionId: 'txn-refund' });
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('add_credits', {
+      p_user_id: 'user-1',
+      p_amount: 3,
+      p_reason: 'refund_llm_failure',
+      p_reference_type: 'compatibility_report',
+      p_reference_id: 'report-1',
+      p_note: undefined,
+    });
+  });
+
+  it('skips refund when no matching debit transaction exists', async () => {
+    mockFrom
+      .mockReturnValueOnce(makeOrderedQueryMock(null))
+      .mockReturnValueOnce(makeOrderedQueryMock(null));
+
+    const result = await refundReferenceDebitIfEligible(
+      'user-1',
+      'reading',
+      'reading-1',
+      'reading_debit',
+      'refund_llm_failure',
+    );
+
+    expect(result).toEqual({ refunded: false, amount: 0 });
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
+  });
+
+  it('skips duplicate refunds when a refund transaction already exists', async () => {
+    mockFrom.mockReturnValueOnce(makeOrderedQueryMock({ id: 'existing-refund' }));
+
+    const result = await refundReferenceDebitIfEligible(
+      'user-1',
+      'reading',
+      'reading-1',
+      'reading_debit',
+      'refund_llm_failure',
+    );
+
+    expect(result).toEqual({ refunded: false, amount: 0 });
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
   });
 });
 

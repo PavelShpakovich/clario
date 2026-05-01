@@ -1,10 +1,9 @@
-import { NotFoundError } from '@/lib/errors';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 import { env } from '@/lib/env';
 import { generateStructuredOutputWithUsage } from '@/lib/llm/structured-generation';
 import { logger } from '@/lib/logger';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { refundCredits } from '@/lib/credits/service';
-import { getCreditCosts } from '@/lib/credits/pricing';
+import { refundReferenceDebitIfEligible } from '@/lib/credits/service';
 import {
   structuredReadingSchema,
   type StructuredReadingOutput,
@@ -292,6 +291,39 @@ function activeModelName() {
   }
 }
 
+async function persistCompatibilityFailureLog(
+  reportId: string,
+  userId: string,
+  errorMessage: string,
+  requestPayload: Json,
+): Promise<void> {
+  const row: TablesInsert<'generation_logs'> = {
+    user_id: userId,
+    entity_type: 'compatibility_report',
+    entity_id: reportId,
+    operation_key: 'compatibility.pipeline.synastry',
+    provider: env.LLM_PROVIDER,
+    model: activeModelName(),
+    request_payload_json: requestPayload,
+    response_payload_json: { status: 'error' } as Json,
+    latency_ms: 0,
+    usage_tokens: null,
+    error_message: errorMessage,
+  };
+
+  await db
+    .from('generation_logs')
+    .insert(row)
+    .then(({ error }) => {
+      if (error) {
+        logger.warn(
+          { error, reportId, errorMessage },
+          'compatibility: failed to persist precondition failure log',
+        );
+      }
+    });
+}
+
 export function serializeChartForSynastry(
   label: string,
   personName: string,
@@ -401,6 +433,36 @@ export async function createPendingCompatibility(
 
   if (!secondary) throw new NotFoundError({ message: 'Secondary chart not found' });
 
+  const [{ data: primarySnapshot }, { data: secondarySnapshot }] = await Promise.all([
+    db
+      .from('chart_snapshots')
+      .select('id')
+      .eq('chart_id', primaryChartId)
+      .order('snapshot_version', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    db
+      .from('chart_snapshots')
+      .select('id')
+      .eq('chart_id', secondaryChartId)
+      .order('snapshot_version', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (!primarySnapshot || !secondarySnapshot) {
+    throw new ValidationError({
+      message: 'Both charts must have generated snapshots before compatibility can be created',
+      context: {
+        compatibilityType,
+        primaryChartId,
+        secondaryChartId,
+        primarySnapshotFound: Boolean(primarySnapshot),
+        secondarySnapshotFound: Boolean(secondarySnapshot),
+      },
+    });
+  }
+
   const config = COMPATIBILITY_CONFIGS[compatibilityType];
 
   const { data: report, error } = await db
@@ -457,6 +519,14 @@ export async function generateCompatibilityContent(
   ]);
 
   if (!primaryChart || !secondaryChart) {
+    const errorMessage = 'Compatibility generation failed: chart lookup missing';
+    logger.warn({ reportId, userId, compatibilityType }, 'compatibility: chart lookup missing');
+    await persistCompatibilityFailureLog(reportId, userId, errorMessage, {
+      compatibilityType,
+      primaryChartId: report.primary_chart_id,
+      secondaryChartId: report.secondary_chart_id,
+      stage: 'chart_lookup',
+    });
     await db.from('compatibility_reports').update({ status: 'error' }).eq('id', reportId);
     return;
   }
@@ -480,6 +550,25 @@ export async function generateCompatibilityContent(
   ]);
 
   if (!primarySnapshot || !secondarySnapshot) {
+    const errorMessage = 'Compatibility generation failed: latest chart snapshot missing';
+    logger.warn(
+      {
+        reportId,
+        userId,
+        compatibilityType,
+        primarySnapshotFound: Boolean(primarySnapshot),
+        secondarySnapshotFound: Boolean(secondarySnapshot),
+      },
+      'compatibility: latest chart snapshot missing for generation',
+    );
+    await persistCompatibilityFailureLog(reportId, userId, errorMessage, {
+      compatibilityType,
+      primaryChartId: report.primary_chart_id,
+      secondaryChartId: report.secondary_chart_id,
+      primarySnapshotFound: Boolean(primarySnapshot),
+      secondarySnapshotFound: Boolean(secondarySnapshot),
+      stage: 'snapshot_lookup',
+    });
     await db.from('compatibility_reports').update({ status: 'error' }).eq('id', reportId);
     return;
   }
@@ -632,13 +721,15 @@ ${crossAspectLines || '  — не найдены'}
   } catch (err) {
     status = 'error';
 
-    // Refund credits on LLM failure
+    // Refund only if this report was actually charged.
     try {
-      const costs = await getCreditCosts();
-      await refundCredits(userId, costs.compatibility_report, 'refund_llm_failure', {
-        referenceType: 'compatibility_report',
-        referenceId: reportId,
-      });
+      await refundReferenceDebitIfEligible(
+        userId,
+        'compatibility_report',
+        reportId,
+        'compatibility_debit',
+        'refund_llm_failure',
+      );
     } catch (refundErr) {
       logger.error(
         { err: refundErr, reportId },

@@ -19,8 +19,7 @@ import {
 } from '@/lib/readings/prompt';
 import type { ReadingCreateInput } from '@/lib/readings/reading-request-schema';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { refundCredits } from '@/lib/credits/service';
-import { getCreditCosts } from '@/lib/credits/pricing';
+import { refundReferenceDebitIfEligible } from '@/lib/credits/service';
 import type { Json, TablesInsert } from '@/lib/supabase/types';
 import type { ZodType } from 'zod';
 
@@ -442,13 +441,15 @@ export async function generateReadingContent(readingId: string, userId: string):
     status = 'error';
     errorMessage = error instanceof Error ? error.message : 'Reading generation failed';
 
-    // Refund credits on LLM failure
+    // Refund only if this reading was actually charged.
     try {
-      const costs = await getCreditCosts();
-      await refundCredits(userId, costs.natal_report, 'refund_llm_failure', {
-        referenceType: 'reading',
-        referenceId: readingId,
-      });
+      await refundReferenceDebitIfEligible(
+        userId,
+        'reading',
+        readingId,
+        'reading_debit',
+        'refund_llm_failure',
+      );
     } catch (refundErr) {
       logger.error(
         { err: refundErr, readingId },

@@ -63,10 +63,8 @@ export default function TabsLayout() {
         }}
       />
       {/* Hidden screens accessible via router.push */}
-      <Tabs.Screen name="horoscope" options={{ href: null }} />
       <Tabs.Screen name="store" options={{ href: null }} />
       <Tabs.Screen name="calendar" options={{ href: null }} />
-      <Tabs.Screen name="admin" options={{ href: null }} />
     </Tabs>
   );
 }
