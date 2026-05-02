@@ -9,10 +9,55 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 const db = supabaseAdmin;
 const uuidSchema = z.string().uuid();
 const UNLOCK_MESSAGE_COUNT = 5;
+const MAX_UNLOCK_RETRIES = 3;
 
 async function getReadingId(ctx: unknown): Promise<string | undefined> {
   const routeContext = ctx as { params?: Promise<{ readingId: string }> } | undefined;
   return routeContext?.params ? (await routeContext.params).readingId : undefined;
+}
+
+async function incrementThreadMessageLimit(
+  threadId: string,
+  startingLimit: number,
+): Promise<number> {
+  let currentLimit = startingLimit;
+
+  for (let attempt = 0; attempt < MAX_UNLOCK_RETRIES; attempt += 1) {
+    const nextLimit = currentLimit + UNLOCK_MESSAGE_COUNT;
+    const { data: updatedThread, error: updateError } = await db
+      .from('follow_up_threads')
+      .update({ message_limit: nextLimit })
+      .eq('id', threadId)
+      .eq('message_limit', currentLimit)
+      .select('message_limit')
+      .maybeSingle<{ message_limit: number }>();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    if (updatedThread) {
+      return updatedThread.message_limit;
+    }
+
+    const { data: latestThread, error: latestError } = await db
+      .from('follow_up_threads')
+      .select('message_limit')
+      .eq('id', threadId)
+      .maybeSingle<{ message_limit: number }>();
+
+    if (latestError) {
+      throw latestError;
+    }
+
+    if (!latestThread) {
+      throw new NotFoundError({ message: 'Chat thread not found' });
+    }
+
+    currentLimit = latestThread.message_limit ?? 5;
+  }
+
+  throw new Error('Failed to update chat thread message limit');
 }
 
 export const POST = withApiHandler(async (_req, ctx) => {
@@ -75,11 +120,7 @@ export const POST = withApiHandler(async (_req, ctx) => {
     throw err;
   }
 
-  // Increase message limit on the thread
-  const currentLimit = thread.message_limit ?? 5;
-  const newLimit = currentLimit + UNLOCK_MESSAGE_COUNT;
-
-  await db.from('follow_up_threads').update({ message_limit: newLimit }).eq('id', thread.id);
+  const newLimit = await incrementThreadMessageLimit(thread.id, thread.message_limit ?? 5);
 
   return NextResponse.json({
     messagesLimit: newLimit,

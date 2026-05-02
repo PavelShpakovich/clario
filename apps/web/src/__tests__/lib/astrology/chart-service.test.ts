@@ -1,6 +1,5 @@
 jest.mock('@/lib/astrology/repository', () => ({
   createChartRecord: jest.fn(),
-  deleteChartSnapshots: jest.fn(),
   getChartWithBirthData: jest.fn(),
   markChartFailed: jest.fn(),
   markOnboardingComplete: jest.fn(),
@@ -12,11 +11,7 @@ jest.mock('@/lib/astrology/engine', () => ({
 }));
 
 import { calculateNatalChart } from '@/lib/astrology/engine';
-import {
-  deleteChartSnapshots,
-  getChartWithBirthData,
-  saveChartSnapshot,
-} from '@/lib/astrology/repository';
+import { getChartWithBirthData, saveChartSnapshot } from '@/lib/astrology/repository';
 import { recalculateChart } from '@/lib/astrology/chart-service';
 
 describe('recalculateChart', () => {
@@ -53,7 +48,6 @@ describe('recalculateChart', () => {
 
     const result = await recalculateChart('chart-1', 'user-123');
 
-    expect(deleteChartSnapshots).toHaveBeenCalledWith('chart-1');
     expect(calculateNatalChart).toHaveBeenCalledWith(
       expect.objectContaining({
         birthDate: '1990-06-21',

@@ -6,7 +6,7 @@ import { sendVerificationEmail } from '@/lib/email/send-verification';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 const bodySchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
   source: z.string().optional(),
 });
 

@@ -3,7 +3,6 @@ import { normalizeHouseSystem } from '@/lib/astrology/constants';
 import { calculateNatalChart } from '@/lib/astrology/engine';
 import {
   createChartRecord,
-  deleteChartSnapshots,
   getChartWithBirthData,
   markChartFailed,
   markOnboardingComplete,
@@ -42,8 +41,6 @@ export async function createChart(userId: string, rawInput: ChartCreateInput) {
 
 export async function recalculateChart(chartId: string, userId: string) {
   const chart = await getChartWithBirthData(chartId, userId);
-
-  await deleteChartSnapshots(chartId);
 
   const computation = await calculateNatalChart({
     label: chart.label,

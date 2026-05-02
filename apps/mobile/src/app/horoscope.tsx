@@ -6,17 +6,19 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { goBackTo, withReturnTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
-import { forecastsApi } from '@clario/api-client';
+import { creditsApi, forecastsApi, ApiClientError } from '@clario/api-client';
 import type { DailyForecastRecord, DailyForecastResponse } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { runToastMutation } from '@/lib/mutation-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
+import { useInsufficientCredits } from '@/lib/insufficient-credits-context';
 
 function HoroscopeSkeleton() {
   const colors = useColors();
@@ -82,13 +84,17 @@ export default function HoroscopeScreen() {
   const [loading, setLoading] = useState(true);
   const [unlocking, setUnlocking] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [forecastCost, setForecastCost] = useState<number | null>(null);
+  const [forecastIsFree, setForecastIsFree] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const tHoro = useTranslations('horoscope');
   const tCommon = useTranslations('common');
+  const tCredits = useTranslations('credits');
   const tWorkspace = useTranslations('workspace');
+  const { showInsufficientCredits } = useInsufficientCredits();
 
   async function loadForecast() {
     try {
@@ -107,6 +113,19 @@ export default function HoroscopeScreen() {
 
   useEffect(() => {
     void loadForecast();
+  }, []);
+
+  useEffect(() => {
+    void creditsApi
+      .getPricing(true)
+      .then((pricing) => {
+        setForecastCost(pricing.costs.forecast_report ?? 0);
+        setForecastIsFree(pricing.freeProducts.includes('forecast_report'));
+      })
+      .catch(() => {
+        setForecastCost(null);
+        setForecastIsFree(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -159,9 +178,28 @@ export default function HoroscopeScreen() {
         action: () => forecastsApi.activateAccess(),
         silentSuccess: true,
         errorMessage: tHoro('unlockForecastFailed'),
+        mapErrorMessage: (error) => {
+          if (
+            error instanceof ApiClientError &&
+            (error.status === 402 || error.code === 'insufficient_credits')
+          ) {
+            return undefined;
+          }
+
+          return tHoro('unlockForecastFailed');
+        },
         toastKey: 'mobile-forecast-unlock',
         onSuccess: async () => {
           await loadForecast();
+        },
+        onError: (error) => {
+          if (
+            error instanceof ApiClientError &&
+            (error.status === 402 || error.code === 'insufficient_credits')
+          ) {
+            const data = error.data as { required?: number; balance?: number } | undefined;
+            showInsufficientCredits({ required: data?.required, balance: data?.balance });
+          }
         },
       });
     } catch {
@@ -169,6 +207,23 @@ export default function HoroscopeScreen() {
     } finally {
       setUnlocking(false);
     }
+  }
+
+  function confirmForecastSpend(onConfirm: () => void) {
+    if (forecastIsFree || !forecastCost || forecastCost <= 0) {
+      onConfirm();
+      return;
+    }
+
+    Alert.alert(
+      tCredits('confirmSpendTitle'),
+      tCredits('confirmSpendDescription', { cost: forecastCost }),
+      [
+        { text: tCommon('cancel'), style: 'cancel' },
+        { text: tCredits('confirm'), onPress: onConfirm },
+      ],
+      { cancelable: true },
+    );
   }
 
   async function handleRegenerate() {
@@ -179,10 +234,29 @@ export default function HoroscopeScreen() {
         action: () => forecastsApi.regenerateForecast(forecast.id),
         silentSuccess: true,
         errorMessage: tHoro('regenerateFailed'),
+        mapErrorMessage: (error) => {
+          if (
+            error instanceof ApiClientError &&
+            (error.status === 402 || error.code === 'insufficient_credits')
+          ) {
+            return undefined;
+          }
+
+          return tHoro('regenerateFailed');
+        },
         toastKey: 'mobile-forecast-regenerate',
         onSuccess: async () => {
           setLoading(true);
           await loadForecast();
+        },
+        onError: (error) => {
+          if (
+            error instanceof ApiClientError &&
+            (error.status === 402 || error.code === 'insufficient_credits')
+          ) {
+            const data = error.data as { required?: number; balance?: number } | undefined;
+            showInsufficientCredits({ required: data?.required, balance: data?.balance });
+          }
         },
       });
     } catch {
@@ -190,6 +264,22 @@ export default function HoroscopeScreen() {
     } finally {
       setRegenerating(false);
     }
+  }
+
+  function handleUnlockPress() {
+    if (unlocking) return;
+
+    confirmForecastSpend(() => {
+      void handleUnlock();
+    });
+  }
+
+  function handleRegeneratePress() {
+    if (regenerating) return;
+
+    confirmForecastSpend(() => {
+      void handleRegenerate();
+    });
   }
 
   if (loading) {
@@ -261,7 +351,7 @@ export default function HoroscopeScreen() {
           <Text style={styles.errorDesc}>{tHoro('generatingErrorDesc')}</Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={handleRegenerate}
+            onPress={handleRegeneratePress}
             disabled={regenerating}
           >
             {regenerating ? (
@@ -307,7 +397,7 @@ export default function HoroscopeScreen() {
         {!fullAccessRequired && (
           <TouchableOpacity
             style={styles.regenerateButton}
-            onPress={handleRegenerate}
+            onPress={handleRegeneratePress}
             disabled={regenerating}
           >
             {regenerating ? (
@@ -360,11 +450,17 @@ export default function HoroscopeScreen() {
         <View style={styles.unlockCta}>
           <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
           <Text style={styles.unlockCtaNote}>{tHoro('previewNote')}</Text>
-          <TouchableOpacity style={styles.unlockButton} onPress={handleUnlock} disabled={unlocking}>
+          <TouchableOpacity
+            style={styles.unlockButton}
+            onPress={handleUnlockPress}
+            disabled={unlocking}
+          >
             {unlocking ? (
               <ActivityIndicator size="small" color={colors.primaryForeground} />
             ) : (
-              <Text style={styles.unlockButtonText}>{tHoro('unlockForecast')}</Text>
+              <Text style={styles.unlockButtonText}>
+                {forecastIsFree ? tHoro('unlockForecastFree') : tHoro('unlockForecast')}
+              </Text>
             )}
           </TouchableOpacity>
         </View>

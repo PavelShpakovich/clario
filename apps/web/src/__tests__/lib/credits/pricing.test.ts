@@ -27,6 +27,7 @@ import {
   getCreditCosts,
   getCreditPacks,
   getAllCreditPacks,
+  getProductPricing,
   invalidatePricingCache,
 } from '@/lib/credits/pricing';
 
@@ -156,6 +157,37 @@ describe('getCreditCosts', () => {
     } finally {
       Date.now = originalNow;
     }
+  });
+});
+
+describe('getProductPricing', () => {
+  it('loads cost and free status from one DB read', async () => {
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockResolvedValue({
+        data: [
+          { kind: 'natal_report', credit_cost: 4, free: true },
+          { kind: 'follow_up_pack', credit_cost: 2, free: false },
+        ],
+        error: null,
+      }),
+    });
+
+    const pricing = await getProductPricing('natal_report');
+
+    expect(pricing).toEqual({ cost: 4, isFree: true });
+  });
+
+  it('uses fallback values when the DB read fails', async () => {
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'connection refused' },
+      }),
+    });
+
+    const pricing = await getProductPricing('compatibility_report');
+
+    expect(pricing).toEqual({ cost: 3, isFree: false });
   });
 });
 

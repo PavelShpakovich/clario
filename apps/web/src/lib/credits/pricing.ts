@@ -46,17 +46,21 @@ const CREDIT_COSTS_CACHE_TTL_MS = 10_000; // 10 seconds
 // Free-product flag can change any time via the admin panel.
 // Short TTL ensures all server instances see the change quickly.
 const FREE_PRODUCTS_CACHE_TTL_MS = 10_000; // 10 seconds
+const PRODUCT_PRICING_CACHE_TTL_MS = 10_000; // 10 seconds
 // Pack visibility can also change via the admin panel and should appear in
 // the store almost immediately across warmed server instances.
 const CREDIT_PACKS_CACHE_TTL_MS = 5_000; // 5 seconds
 
 let creditCostsCache: CacheEntry<CreditCosts> | null = null;
 let freeProductsCache: CacheEntry<FreeProducts> | null = null;
+let productPricingCache: CacheEntry<Record<ProductKind, { cost: number; isFree: boolean }>> | null =
+  null;
 let creditPacksCache: CacheEntry<CreditPack[]> | null = null;
 
 export function invalidatePricingCache(): void {
   creditCostsCache = null;
   freeProductsCache = null;
+  productPricingCache = null;
   creditPacksCache = null;
 }
 
@@ -129,8 +133,41 @@ export async function getFreeProducts(): Promise<FreeProducts> {
 export async function getProductPricing(
   kind: ProductKind,
 ): Promise<{ cost: number; isFree: boolean }> {
-  const [costs, free] = await Promise.all([getCreditCosts(), getFreeProducts()]);
-  return { cost: costs[kind], isFree: free.has(kind) };
+  if (productPricingCache && Date.now() < productPricingCache.expiresAt) {
+    return productPricingCache.data[kind];
+  }
+
+  try {
+    const { data, error } = await db.from('report_products').select('kind, credit_cost, free');
+
+    if (error) throw error;
+
+    const pricing = Object.fromEntries(
+      Object.entries(FALLBACK_COSTS).map(([productKind, cost]) => [
+        productKind,
+        { cost, isFree: false },
+      ]),
+    ) as Record<ProductKind, { cost: number; isFree: boolean }>;
+
+    for (const row of data ?? []) {
+      if (row.kind in pricing) {
+        pricing[row.kind as ProductKind] = {
+          cost: row.credit_cost ?? FALLBACK_COSTS[row.kind as ProductKind],
+          isFree: row.free ?? false,
+        };
+      }
+    }
+
+    productPricingCache = {
+      data: pricing,
+      expiresAt: Date.now() + PRODUCT_PRICING_CACHE_TTL_MS,
+    };
+
+    return pricing[kind];
+  } catch (err) {
+    logger.error({ error: err, kind }, 'Failed to load product pricing from DB');
+    return { cost: FALLBACK_COSTS[kind], isFree: false };
+  }
 }
 
 // ─── Credit packs from DB ───────────────────────────────────────────────────

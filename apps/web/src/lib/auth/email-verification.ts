@@ -66,21 +66,23 @@ export async function consumeEmailVerificationToken(token: string): Promise<{
   email: string;
 } | null> {
   const now = new Date().toISOString();
+  const tokenHash = sha256(token);
 
-  const row = await findEmailVerificationToken(token);
-
-  if (!row || row.consumed_at || row.expires_at <= now) {
-    return null;
-  }
-
-  const { error: consumeError } = await supabaseAdmin
+  const { data: row, error: consumeError } = await supabaseAdmin
     .from('email_verification_tokens')
     .update({ consumed_at: now })
-    .eq('id', row.id)
-    .is('consumed_at', null);
+    .eq('token_hash', tokenHash)
+    .is('consumed_at', null)
+    .gt('expires_at', now)
+    .select('user_id, email')
+    .maybeSingle<{ user_id: string; email: string }>();
 
   if (consumeError) {
     throw consumeError;
+  }
+
+  if (!row) {
+    return null;
   }
 
   return {

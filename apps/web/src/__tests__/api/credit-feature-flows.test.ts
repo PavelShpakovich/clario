@@ -257,7 +257,13 @@ describe('POST /api/chat/[readingId]/unlock', () => {
   });
 
   it('charges follow-up credits by thread id and increases the message limit', async () => {
-    const updateEq = jest.fn().mockResolvedValue({ error: null });
+    const maybeSingle = jest.fn().mockResolvedValue({
+      data: { message_limit: 15 },
+      error: null,
+    });
+    const selectAfterUpdate = jest.fn().mockReturnValue({ maybeSingle });
+    const secondEq = jest.fn().mockReturnValue({ select: selectAfterUpdate });
+    const firstEq = jest.fn().mockReturnValue({ eq: secondEq });
     mockFrom.mockImplementation((table: string) => {
       if (table === 'readings') {
         return {
@@ -281,8 +287,9 @@ describe('POST /api/chat/[readingId]/unlock', () => {
             }),
           }),
           update: jest.fn().mockReturnValue({
-            eq: updateEq,
+            eq: firstEq,
           }),
+          select: jest.fn(),
         };
       }
 
@@ -301,11 +308,12 @@ describe('POST /api/chat/[readingId]/unlock', () => {
     expect(chargeForProduct).toHaveBeenCalledWith('user-123', 'follow_up_pack', {
       referenceId: 'thread-1',
     });
-    expect(updateEq).toHaveBeenCalledWith('id', 'thread-1');
+    expect(firstEq).toHaveBeenCalledWith('id', 'thread-1');
+    expect(secondEq).toHaveBeenCalledWith('message_limit', 10);
   });
 
   it('returns 402 and does not update the thread when follow-up credits are insufficient', async () => {
-    const updateEq = jest.fn().mockResolvedValue({ error: null });
+    const firstEq = jest.fn();
     mockFrom.mockImplementation((table: string) => {
       if (table === 'readings') {
         return {
@@ -329,7 +337,7 @@ describe('POST /api/chat/[readingId]/unlock', () => {
             }),
           }),
           update: jest.fn().mockReturnValue({
-            eq: updateEq,
+            eq: firstEq,
           }),
         };
       }
@@ -351,7 +359,69 @@ describe('POST /api/chat/[readingId]/unlock', () => {
 
     expect(res.status).toBe(402);
     expect(body).toEqual({ error: 'insufficient_credits', required: 1, balance: 0 });
-    expect(updateEq).not.toHaveBeenCalled();
+    expect(firstEq).not.toHaveBeenCalled();
+  });
+
+  it('retries the thread update when a concurrent unlock changes the current limit', async () => {
+    const updatedMaybeSingle = jest
+      .fn()
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: { message_limit: 20 }, error: null });
+    const selectAfterUpdate = jest.fn().mockReturnValue({ maybeSingle: updatedMaybeSingle });
+    const updateEqSecond = jest.fn().mockReturnValue({ select: selectAfterUpdate });
+    const updateEqFirst = jest.fn().mockReturnValue({ eq: updateEqSecond });
+
+    const latestMaybeSingle = jest
+      .fn()
+      .mockResolvedValue({ data: { message_limit: 15 }, error: null });
+    const latestEq = jest.fn().mockReturnValue({ maybeSingle: latestMaybeSingle });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'readings') {
+        return {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { id: 'reading-1', chart_id: 'chart-1', title: 'Reading title' },
+            error: null,
+          }),
+        };
+      }
+
+      if (table === 'follow_up_threads') {
+        return {
+          upsert: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnValue({
+              single: jest.fn().mockResolvedValue({
+                data: { id: 'thread-1', message_limit: 10 },
+                error: null,
+              }),
+            }),
+          }),
+          update: jest.fn().mockReturnValue({
+            eq: updateEqFirst,
+          }),
+          select: jest.fn().mockReturnValue({
+            eq: latestEq,
+          }),
+        };
+      }
+
+      throw new Error(`Unexpected table: ${table}`);
+    });
+    (chargeForProduct as jest.Mock).mockResolvedValue({ newBalance: 4, free: false });
+
+    const res = await handler(
+      { method: 'POST' },
+      routeParams({ readingId: '550e8400-e29b-41d4-a716-446655440000' }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ messagesLimit: 20, addedMessages: 5, newBalance: 4 });
+    expect(updateEqSecond).toHaveBeenNthCalledWith(1, 'message_limit', 10);
+    expect(latestEq).toHaveBeenCalledWith('id', 'thread-1');
+    expect(updateEqSecond).toHaveBeenNthCalledWith(2, 'message_limit', 15);
   });
 });
 
@@ -423,5 +493,25 @@ describe('POST /api/forecasts/[forecastId]/regenerate', () => {
       '550e8400-e29b-41d4-a716-446655440000',
       'user-123',
     );
+  });
+
+  it('returns 402 and does not clear content when regeneration credits are insufficient', async () => {
+    (hasForecastAccess as jest.Mock).mockResolvedValue(true);
+    (chargeForProduct as jest.Mock).mockRejectedValue(
+      new InsufficientCreditsError({
+        message: 'Not enough credits',
+        context: { balance: 1, required: 2 },
+      }),
+    );
+
+    const res = await handler(
+      { method: 'POST' },
+      routeParams({ forecastId: '550e8400-e29b-41d4-a716-446655440000' }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(402);
+    expect(body).toEqual({ error: 'insufficient_credits', required: 2, balance: 1 });
+    expect(clearDailyForecastContent).not.toHaveBeenCalled();
   });
 });
