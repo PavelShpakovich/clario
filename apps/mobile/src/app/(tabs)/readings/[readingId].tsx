@@ -269,18 +269,7 @@ export default function ReadingDetailScreen() {
   const isGenerating = status === 'pending' || status === 'generating';
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      {/* Back */}
+    <View style={styles.container}>
       <TouchableOpacity
         style={[styles.backButton, { marginTop: insets.top + 8 }]}
         onPress={() => goBackTo(returnTo, '/(tabs)/readings')}
@@ -289,7 +278,6 @@ export default function ReadingDetailScreen() {
         <Text style={styles.backText}>{tDetail('backToReadings')}</Text>
       </TouchableOpacity>
 
-      {/* Title block: type + title + date + status badge */}
       <View style={styles.titleBlock}>
         <Text style={styles.typeLabel}>
           {readingTypeLabels[reading.reading_type] ?? reading.reading_type}
@@ -329,186 +317,198 @@ export default function ReadingDetailScreen() {
         </View>
       </View>
 
-      {/* Action buttons */}
-      <View style={styles.actionsRow}>
-        {/* View Chart — always shown */}
-        {reading.chart_id ? (
-          <TouchableOpacity
-            style={styles.outlineButton}
-            onPress={() =>
-              router.push(
-                withReturnTo(
-                  `/(tabs)/charts/${reading.chart_id}`,
-                  `/(tabs)/readings/${readingId}`,
-                ) as never,
-              )
-            }
-          >
-            <Ionicons name="planet-outline" size={15} color={colors.primary} />
-            <Text style={styles.outlineButtonText}>{tDetail('viewChart')}</Text>
-          </TouchableOpacity>
-        ) : null}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {/* Action buttons */}
+        <View style={styles.actionsRow}>
+          {/* View Chart — always shown */}
+          {reading.chart_id ? (
+            <TouchableOpacity
+              style={styles.outlineButton}
+              onPress={() =>
+                router.push(
+                  withReturnTo(
+                    `/(tabs)/charts/${reading.chart_id}`,
+                    `/(tabs)/readings/${readingId}`,
+                  ) as never,
+                )
+              }
+            >
+              <Ionicons name="planet-outline" size={15} color={colors.primary} />
+              <Text style={styles.outlineButtonText}>{tDetail('viewChart')}</Text>
+            </TouchableOpacity>
+          ) : null}
 
-        {/* Ask follow-up — only if ready */}
-        {isReady ? (
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() =>
-              router.push(
-                withReturnTo(
-                  `/(tabs)/readings/chat/${readingId}`,
-                  `/(tabs)/readings/${readingId}`,
-                ) as never,
-              )
-            }
-          >
-            <Ionicons name="chatbubble-outline" size={15} color={colors.primaryForeground} />
-            <Text style={styles.primaryButtonText}>{tDetail('askFollowUp')}</Text>
-          </TouchableOpacity>
-        ) : null}
+          {/* Ask follow-up — only if ready */}
+          {isReady ? (
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() =>
+                router.push(
+                  withReturnTo(
+                    `/(tabs)/readings/chat/${readingId}`,
+                    `/(tabs)/readings/${readingId}`,
+                  ) as never,
+                )
+              }
+            >
+              <Ionicons name="chatbubble-outline" size={15} color={colors.primaryForeground} />
+              <Text style={styles.primaryButtonText}>{tDetail('askFollowUp')}</Text>
+            </TouchableOpacity>
+          ) : null}
 
-        {/* Download PDF — only if ready */}
-        {isReady ? (
-          <TouchableOpacity
-            style={[styles.outlineButton, downloadingPdf && styles.buttonDisabled]}
-            onPress={handleDownloadPdf}
-            disabled={downloadingPdf}
-          >
-            {downloadingPdf ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <>
-                <Ionicons name="download-outline" size={15} color={colors.primary} />
-                <Text style={styles.outlineButtonText}>{tDetail('downloadPdf')}</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        ) : null}
+          {/* Download PDF — only if ready */}
+          {isReady ? (
+            <TouchableOpacity
+              style={[styles.outlineButton, downloadingPdf && styles.buttonDisabled]}
+              onPress={handleDownloadPdf}
+              disabled={downloadingPdf}
+            >
+              {downloadingPdf ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <>
+                  <Ionicons name="download-outline" size={15} color={colors.primary} />
+                  <Text style={styles.outlineButtonText}>{tDetail('downloadPdf')}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : null}
 
-        {/* Retry — only if error */}
-        {isError ? (
-          <TouchableOpacity
-            style={[styles.primaryButton, retrying && styles.buttonDisabled]}
-            onPress={handleRetry}
-            disabled={retrying}
-          >
-            {retrying ? (
-              <ActivityIndicator color={colors.primaryForeground} />
-            ) : (
-              <Text style={styles.primaryButtonText}>{tGenerating('retryButton')}</Text>
-            )}
-          </TouchableOpacity>
-        ) : null}
-      </View>
+          {/* Retry — only if error */}
+          {isError ? (
+            <TouchableOpacity
+              style={[styles.primaryButton, retrying && styles.buttonDisabled]}
+              onPress={handleRetry}
+              disabled={retrying}
+            >
+              {retrying ? (
+                <ActivityIndicator color={colors.primaryForeground} />
+              ) : (
+                <Text style={styles.primaryButtonText}>{tGenerating('retryButton')}</Text>
+              )}
+            </TouchableOpacity>
+          ) : null}
+        </View>
 
-      {/* Generating / pending spinner */}
-      {isGenerating ? (
-        <View style={styles.generatingBlock}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.generatingTitle}>{tGenerating('title')}</Text>
-          <Text style={styles.generatingStep}>
-            {
-              [
-                tGenerating('analyzing'),
-                tGenerating('writing'),
-                tGenerating('reviewing'),
-                tGenerating('finalizing'),
-              ][stepIndex]
-            }
-          </Text>
-          <View style={styles.progressDots}>
-            {[0, 1, 2, 3].map((i) => (
-              <View
-                key={i}
-                style={[styles.progressDot, i <= stepIndex && styles.progressDotActive]}
-              />
-            ))}
+        {/* Generating / pending spinner */}
+        {isGenerating ? (
+          <View style={styles.generatingBlock}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.generatingTitle}>{tGenerating('title')}</Text>
+            <Text style={styles.generatingStep}>
+              {
+                [
+                  tGenerating('analyzing'),
+                  tGenerating('writing'),
+                  tGenerating('reviewing'),
+                  tGenerating('finalizing'),
+                ][stepIndex]
+              }
+            </Text>
+            <View style={styles.progressDots}>
+              {[0, 1, 2, 3].map((i) => (
+                <View
+                  key={i}
+                  style={[styles.progressDot, i <= stepIndex && styles.progressDotActive]}
+                />
+              ))}
+            </View>
           </View>
-        </View>
-      ) : null}
+        ) : null}
 
-      {/* Error banner */}
-      {isError ? (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorBannerTitle}>{tDetail('errorBannerTitle')}</Text>
-          <Text style={styles.errorBannerDesc}>{tDetail('errorBannerDesc')}</Text>
-        </View>
-      ) : null}
+        {/* Error banner */}
+        {isError ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerTitle}>{tDetail('errorBannerTitle')}</Text>
+            <Text style={styles.errorBannerDesc}>{tDetail('errorBannerDesc')}</Text>
+          </View>
+        ) : null}
 
-      {/* Content — only when not error */}
-      {!isError ? (
-        <>
-          {/* Summary */}
-          {reading.summary ? (
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryText}>{reading.summary}</Text>
-            </View>
-          ) : null}
+        {/* Content — only when not error */}
+        {!isError ? (
+          <>
+            {/* Summary */}
+            {reading.summary ? (
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryText}>{reading.summary}</Text>
+              </View>
+            ) : null}
 
-          {/* Key Takeaways (advice) */}
-          {advice.length > 0 ? (
-            <View style={styles.takeawaysCard}>
-              <Text style={styles.takeawaysHeading}>{tDetail('keyTakeaways')}</Text>
-              {advice.map((item, idx) => (
-                <View key={idx} style={styles.numberedRow}>
-                  <View style={styles.numberCircle}>
-                    <Text style={styles.numberCircleText}>{idx + 1}</Text>
-                  </View>
-                  <Text style={styles.numberedRowText}>{item}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-
-          {/* Sections */}
-          {reading.reading_sections.length > 0 ? (
-            <View style={styles.sectionsBlock}>
-              {reading.reading_sections.map((section, idx) => (
-                <View key={section.id} style={styles.sectionItem}>
-                  <View style={styles.sectionHeader}>
-                    <View style={styles.sectionNumberCircle}>
-                      <Text style={styles.sectionNumberText}>{idx + 1}</Text>
+            {/* Key Takeaways (advice) */}
+            {advice.length > 0 ? (
+              <View style={styles.takeawaysCard}>
+                <Text style={styles.takeawaysHeading}>{tDetail('keyTakeaways')}</Text>
+                {advice.map((item, idx) => (
+                  <View key={idx} style={styles.numberedRow}>
+                    <View style={styles.numberCircle}>
+                      <Text style={styles.numberCircleText}>{idx + 1}</Text>
                     </View>
-                    <Text style={styles.sectionTitle}>{section.title}</Text>
-                  </View>
-                  <View style={styles.sectionBody}>
-                    {section.content
-                      .split('\n\n')
-                      .filter(Boolean)
-                      .map((para, pIdx) => (
-                        <Text key={pIdx} style={styles.sectionParagraph}>
-                          {para}
-                        </Text>
-                      ))}
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : null}
-
-          {/* Placement Highlights — 2-column grid */}
-          {placementHighlights.length > 0 ? (
-            <View style={styles.highlightsBlock}>
-              <Text style={styles.highlightsTitle}>{tDetail('placementHighlights')}</Text>
-              <View style={styles.highlightsGrid}>
-                {placementHighlights.map((item, idx) => (
-                  <View key={idx} style={styles.highlightCell}>
-                    <Text style={styles.highlightText}>{item}</Text>
+                    <Text style={styles.numberedRowText}>{item}</Text>
                   </View>
                 ))}
               </View>
-            </View>
-          ) : null}
+            ) : null}
 
-          {/* Disclaimers */}
-          {disclaimers.length > 0 ? (
-            <View style={styles.disclaimersCard}>
-              <Text style={styles.disclaimersText}>{disclaimers.join(' ')}</Text>
-            </View>
-          ) : null}
-        </>
-      ) : null}
-    </ScrollView>
+            {/* Sections */}
+            {reading.reading_sections.length > 0 ? (
+              <View style={styles.sectionsBlock}>
+                {reading.reading_sections.map((section, idx) => (
+                  <View key={section.id} style={styles.sectionItem}>
+                    <View style={styles.sectionHeader}>
+                      <View style={styles.sectionNumberCircle}>
+                        <Text style={styles.sectionNumberText}>{idx + 1}</Text>
+                      </View>
+                      <Text style={styles.sectionTitle}>{section.title}</Text>
+                    </View>
+                    <View style={styles.sectionBody}>
+                      {section.content
+                        .split('\n\n')
+                        .filter(Boolean)
+                        .map((para, pIdx) => (
+                          <Text key={pIdx} style={styles.sectionParagraph}>
+                            {para}
+                          </Text>
+                        ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {/* Placement Highlights — 2-column grid */}
+            {placementHighlights.length > 0 ? (
+              <View style={styles.highlightsBlock}>
+                <Text style={styles.highlightsTitle}>{tDetail('placementHighlights')}</Text>
+                <View style={styles.highlightsGrid}>
+                  {placementHighlights.map((item, idx) => (
+                    <View key={idx} style={styles.highlightCell}>
+                      <Text style={styles.highlightText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+
+            {/* Disclaimers */}
+            {disclaimers.length > 0 ? (
+              <View style={styles.disclaimersCard}>
+                <Text style={styles.disclaimersText}>{disclaimers.join(' ')}</Text>
+              </View>
+            ) : null}
+          </>
+        ) : null}
+      </ScrollView>
+    </View>
   );
 }
 

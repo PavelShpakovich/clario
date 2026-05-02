@@ -150,19 +150,8 @@ export default function CalendarScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 8 }]}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      {/* Page header */}
-      <View style={styles.headerRow}>
+    <View style={styles.container}>
+      <View style={[styles.headerRow, { paddingTop: insets.top + 8 }]}>
         <View style={styles.headerLeft}>
           <Text style={styles.eyebrow}>{tCal('eyebrow')}</Text>
           <Text style={styles.heading}>{tCal('heading')}</Text>
@@ -176,89 +165,101 @@ export default function CalendarScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Legend */}
-      <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
-          <Text style={styles.legendText}>{tCal('legendSun')}</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#0EA5E9' }]} />
-          <Text style={styles.legendText}>{tCal('legendMoon')}</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <Text style={styles.legendEmoji}>🌑</Text>
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <Text style={styles.legendText}>{tCal('phases.new' as any)}</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <Text style={styles.legendEmoji}>🌕</Text>
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <Text style={styles.legendText}>{tCal('phases.full' as any)}</Text>
-        </View>
-      </View>
-
-      {/* Calendar months */}
-      {months.map((month) => (
-        <View key={month.name} style={styles.monthSection}>
-          <Text style={styles.monthHeading}>{month.name}</Text>
-          <View style={styles.monthGrid}>
-            {month.days.map((day) => {
-              const d = new Date(day.date + 'T12:00:00Z');
-              const isToday = day.date === todayStr;
-              const isSpecialPhase = day.phase === 'new' || day.phase === 'full';
-              const phaseEmoji = day.phase ? (PHASE_EMOJI[day.phase] ?? '') : '';
-              const phaseKey = day.phase ? PHASE_KEY_MAP[day.phase] : null;
-              const phaseLabel = phaseKey ? (phaseLabels[phaseKey] ?? '') : '';
-
-              return (
-                <View
-                  key={day.date}
-                  style={[
-                    styles.dayCard,
-                    isToday && styles.dayCardToday,
-                    isSpecialPhase && !isToday && styles.dayCardSpecial,
-                  ]}
-                >
-                  {/* Day number + phase emoji */}
-                  <View style={styles.cardTopRow}>
-                    <Text style={[styles.dayNumber, isToday && styles.dayNumberToday]}>
-                      {d.getUTCDate()}
-                    </Text>
-                    {phaseEmoji ? <Text style={styles.phaseEmoji}>{phaseEmoji}</Text> : null}
-                  </View>
-
-                  {/* Sun sign */}
-                  {day.sunSign ? (
-                    <View style={styles.signRow}>
-                      <View style={[styles.signDot, { backgroundColor: '#F59E0B' }]} />
-                      <Text style={styles.signText} numberOfLines={1}>
-                        {signLabels[day.sunSign] ?? day.sunSign}
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  {/* Moon sign */}
-                  {day.moonSign ? (
-                    <View style={styles.signRow}>
-                      <View style={[styles.signDot, { backgroundColor: '#0EA5E9' }]} />
-                      <Text style={styles.signText} numberOfLines={1}>
-                        {signLabels[day.moonSign] ?? day.moonSign}
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  {/* Special phase label — new/full only */}
-                  {isSpecialPhase && phaseLabel ? (
-                    <Text style={styles.specialPhaseLabel}>{phaseLabel}</Text>
-                  ) : null}
-                </View>
-              );
-            })}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {/* Legend */}
+        <View style={styles.legend}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
+            <Text style={styles.legendText}>{tCal('legendSun')}</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#0EA5E9' }]} />
+            <Text style={styles.legendText}>{tCal('legendMoon')}</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <Text style={styles.legendEmoji}>🌑</Text>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <Text style={styles.legendText}>{tCal('phases.new' as any)}</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <Text style={styles.legendEmoji}>🌕</Text>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <Text style={styles.legendText}>{tCal('phases.full' as any)}</Text>
           </View>
         </View>
-      ))}
-    </ScrollView>
+
+        {/* Calendar months */}
+        {months.map((month) => (
+          <View key={month.name} style={styles.monthSection}>
+            <Text style={styles.monthHeading}>{month.name}</Text>
+            <View style={styles.monthGrid}>
+              {month.days.map((day) => {
+                const d = new Date(day.date + 'T12:00:00Z');
+                const isToday = day.date === todayStr;
+                const isSpecialPhase = day.phase === 'new' || day.phase === 'full';
+                const phaseEmoji = day.phase ? (PHASE_EMOJI[day.phase] ?? '') : '';
+                const phaseKey = day.phase ? PHASE_KEY_MAP[day.phase] : null;
+                const phaseLabel = phaseKey ? (phaseLabels[phaseKey] ?? '') : '';
+
+                return (
+                  <View
+                    key={day.date}
+                    style={[
+                      styles.dayCard,
+                      isToday && styles.dayCardToday,
+                      isSpecialPhase && !isToday && styles.dayCardSpecial,
+                    ]}
+                  >
+                    {/* Day number + phase emoji */}
+                    <View style={styles.cardTopRow}>
+                      <Text style={[styles.dayNumber, isToday && styles.dayNumberToday]}>
+                        {d.getUTCDate()}
+                      </Text>
+                      {phaseEmoji ? <Text style={styles.phaseEmoji}>{phaseEmoji}</Text> : null}
+                    </View>
+
+                    {/* Sun sign */}
+                    {day.sunSign ? (
+                      <View style={styles.signRow}>
+                        <View style={[styles.signDot, { backgroundColor: '#F59E0B' }]} />
+                        <Text style={styles.signText} numberOfLines={1}>
+                          {signLabels[day.sunSign] ?? day.sunSign}
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    {/* Moon sign */}
+                    {day.moonSign ? (
+                      <View style={styles.signRow}>
+                        <View style={[styles.signDot, { backgroundColor: '#0EA5E9' }]} />
+                        <Text style={styles.signText} numberOfLines={1}>
+                          {signLabels[day.moonSign] ?? day.moonSign}
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    {/* Special phase label — new/full only */}
+                    {isSpecialPhase && phaseLabel ? (
+                      <Text style={styles.specialPhaseLabel}>{phaseLabel}</Text>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
   );
 }
 

@@ -189,18 +189,7 @@ export default function StoreScreen() {
   const totalPages = history ? Math.max(1, Math.ceil(history.total / PAGE_SIZE)) : 1;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      {/* Back row + page title */}
+    <View style={styles.container}>
       <View style={[styles.backRow, { marginTop: insets.top + 8 }]}>
         <TouchableOpacity
           onPress={() => goBackTo(returnTo, '/(tabs)/index')}
@@ -214,158 +203,173 @@ export default function StoreScreen() {
       <Text style={styles.title}>{tCredits('storeTitle')}</Text>
       <Text style={styles.storeDesc}>{tCredits('storeDescription')}</Text>
 
-      {/* Balance card */}
-      <View style={styles.balanceCard}>
-        <View style={styles.balanceIconWrap}>
-          <Ionicons name="wallet-outline" size={24} color={colors.primary} />
-        </View>
-        <View style={styles.balanceInfo}>
-          <Text style={styles.balanceLabel}>{tCredits('yourBalance')}</Text>
-          <Text style={styles.balanceValue}>
-            {balance.balance} <Text style={styles.balanceUnit}>{tCredits('creditsUnit')}</Text>
-          </Text>
-          {balance.forecastAccessUntil && (
-            <Text style={styles.forecastAccess}>
-              {tCredits('forecastAccessActive').replace(
-                '{date}',
-                new Date(balance.forecastAccessUntil).toLocaleDateString('ru-RU'),
-              )}
-            </Text>
-          )}
-        </View>
-      </View>
-
-      {/* Credit packs */}
-      <View style={styles.sectionHeader}>
-        <Ionicons name="cube-outline" size={18} color={colors.foreground} />
-        <Text style={styles.sectionTitle}>{tCredits('creditPacks')}</Text>
-      </View>
-      <Text style={styles.sectionDesc}>{tCredits('betaNote')}</Text>
-      {packs.map((pack) => (
-        <View key={pack.id} style={styles.packCard}>
-          <View style={styles.packInfo}>
-            <Text style={styles.packName}>{pack.name}</Text>
-            <Text style={styles.packCredits}>
-              {tCredits('packCredits').replace('{count}', String(pack.credits))}
-            </Text>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {/* Balance card */}
+        <View style={styles.balanceCard}>
+          <View style={styles.balanceIconWrap}>
+            <Ionicons name="wallet-outline" size={24} color={colors.primary} />
           </View>
-          <View style={styles.packAction}>
-            {pack.priceminor !== null ? (
-              <Text style={styles.packPrice}>
-                {(pack.priceminor / 100).toFixed(2)} {pack.currency}
+          <View style={styles.balanceInfo}>
+            <Text style={styles.balanceLabel}>{tCredits('yourBalance')}</Text>
+            <Text style={styles.balanceValue}>
+              {balance.balance} <Text style={styles.balanceUnit}>{tCredits('creditsUnit')}</Text>
+            </Text>
+            {balance.forecastAccessUntil && (
+              <Text style={styles.forecastAccess}>
+                {tCredits('forecastAccessActive').replace(
+                  '{date}',
+                  new Date(balance.forecastAccessUntil).toLocaleDateString('ru-RU'),
+                )}
               </Text>
-            ) : (
-              <Text style={styles.comingSoonText}>{tCredits('comingSoon')}</Text>
             )}
           </View>
         </View>
-      ))}
-      {packs.length === 0 && <View style={styles.packsEmpty} />}
 
-      {/* Credit costs */}
-      <View style={styles.sectionHeader}>
-        <Ionicons name="flash-outline" size={18} color={colors.foreground} />
-        <Text style={styles.sectionTitle}>{tCredits('creditCosts')}</Text>
-      </View>
-      <View style={styles.costsCard}>
-        {Object.entries(pricing.costs)
-          .filter(([k]) => COST_KEYS[k])
-          .map(([key, cost], index, arr) => (
-            <View
-              key={key}
-              style={[styles.costRow, index === arr.length - 1 && styles.costRowLast]}
-            >
-              <Text style={styles.costLabel}>
-                {tCredits(COST_KEYS[key] as Parameters<typeof tCredits>[0])}
-              </Text>
-              <Text style={styles.costValue}>
-                {pricing.freeProducts.includes(key)
-                  ? tCredits('freeLabel')
-                  : tCredits('balanceCount').replace('{count}', String(cost))}
+        {/* Credit packs */}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="cube-outline" size={18} color={colors.foreground} />
+          <Text style={styles.sectionTitle}>{tCredits('creditPacks')}</Text>
+        </View>
+        <Text style={styles.sectionDesc}>{tCredits('betaNote')}</Text>
+        {packs.map((pack) => (
+          <View key={pack.id} style={styles.packCard}>
+            <View style={styles.packInfo}>
+              <Text style={styles.packName}>{pack.name}</Text>
+              <Text style={styles.packCredits}>
+                {tCredits('packCredits').replace('{count}', String(pack.credits))}
               </Text>
             </View>
-          ))}
-      </View>
+            <View style={styles.packAction}>
+              {pack.priceminor !== null ? (
+                <Text style={styles.packPrice}>
+                  {(pack.priceminor / 100).toFixed(2)} {pack.currency}
+                </Text>
+              ) : (
+                <Text style={styles.comingSoonText}>{tCredits('comingSoon')}</Text>
+              )}
+            </View>
+          </View>
+        ))}
+        {packs.length === 0 && <View style={styles.packsEmpty} />}
 
-      {/* Transaction history */}
-      <View style={styles.sectionHeader}>
-        <Ionicons name="time-outline" size={18} color={colors.foreground} />
-        <Text style={styles.sectionTitle}>{tCredits('purchaseHistory')}</Text>
-        {history && history.total > 0 && (
-          <View style={styles.pagination}>
-            <TouchableOpacity
-              style={[
-                styles.pageChevron,
-                (page <= 1 || historyLoading) && styles.pageButtonDisabled,
-              ]}
-              onPress={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1 || historyLoading}
-            >
-              <Ionicons name="chevron-back" size={16} color={colors.foreground} />
-            </TouchableOpacity>
-            {historyLoading ? (
-              <ActivityIndicator
-                size="small"
-                color={colors.primary}
-                style={{ marginHorizontal: 8 }}
-              />
-            ) : (
-              <Text style={styles.pageLabel}>
-                {tCredits('pageLabel')
-                  .replace('{current}', String(page))
-                  .replace('{total}', String(totalPages))}
-              </Text>
-            )}
-            <TouchableOpacity
-              style={[
-                styles.pageChevron,
-                (page >= totalPages || historyLoading) && styles.pageButtonDisabled,
-              ]}
-              onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages || historyLoading}
-            >
-              <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
-            </TouchableOpacity>
+        {/* Credit costs */}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="flash-outline" size={18} color={colors.foreground} />
+          <Text style={styles.sectionTitle}>{tCredits('creditCosts')}</Text>
+        </View>
+        <View style={styles.costsCard}>
+          {Object.entries(pricing.costs)
+            .filter(([k]) => COST_KEYS[k])
+            .map(([key, cost], index, arr) => (
+              <View
+                key={key}
+                style={[styles.costRow, index === arr.length - 1 && styles.costRowLast]}
+              >
+                <Text style={styles.costLabel}>
+                  {tCredits(COST_KEYS[key] as Parameters<typeof tCredits>[0])}
+                </Text>
+                <Text style={styles.costValue}>
+                  {pricing.freeProducts.includes(key)
+                    ? tCredits('freeLabel')
+                    : tCredits('balanceCount').replace('{count}', String(cost))}
+                </Text>
+              </View>
+            ))}
+        </View>
+
+        {/* Transaction history */}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="time-outline" size={18} color={colors.foreground} />
+          <Text style={styles.sectionTitle}>{tCredits('purchaseHistory')}</Text>
+          {history && history.total > 0 && (
+            <View style={styles.pagination}>
+              <TouchableOpacity
+                style={[
+                  styles.pageChevron,
+                  (page <= 1 || historyLoading) && styles.pageButtonDisabled,
+                ]}
+                onPress={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1 || historyLoading}
+              >
+                <Ionicons name="chevron-back" size={16} color={colors.foreground} />
+              </TouchableOpacity>
+              {historyLoading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                  style={{ marginHorizontal: 8 }}
+                />
+              ) : (
+                <Text style={styles.pageLabel}>
+                  {tCredits('pageLabel')
+                    .replace('{current}', String(page))
+                    .replace('{total}', String(totalPages))}
+                </Text>
+              )}
+              <TouchableOpacity
+                style={[
+                  styles.pageChevron,
+                  (page >= totalPages || historyLoading) && styles.pageButtonDisabled,
+                ]}
+                onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages || historyLoading}
+              >
+                <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+        {!history || history.transactions.length === 0 ? (
+          <Text style={styles.emptyText}>{tCredits('noTransactions')}</Text>
+        ) : (
+          <View style={[styles.historyCard, historyLoading && { opacity: 0.5 }]}>
+            {history.transactions.map((tx, index) => {
+              const reasonKey = REASON_KEYS[tx.reason];
+              const reasonLabel = reasonKey
+                ? tCredits(reasonKey as Parameters<typeof tCredits>[0])
+                : tx.reason;
+              return (
+                <View
+                  key={tx.id}
+                  style={[
+                    styles.txRow,
+                    index === history.transactions.length - 1 && styles.txRowLast,
+                  ]}
+                >
+                  <View style={styles.txLeft}>
+                    <Text style={styles.txReason}>{reasonLabel}</Text>
+                    {tx.note ? <Text style={styles.txNote}>{tx.note}</Text> : null}
+                    <Text style={styles.txDate}>
+                      {new Date(tx.created_at).toLocaleString('ru-RU')}
+                    </Text>
+                  </View>
+                  <View style={styles.txRight}>
+                    <Text
+                      style={[
+                        styles.txAmount,
+                        tx.amount > 0 ? styles.txPositive : styles.txNegative,
+                      ]}
+                    >
+                      {tx.amount > 0 ? `+${tx.amount}` : tx.amount}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
           </View>
         )}
-      </View>
-      {!history || history.transactions.length === 0 ? (
-        <Text style={styles.emptyText}>{tCredits('noTransactions')}</Text>
-      ) : (
-        <View style={[styles.historyCard, historyLoading && { opacity: 0.5 }]}>
-          {history.transactions.map((tx, index) => {
-            const reasonKey = REASON_KEYS[tx.reason];
-            const reasonLabel = reasonKey
-              ? tCredits(reasonKey as Parameters<typeof tCredits>[0])
-              : tx.reason;
-            return (
-              <View
-                key={tx.id}
-                style={[
-                  styles.txRow,
-                  index === history.transactions.length - 1 && styles.txRowLast,
-                ]}
-              >
-                <View style={styles.txLeft}>
-                  <Text style={styles.txReason}>{reasonLabel}</Text>
-                  {tx.note ? <Text style={styles.txNote}>{tx.note}</Text> : null}
-                  <Text style={styles.txDate}>
-                    {new Date(tx.created_at).toLocaleString('ru-RU')}
-                  </Text>
-                </View>
-                <View style={styles.txRight}>
-                  <Text
-                    style={[styles.txAmount, tx.amount > 0 ? styles.txPositive : styles.txNegative]}
-                  >
-                    {tx.amount > 0 ? `+${tx.amount}` : tx.amount}
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

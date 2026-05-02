@@ -233,289 +233,290 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      {/* Page header */}
+    <View style={styles.container}>
       <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
         <Text style={styles.eyebrow}>{tSettings('sectionLabel')}</Text>
         <Text style={styles.pageTitle}>{tSettings('heading')}</Text>
         <Text style={styles.pageDesc}>{tSettings('description')}</Text>
       </View>
 
-      {/* Profile card */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons name="person-outline" size={16} color={colors.primary} />
-          <Text style={styles.cardSectionTitle}>{tSettings('profileTitle')}</Text>
-        </View>
-        <Text style={styles.cardDesc}>{tSettings('profileDescription')}</Text>
-
-        <Text style={styles.label}>{tSettings('emailLabel')}</Text>
-        <Text style={styles.readOnly}>{email || tSettings('emailUnavailable')}</Text>
-
-        <Text style={styles.label}>{tSettings('nameLabel')}</Text>
-        <TextInput
-          style={styles.input}
-          value={displayName}
-          onChangeText={setDisplayName}
-          placeholder={tSettings('nameLabel')}
-          placeholderTextColor={colors.placeholder}
-          returnKeyType="done"
-          onSubmitEditing={handleSaveName}
-        />
-
-        <Text style={styles.label}>{tSettings('timezoneLabel')}</Text>
-        <TouchableOpacity style={styles.pickerButton} onPress={() => setTzPickerOpen(true)}>
-          <Text
-            style={[styles.pickerButtonText, !timezone && styles.pickerButtonPlaceholder]}
-            numberOfLines={1}
-          >
-            {timezone ? timezoneLabel(timezone) : tSettings('timezonePlaceholder')}
-          </Text>
-          <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
-        </TouchableOpacity>
-
-        <TimezonePickerModal
-          visible={tzPickerOpen}
-          value={timezone}
-          placeholder={tSettings('timezonePlaceholder')}
-          onSelect={(tz) => {
-            setTimezone(tz);
-          }}
-          onClose={() => setTzPickerOpen(false)}
-        />
-
-        <TouchableOpacity
-          style={[styles.primaryButton, savingName && styles.buttonDisabled]}
-          onPress={handleSaveName}
-          disabled={savingName}
-        >
-          {savingName ? (
-            <ActivityIndicator color={colors.primaryForeground} />
-          ) : (
-            <Text style={styles.primaryButtonText}>
-              {savedName ? tSettings('saved') : tSettings('saveProfile')}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Privacy card */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
-          <Text style={styles.cardSectionTitle}>{tSettings('privacyTitle')}</Text>
-        </View>
-        <Text style={styles.cardDesc}>{tSettings('privacyDescription')}</Text>
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>{tSettings('birthConsent')}</Text>
-          <View
-            style={[
-              styles.consentBadge,
-              birthDataConsentAt ? styles.consentBadgeActive : styles.consentBadgeMuted,
-            ]}
-          >
-            <Text
-              style={[
-                styles.consentBadgeText,
-                birthDataConsentAt ? styles.consentBadgeTextActive : styles.consentBadgeTextMuted,
-              ]}
-            >
-              {birthDataConsentAt
-                ? `✓ ${tSettings('consentGranted')}`
-                : `— ${tSettings('consentNotGranted')}`}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Preferences card */}
-      {prefs && (
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {/* Profile card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
-            <Text style={styles.cardSectionTitle}>{tSettings('preferencesTitle')}</Text>
+            <Ionicons name="person-outline" size={16} color={colors.primary} />
+            <Text style={styles.cardSectionTitle}>{tSettings('profileTitle')}</Text>
           </View>
-          <Text style={styles.cardDesc}>{tSettings('preferencesDescription')}</Text>
+          <Text style={styles.cardDesc}>{tSettings('profileDescription')}</Text>
 
-          <Text style={styles.label}>{tSettings('toneLabel')}</Text>
-          <View style={styles.toneRow}>
-            {TONE_STYLES.map((tone) => (
-              <TouchableOpacity
-                key={tone}
-                style={[styles.toneChip, prefs.tone_style === tone && styles.toneChipActive]}
-                onPress={() => updatePref({ tone_style: tone })}
+          <Text style={styles.label}>{tSettings('emailLabel')}</Text>
+          <Text style={styles.readOnly}>{email || tSettings('emailUnavailable')}</Text>
+
+          <Text style={styles.label}>{tSettings('nameLabel')}</Text>
+          <TextInput
+            style={styles.input}
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder={tSettings('nameLabel')}
+            placeholderTextColor={colors.placeholder}
+            returnKeyType="done"
+            onSubmitEditing={handleSaveName}
+          />
+
+          <Text style={styles.label}>{tSettings('timezoneLabel')}</Text>
+          <TouchableOpacity style={styles.pickerButton} onPress={() => setTzPickerOpen(true)}>
+            <Text
+              style={[styles.pickerButtonText, !timezone && styles.pickerButtonPlaceholder]}
+              numberOfLines={1}
+            >
+              {timezone ? timezoneLabel(timezone) : tSettings('timezonePlaceholder')}
+            </Text>
+            <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+
+          <TimezonePickerModal
+            visible={tzPickerOpen}
+            value={timezone}
+            placeholder={tSettings('timezonePlaceholder')}
+            onSelect={(tz) => {
+              setTimezone(tz);
+            }}
+            onClose={() => setTzPickerOpen(false)}
+          />
+
+          <TouchableOpacity
+            style={[styles.primaryButton, savingName && styles.buttonDisabled]}
+            onPress={handleSaveName}
+            disabled={savingName}
+          >
+            {savingName ? (
+              <ActivityIndicator color={colors.primaryForeground} />
+            ) : (
+              <Text style={styles.primaryButtonText}>
+                {savedName ? tSettings('saved') : tSettings('saveProfile')}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Privacy card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
+            <Text style={styles.cardSectionTitle}>{tSettings('privacyTitle')}</Text>
+          </View>
+          <Text style={styles.cardDesc}>{tSettings('privacyDescription')}</Text>
+          <View style={styles.fieldRow}>
+            <Text style={styles.fieldLabel}>{tSettings('birthConsent')}</Text>
+            <View
+              style={[
+                styles.consentBadge,
+                birthDataConsentAt ? styles.consentBadgeActive : styles.consentBadgeMuted,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.consentBadgeText,
+                  birthDataConsentAt ? styles.consentBadgeTextActive : styles.consentBadgeTextMuted,
+                ]}
               >
+                {birthDataConsentAt
+                  ? `✓ ${tSettings('consentGranted')}`
+                  : `— ${tSettings('consentNotGranted')}`}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Preferences card */}
+        {prefs && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
+              <Text style={styles.cardSectionTitle}>{tSettings('preferencesTitle')}</Text>
+            </View>
+            <Text style={styles.cardDesc}>{tSettings('preferencesDescription')}</Text>
+
+            <Text style={styles.label}>{tSettings('toneLabel')}</Text>
+            <View style={styles.toneRow}>
+              {TONE_STYLES.map((tone) => (
+                <TouchableOpacity
+                  key={tone}
+                  style={[styles.toneChip, prefs.tone_style === tone && styles.toneChipActive]}
+                  onPress={() => updatePref({ tone_style: tone })}
+                >
+                  <Text
+                    style={[
+                      styles.toneChipText,
+                      prefs.tone_style === tone && styles.toneChipTextActive,
+                    ]}
+                  >
+                    {toneLabels[tone] ?? tone}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>{tSettings('spiritualTone')}</Text>
+              <Switch
+                value={prefs.allow_spiritual_tone}
+                onValueChange={(v) => updatePref({ allow_spiritual_tone: v })}
+                trackColor={{ true: colors.primary }}
+              />
+            </View>
+
+            <View style={styles.divider} />
+
+            <Text style={styles.label}>{tSettings('focusAreas')}</Text>
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>{tSettings('focusLove')}</Text>
+              <Switch
+                value={prefs.content_focus_love}
+                onValueChange={(v) => updatePref({ content_focus_love: v })}
+                trackColor={{ true: colors.primary }}
+              />
+            </View>
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>{tSettings('focusCareer')}</Text>
+              <Switch
+                value={prefs.content_focus_career}
+                onValueChange={(v) => updatePref({ content_focus_career: v })}
+                trackColor={{ true: colors.primary }}
+              />
+            </View>
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>{tSettings('focusGrowth')}</Text>
+              <Switch
+                value={prefs.content_focus_growth}
+                onValueChange={(v) => updatePref({ content_focus_growth: v })}
+                trackColor={{ true: colors.primary }}
+              />
+            </View>
+            <Text style={styles.prefsHint}>{tSettings('preferencesHint')}</Text>
+          </View>
+        )}
+
+        {/* Theme card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="color-palette-outline" size={16} color={colors.primary} />
+            <Text style={styles.cardSectionTitle}>{tSettings('themeTitle')}</Text>
+          </View>
+          <View style={styles.themeButtons}>
+            {(['light', 'dark', 'system'] as ThemePreference[]).map((opt) => (
+              <TouchableOpacity
+                key={opt}
+                style={[styles.themeButton, currentTheme === opt && styles.themeButtonActive]}
+                onPress={() => setTheme(opt)}
+              >
+                <Ionicons
+                  name={
+                    opt === 'light'
+                      ? 'sunny-outline'
+                      : opt === 'dark'
+                        ? 'moon-outline'
+                        : 'phone-portrait-outline'
+                  }
+                  size={15}
+                  color={currentTheme === opt ? colors.primaryForeground : colors.mutedForeground}
+                />
                 <Text
                   style={[
-                    styles.toneChipText,
-                    prefs.tone_style === tone && styles.toneChipTextActive,
+                    styles.themeButtonText,
+                    currentTheme === opt && styles.themeButtonTextActive,
                   ]}
                 >
-                  {toneLabels[tone] ?? tone}
+                  {tSettings(
+                    opt === 'light' ? 'themeLight' : opt === 'dark' ? 'themeDark' : 'themeSystem',
+                  )}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{tSettings('spiritualTone')}</Text>
-            <Switch
-              value={prefs.allow_spiritual_tone}
-              onValueChange={(v) => updatePref({ allow_spiritual_tone: v })}
-              trackColor={{ true: colors.primary }}
-            />
-          </View>
-
-          <View style={styles.divider} />
-
-          <Text style={styles.label}>{tSettings('focusAreas')}</Text>
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{tSettings('focusLove')}</Text>
-            <Switch
-              value={prefs.content_focus_love}
-              onValueChange={(v) => updatePref({ content_focus_love: v })}
-              trackColor={{ true: colors.primary }}
-            />
-          </View>
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{tSettings('focusCareer')}</Text>
-            <Switch
-              value={prefs.content_focus_career}
-              onValueChange={(v) => updatePref({ content_focus_career: v })}
-              trackColor={{ true: colors.primary }}
-            />
-          </View>
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{tSettings('focusGrowth')}</Text>
-            <Switch
-              value={prefs.content_focus_growth}
-              onValueChange={(v) => updatePref({ content_focus_growth: v })}
-              trackColor={{ true: colors.primary }}
-            />
-          </View>
-          <Text style={styles.prefsHint}>{tSettings('preferencesHint')}</Text>
         </View>
-      )}
 
-      {/* Theme card */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons name="color-palette-outline" size={16} color={colors.primary} />
-          <Text style={styles.cardSectionTitle}>{tSettings('themeTitle')}</Text>
-        </View>
-        <View style={styles.themeButtons}>
-          {(['light', 'dark', 'system'] as ThemePreference[]).map((opt) => (
-            <TouchableOpacity
-              key={opt}
-              style={[styles.themeButton, currentTheme === opt && styles.themeButtonActive]}
-              onPress={() => setTheme(opt)}
-            >
-              <Ionicons
-                name={
-                  opt === 'light'
-                    ? 'sunny-outline'
-                    : opt === 'dark'
-                      ? 'moon-outline'
-                      : 'phone-portrait-outline'
-                }
-                size={15}
-                color={currentTheme === opt ? colors.primaryForeground : colors.mutedForeground}
-              />
-              <Text
-                style={[
-                  styles.themeButtonText,
-                  currentTheme === opt && styles.themeButtonTextActive,
-                ]}
-              >
-                {tSettings(
-                  opt === 'light' ? 'themeLight' : opt === 'dark' ? 'themeDark' : 'themeSystem',
-                )}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* Store link */}
-      <TouchableOpacity
-        style={styles.outlineButton}
-        onPress={() => router.push(withReturnTo('/store', '/(tabs)/settings') as never)}
-      >
-        <Ionicons name="storefront-outline" size={16} color={colors.primary} />
-        <Text style={styles.outlineButtonText}>{tCredits('storeTitle')}</Text>
-      </TouchableOpacity>
-
-      {/* Feedback */}
-      <TouchableOpacity style={styles.outlineButton} onPress={() => setFeedbackOpen(true)}>
-        <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.primary} />
-        <Text style={styles.outlineButtonText}>{tFeedback('title')}</Text>
-      </TouchableOpacity>
-      <FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
-
-      {/* Admin panel — only for admins */}
-      {isAdmin && (
+        {/* Store link */}
         <TouchableOpacity
           style={styles.outlineButton}
-          onPress={() => router.push(withReturnTo('/admin', '/(tabs)/settings') as never)}
+          onPress={() => router.push(withReturnTo('/store', '/(tabs)/settings') as never)}
         >
-          <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
-          <Text style={styles.outlineButtonText}>{tAdmin('title')}</Text>
+          <Ionicons name="storefront-outline" size={16} color={colors.primary} />
+          <Text style={styles.outlineButtonText}>{tCredits('storeTitle')}</Text>
         </TouchableOpacity>
-      )}
 
-      {/* Danger Zone card */}
-      <View style={styles.dangerCard}>
-        <View style={styles.dangerCardHeader}>
-          <Ionicons name="trash-outline" size={16} color={colors.destructive} />
-          <Text style={styles.dangerTitle}>{tSettings('dangerZoneTitle')}</Text>
+        {/* Feedback */}
+        <TouchableOpacity style={styles.outlineButton} onPress={() => setFeedbackOpen(true)}>
+          <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.primary} />
+          <Text style={styles.outlineButtonText}>{tFeedback('title')}</Text>
+        </TouchableOpacity>
+        <FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+
+        {/* Admin panel — only for admins */}
+        {isAdmin && (
+          <TouchableOpacity
+            style={styles.outlineButton}
+            onPress={() => router.push(withReturnTo('/admin', '/(tabs)/settings') as never)}
+          >
+            <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
+            <Text style={styles.outlineButtonText}>{tAdmin('title')}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Danger Zone card */}
+        <View style={styles.dangerCard}>
+          <View style={styles.dangerCardHeader}>
+            <Ionicons name="trash-outline" size={16} color={colors.destructive} />
+            <Text style={styles.dangerTitle}>{tSettings('dangerZoneTitle')}</Text>
+          </View>
+          <Text style={styles.dangerDesc}>{tSettings('dangerZoneDescription')}</Text>
+          <Text style={styles.dangerAccountLabel}>{tSettings('deleteAccountLabel')}</Text>
+          <Text style={styles.dangerHint}>{tSettings('deleteAccountHint')}</Text>
+          <TouchableOpacity
+            style={[styles.destructiveOutlineButton, deletingAccount && styles.buttonDisabled]}
+            onPress={confirmDeleteAccount}
+            disabled={deletingAccount}
+          >
+            {deletingAccount ? (
+              <ActivityIndicator color={colors.destructive} />
+            ) : (
+              <Text style={styles.destructiveOutlineButtonText}>
+                {tSettings('deleteAccountButton')}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
-        <Text style={styles.dangerDesc}>{tSettings('dangerZoneDescription')}</Text>
-        <Text style={styles.dangerAccountLabel}>{tSettings('deleteAccountLabel')}</Text>
-        <Text style={styles.dangerHint}>{tSettings('deleteAccountHint')}</Text>
-        <TouchableOpacity
-          style={[styles.destructiveOutlineButton, deletingAccount && styles.buttonDisabled]}
-          onPress={confirmDeleteAccount}
-          disabled={deletingAccount}
-        >
-          {deletingAccount ? (
-            <ActivityIndicator color={colors.destructive} />
-          ) : (
-            <Text style={styles.destructiveOutlineButtonText}>
-              {tSettings('deleteAccountButton')}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
 
-      {/* Sign out */}
-      <TouchableOpacity
-        style={styles.signOutButton}
-        onPress={async () => {
-          const ok = await confirm({
-            title: tNav('logout'),
-            confirmText: tNav('logout'),
-            cancelText: tSettings('deleteAccountCancel'),
-            destructive: true,
-          });
-          if (ok) await handleSignOut();
-        }}
-      >
-        <Ionicons name="log-out-outline" size={16} color={colors.destructive} />
-        <Text style={styles.signOutText}>{tNav('logout')}</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        {/* Sign out */}
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={async () => {
+            const ok = await confirm({
+              title: tNav('logout'),
+              confirmText: tNav('logout'),
+              cancelText: tSettings('deleteAccountCancel'),
+              destructive: true,
+            });
+            if (ok) await handleSignOut();
+          }}
+        >
+          <Ionicons name="log-out-outline" size={16} color={colors.destructive} />
+          <Text style={styles.signOutText}>{tNav('logout')}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
 

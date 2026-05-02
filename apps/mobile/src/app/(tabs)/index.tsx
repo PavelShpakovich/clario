@@ -250,18 +250,7 @@ export default function DashboardScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      {/* Header */}
+    <View style={styles.container}>
       <View style={[styles.header, { marginTop: insets.top + 12 }]}>
         <View style={styles.headerLeft}>
           <Text style={styles.eyebrow}>{tDashboard('subheading')}</Text>
@@ -280,215 +269,227 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Today's Sky widget — taps to calendar */}
-      {hasSky && (
-        <TouchableOpacity
-          style={styles.skyWidget}
-          onPress={() => router.push(withReturnTo('/calendar', '/(tabs)') as never)}
-        >
-          <Text style={styles.skyWidgetEyebrow}>{tDashboard('skyToday')}</Text>
-          <View style={styles.skyPlanets}>
-            {(['sun', 'moon', 'mercury'] as const).map((key) => {
-              const sign = todaySky[key];
-              if (!sign) return null;
-              const el = SIGN_ELEMENT[sign] ?? '';
-              const color = ELEMENT_COLORS[el] ?? colors.mutedForeground;
-              return (
-                <View key={key} style={styles.skyPlanetItem}>
-                  <Text style={[styles.skyPlanetSymbol, { color }]}>{PLANET_SYMBOLS[key]}</Text>
-                  <View>
-                    <Text style={styles.skyPlanetName}>
-                      {tChart(`planets.${key}` as Parameters<typeof tChart>[0])}
-                    </Text>
-                    <Text style={[styles.skySignName, { color }]}>
-                      {tChart(`signs.${sign}` as Parameters<typeof tChart>[0]) ?? sign}
-                    </Text>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {/* Today's Sky widget — taps to calendar */}
+        {hasSky && (
+          <TouchableOpacity
+            style={styles.skyWidget}
+            onPress={() => router.push(withReturnTo('/calendar', '/(tabs)') as never)}
+          >
+            <Text style={styles.skyWidgetEyebrow}>{tDashboard('skyToday')}</Text>
+            <View style={styles.skyPlanets}>
+              {(['sun', 'moon', 'mercury'] as const).map((key) => {
+                const sign = todaySky[key];
+                if (!sign) return null;
+                const el = SIGN_ELEMENT[sign] ?? '';
+                const color = ELEMENT_COLORS[el] ?? colors.mutedForeground;
+                return (
+                  <View key={key} style={styles.skyPlanetItem}>
+                    <Text style={[styles.skyPlanetSymbol, { color }]}>{PLANET_SYMBOLS[key]}</Text>
+                    <View>
+                      <Text style={styles.skyPlanetName}>
+                        {tChart(`planets.${key}` as Parameters<typeof tChart>[0])}
+                      </Text>
+                      <Text style={[styles.skySignName, { color }]}>
+                        {tChart(`signs.${sign}` as Parameters<typeof tChart>[0]) ?? sign}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              );
-            })}
-          </View>
-        </TouchableOpacity>
-      )}
+                );
+              })}
+            </View>
+          </TouchableOpacity>
+        )}
 
-      {/* Personal horoscope widget */}
-      {hasPrimaryChart && (
-        <View style={styles.horoscopeWidget}>
-          <View style={styles.horoscopeLeft}>
-            <Text style={styles.horoscopeEyebrow}>{tDashboard('horoscopeWidgetTitle')}</Text>
-            {forecast?.keyTheme ? (
-              <Text style={styles.horoscopeTheme}>{forecast.keyTheme}</Text>
-            ) : (
-              <Text style={styles.horoscopeDesc}>{tDashboard('horoscopeWidgetDesc')}</Text>
-            )}
-            {forecast?.advice ? (
-              <Text style={styles.horoscopeAdvice} numberOfLines={2}>
-                {forecast.advice}
+        {/* Personal horoscope widget */}
+        {hasPrimaryChart && (
+          <View style={styles.horoscopeWidget}>
+            <View style={styles.horoscopeLeft}>
+              <Text style={styles.horoscopeEyebrow}>{tDashboard('horoscopeWidgetTitle')}</Text>
+              {forecast?.keyTheme ? (
+                <Text style={styles.horoscopeTheme}>{forecast.keyTheme}</Text>
+              ) : (
+                <Text style={styles.horoscopeDesc}>{tDashboard('horoscopeWidgetDesc')}</Text>
+              )}
+              {forecast?.advice ? (
+                <Text style={styles.horoscopeAdvice} numberOfLines={2}>
+                  {forecast.advice}
+                </Text>
+              ) : null}
+            </View>
+            <TouchableOpacity
+              style={styles.horoscopeButton}
+              onPress={() => router.push(withReturnTo('/horoscope', '/(tabs)') as never)}
+            >
+              <Text style={styles.horoscopeButtonText}>
+                {forecast?.hasContent ? tDashboard('horoscopeRead') : tDashboard('horoscopeOpen')}
               </Text>
-            ) : null}
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.horoscopeButton}
-            onPress={() => router.push(withReturnTo('/horoscope', '/(tabs)') as never)}
-          >
-            <Text style={styles.horoscopeButtonText}>
-              {forecast?.hasContent ? tDashboard('horoscopeRead') : tDashboard('horoscopeOpen')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        )}
 
-      {/* Stats row */}
-      <View style={styles.statsRow}>
-        <TouchableOpacity style={styles.statCard} onPress={() => router.push('/(tabs)/charts')}>
-          <Text style={styles.statValue}>{totalCharts}</Text>
-          <Text style={styles.statLabel}>{tDashboard('statsCharts')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.statCard, styles.statCardMiddle]}
-          onPress={() => router.push('/(tabs)/readings')}
-        >
-          <Text style={styles.statValue}>{totalReadings}</Text>
-          <Text style={styles.statLabel}>{tDashboard('statsReadings')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => router.push('/(tabs)/compatibility')}
-        >
-          <Text style={styles.statValue}>{totalCompatibility}</Text>
-          <Text style={styles.statLabel}>{tDashboard('statsCompatibility')}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Quick actions */}
-      <View style={styles.quickActionsCard}>
-        <Text style={styles.quickActionsLabel}>{tDashboard('quickActions')}</Text>
-        <View style={styles.quickActionsButtons}>
-          <TouchableOpacity
-            style={[styles.quickActionButton, styles.quickActionPrimary]}
-            onPress={() =>
-              router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/charts') as never)
-            }
-          >
-            <Text style={styles.quickActionPrimaryText}>{tDashboard('createNewChart')}</Text>
+        {/* Stats row */}
+        <View style={styles.statsRow}>
+          <TouchableOpacity style={styles.statCard} onPress={() => router.push('/(tabs)/charts')}>
+            <Text style={styles.statValue}>{totalCharts}</Text>
+            <Text style={styles.statLabel}>{tDashboard('statsCharts')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.quickActionButton, styles.quickActionOutline]}
-            onPress={() => router.push('/(tabs)/charts')}
-          >
-            <Text style={styles.quickActionOutlineText}>{tDashboard('viewAllCharts')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.quickActionButton, styles.quickActionOutline]}
+            style={[styles.statCard, styles.statCardMiddle]}
             onPress={() => router.push('/(tabs)/readings')}
           >
-            <Text style={styles.quickActionOutlineText}>{tDashboard('viewAllReadings')}</Text>
+            <Text style={styles.statValue}>{totalReadings}</Text>
+            <Text style={styles.statLabel}>{tDashboard('statsReadings')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.statCard}
+            onPress={() => router.push('/(tabs)/compatibility')}
+          >
+            <Text style={styles.statValue}>{totalCompatibility}</Text>
+            <Text style={styles.statLabel}>{tDashboard('statsCompatibility')}</Text>
           </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Recent Charts */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{tDashboard('recentCharts')}</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/charts')}>
-          <Text style={styles.sectionLink}>{tDashboard('viewAllCharts')} →</Text>
-        </TouchableOpacity>
-      </View>
-      {charts.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>{tDashboard('noCharts')}</Text>
+        {/* Quick actions */}
+        <View style={styles.quickActionsCard}>
+          <Text style={styles.quickActionsLabel}>{tDashboard('quickActions')}</Text>
+          <View style={styles.quickActionsButtons}>
+            <TouchableOpacity
+              style={[styles.quickActionButton, styles.quickActionPrimary]}
+              onPress={() =>
+                router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/charts') as never)
+              }
+            >
+              <Text style={styles.quickActionPrimaryText}>{tDashboard('createNewChart')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.quickActionButton, styles.quickActionOutline]}
+              onPress={() => router.push('/(tabs)/charts')}
+            >
+              <Text style={styles.quickActionOutlineText}>{tDashboard('viewAllCharts')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.quickActionButton, styles.quickActionOutline]}
+              onPress={() => router.push('/(tabs)/readings')}
+            >
+              <Text style={styles.quickActionOutlineText}>{tDashboard('viewAllReadings')}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      ) : (
-        charts.map((chart) => (
-          <TouchableOpacity
-            key={chart.id}
-            style={styles.chartCard}
-            onPress={() =>
-              router.push(withReturnTo(`/(tabs)/charts/${chart.id}`, '/(tabs)/charts') as never)
-            }
-          >
-            <View style={styles.chartCardRow}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{chart.person_name.charAt(0).toUpperCase()}</Text>
-              </View>
-              <View style={styles.chartCardInfo}>
-                <Text style={styles.chartCardLabel}>{chart.label}</Text>
-                <Text style={styles.chartCardSub}>{chart.person_name}</Text>
-                <Text style={styles.chartCardSub}>
-                  {chart.birth_date} · {chart.city}, {chart.country}
-                </Text>
-              </View>
-              <View style={styles.subjectBadge}>
-                <Text style={styles.subjectBadgeText}>
-                  {tWorkspace(
-                    `subjectTypes.${chart.subject_type}` as Parameters<typeof tWorkspace>[0],
-                  ) ?? chart.subject_type}
-                </Text>
-              </View>
-            </View>
+
+        {/* Recent Charts */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{tDashboard('recentCharts')}</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/charts')}>
+            <Text style={styles.sectionLink}>{tDashboard('viewAllCharts')} →</Text>
           </TouchableOpacity>
-        ))
-      )}
-
-      {/* Recent Readings */}
-      <View style={[styles.sectionHeader, { marginTop: 20 }]}>
-        <Text style={styles.sectionTitle}>{tDashboard('recentReadings')}</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/readings')}>
-          <Text style={styles.sectionLink}>{tDashboard('viewAllReadings')} →</Text>
-        </TouchableOpacity>
-      </View>
-      {readings.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>{tDashboard('noReadings')}</Text>
         </View>
-      ) : (
-        readings.map((reading) => (
-          <TouchableOpacity
-            key={reading.id}
-            style={styles.readingCard}
-            onPress={() =>
-              router.push(
-                withReturnTo(`/(tabs)/readings/${reading.id}`, '/(tabs)/readings') as never,
-              )
-            }
-          >
-            <Text style={styles.readingIcon}>✦</Text>
-            <View style={styles.readingInfo}>
-              <Text style={styles.readingTitle} numberOfLines={1}>
-                {reading.title ||
-                  tDashboard(
+        {charts.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>{tDashboard('noCharts')}</Text>
+          </View>
+        ) : (
+          charts.map((chart) => (
+            <TouchableOpacity
+              key={chart.id}
+              style={styles.chartCard}
+              onPress={() =>
+                router.push(withReturnTo(`/(tabs)/charts/${chart.id}`, '/(tabs)/charts') as never)
+              }
+            >
+              <View style={styles.chartCardRow}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{chart.person_name.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={styles.chartCardInfo}>
+                  <Text style={styles.chartCardLabel}>{chart.label}</Text>
+                  <Text style={styles.chartCardSub}>{chart.person_name}</Text>
+                  <Text style={styles.chartCardSub}>
+                    {chart.birth_date} · {chart.city}, {chart.country}
+                  </Text>
+                </View>
+                <View style={styles.subjectBadge}>
+                  <Text style={styles.subjectBadgeText}>
+                    {tWorkspace(
+                      `subjectTypes.${chart.subject_type}` as Parameters<typeof tWorkspace>[0],
+                    ) ?? chart.subject_type}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+
+        {/* Recent Readings */}
+        <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+          <Text style={styles.sectionTitle}>{tDashboard('recentReadings')}</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/readings')}>
+            <Text style={styles.sectionLink}>{tDashboard('viewAllReadings')} →</Text>
+          </TouchableOpacity>
+        </View>
+        {readings.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>{tDashboard('noReadings')}</Text>
+          </View>
+        ) : (
+          readings.map((reading) => (
+            <TouchableOpacity
+              key={reading.id}
+              style={styles.readingCard}
+              onPress={() =>
+                router.push(
+                  withReturnTo(`/(tabs)/readings/${reading.id}`, '/(tabs)/readings') as never,
+                )
+              }
+            >
+              <Text style={styles.readingIcon}>✦</Text>
+              <View style={styles.readingInfo}>
+                <Text style={styles.readingTitle} numberOfLines={1}>
+                  {reading.title ||
+                    tDashboard(
+                      `readingTypes.${reading.reading_type}` as Parameters<typeof tDashboard>[0],
+                    ) ||
+                    reading.reading_type}
+                </Text>
+                <Text style={styles.readingMeta}>
+                  {tDashboard(
                     `readingTypes.${reading.reading_type}` as Parameters<typeof tDashboard>[0],
-                  ) ||
-                  reading.reading_type}
-              </Text>
-              <Text style={styles.readingMeta}>
-                {tDashboard(
-                  `readingTypes.${reading.reading_type}` as Parameters<typeof tDashboard>[0],
-                ) ?? reading.reading_type}
-                {' · '}
-                {new Date(reading.created_at).toLocaleDateString('ru-RU')}
-              </Text>
-            </View>
-            {reading.status !== 'ready' && (
-              <View style={styles.statusChip}>
-                <Text style={styles.statusChipText}>{tDashboard('statusPending')}</Text>
+                  ) ?? reading.reading_type}
+                  {' · '}
+                  {new Date(reading.created_at).toLocaleDateString('ru-RU')}
+                </Text>
               </View>
-            )}
-          </TouchableOpacity>
-        ))
-      )}
+              {reading.status !== 'ready' && (
+                <View style={styles.statusChip}>
+                  <Text style={styles.statusChipText}>{tDashboard('statusPending')}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))
+        )}
 
-      {/* Store / credits banner */}
-      <TouchableOpacity
-        style={styles.storeBanner}
-        onPress={() => router.push(withReturnTo('/store', '/(tabs)') as never)}
-      >
-        <Text style={styles.storeBannerLeft}>{tCredits('storeTitle')}</Text>
-        <Text style={styles.storeBannerRight}>
-          {balance} {tCredits('creditsUnit')} →
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+        {/* Store / credits banner */}
+        <TouchableOpacity
+          style={styles.storeBanner}
+          onPress={() => router.push(withReturnTo('/store', '/(tabs)') as never)}
+        >
+          <Text style={styles.storeBannerLeft}>{tCredits('storeTitle')}</Text>
+          <Text style={styles.storeBannerRight}>
+            {balance} {tCredits('creditsUnit')} →
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
 

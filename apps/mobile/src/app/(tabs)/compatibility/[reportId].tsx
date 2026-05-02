@@ -474,18 +474,7 @@ export default function CompatibilityDetailScreen() {
   const disclaimers = content?.disclaimers ?? [];
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      {/* Back + chart links */}
+    <View style={styles.container}>
       <View style={[styles.topBar, { marginTop: insets.top + 8 }]}>
         <TouchableOpacity
           style={styles.backButton}
@@ -528,7 +517,6 @@ export default function CompatibilityDetailScreen() {
         </View>
       </View>
 
-      {/* Title block */}
       <View style={styles.titleBlock}>
         <Text style={styles.typeLabel}>
           {tCompat(`type_${compatType}` as Parameters<typeof tCompat>[0])}
@@ -566,211 +554,223 @@ export default function CompatibilityDetailScreen() {
         </View>
       </View>
 
-      {/* Generating */}
-      {isGenerating ? (
-        <View style={styles.generatingBlock}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.generatingTitle}>{tCompat('generatingTitle')}</Text>
-          {(
-            ['generatingStep1', 'generatingStep2', 'generatingStep3', 'generatingStep4'] as const
-          ).map((k) => (
-            <Text key={k} style={styles.generatingStep}>
-              {tCompat(k)}
-            </Text>
-          ))}
-        </View>
-      ) : null}
-
-      {/* Error banner + retry */}
-      {isError ? (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorBannerTitle}>{tCompat('errorBannerTitle')}</Text>
-          <Text style={styles.errorBannerDesc}>{tCompat('errorBannerDesc')}</Text>
-          <TouchableOpacity
-            style={[styles.retryButton, retrying && styles.buttonDisabled]}
-            onPress={handleRetry}
-            disabled={retrying}
-          >
-            {retrying ? (
-              <ActivityIndicator size="small" color={colors.primaryForeground} />
-            ) : (
-              <Text style={styles.retryButtonText}>{tCompat('generatingRetry')}</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      ) : null}
-
-      {/* ── Ready content ── */}
-      {isReady ? (
-        <>
-          {/* Harmony score card */}
-          <View style={styles.harmonyCard}>
-            {/* Person pair header */}
-            <View style={styles.personPairRow}>
-              <View style={styles.personCell}>
-                <View style={[styles.personAvatar, { backgroundColor: colors.primaryTint }]}>
-                  <Text style={[styles.personInitial, { color: colors.primary }]}>
-                    {primaryName[0]?.toUpperCase() ?? '?'}
-                  </Text>
-                </View>
-                <View style={styles.personInfo}>
-                  <Text style={styles.personName} numberOfLines={1}>
-                    {primaryName}
-                  </Text>
-                  <Text style={styles.personRole}>{tCompat('primaryChart')}</Text>
-                </View>
-              </View>
-              <Text style={styles.crossSign}>×</Text>
-              <View style={[styles.personCell, styles.personCellRight]}>
-                <View style={[styles.personAvatar, { backgroundColor: colors.muted }]}>
-                  <Text style={[styles.personInitial, { color: colors.foreground }]}>
-                    {secondaryName[0]?.toUpperCase() ?? '?'}
-                  </Text>
-                </View>
-                <View style={[styles.personInfo, styles.personInfoRight]}>
-                  <Text style={[styles.personName, styles.personNameRight]} numberOfLines={1}>
-                    {secondaryName}
-                  </Text>
-                  <Text style={[styles.personRole, styles.personRoleRight]}>
-                    {tCompat('secondaryChart')}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Gauge + score */}
-            <View style={styles.gaugeSection}>
-              <Text style={styles.harmonyIndexLabel}>{tCompat('harmonyIndex')}</Text>
-              <SpeedometerGauge score={harmonyScore} accent={harmonyColors.accent} />
-              <View style={styles.scoreRow}>
-                <Text style={styles.scoreNumber}>{harmonyScore}</Text>
-                <Text style={styles.scoreOutOf}>{tCompat('outOf100')}</Text>
-              </View>
-              <View
-                style={[
-                  styles.harmonyPill,
-                  {
-                    backgroundColor: harmonyColors.softAccent,
-                    borderColor: `${harmonyColors.accent}33`,
-                  },
-                ]}
-              >
-                <Text style={[styles.harmonyPillText, { color: harmonyColors.accent }]}>
-                  {harmonyLabel}
-                </Text>
-              </View>
-              <Text style={styles.harmonyDesc}>{harmonyDesc}</Text>
-            </View>
-
-            {/* Info boxes */}
-            <View style={styles.infoBoxes}>
-              <View style={styles.infoBox}>
-                <Text style={styles.infoBoxTitle}>{tCompat('infoWhatWeCount')}</Text>
-                <Text style={styles.infoBoxBody}>{tCompat('infoPlanets')}</Text>
-              </View>
-              <View style={styles.infoBox}>
-                <Text style={styles.infoBoxTitle}>{tCompat('infoBasisTitle')}</Text>
-                <Text style={styles.infoBoxBody}>{tCompat('infoBasisBody')}</Text>
-              </View>
-              <View style={styles.infoBox}>
-                <Text style={styles.infoBoxTitle}>{tCompat('infoInterpretTitle')}</Text>
-                <Text style={styles.infoBoxBody}>
-                  {tCompat(`infoInterpretBody_${compatType}` as Parameters<typeof tCompat>[0])}
-                </Text>
-              </View>
-            </View>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {/* Generating */}
+        {isGenerating ? (
+          <View style={styles.generatingBlock}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.generatingTitle}>{tCompat('generatingTitle')}</Text>
+            {(
+              ['generatingStep1', 'generatingStep2', 'generatingStep3', 'generatingStep4'] as const
+            ).map((k) => (
+              <Text key={k} style={styles.generatingStep}>
+                {tCompat(k)}
+              </Text>
+            ))}
           </View>
+        ) : null}
 
-          {/* Summary */}
-          {content?.summary ? (
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryText}>{content.summary}</Text>
-            </View>
-          ) : null}
+        {/* Error banner + retry */}
+        {isError ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerTitle}>{tCompat('errorBannerTitle')}</Text>
+            <Text style={styles.errorBannerDesc}>{tCompat('errorBannerDesc')}</Text>
+            <TouchableOpacity
+              style={[styles.retryButton, retrying && styles.buttonDisabled]}
+              onPress={handleRetry}
+              disabled={retrying}
+            >
+              {retrying ? (
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
+              ) : (
+                <Text style={styles.retryButtonText}>{tCompat('generatingRetry')}</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
-          {/* Key Aspects */}
-          {keyAspects.length > 0 ? (
-            <View style={styles.sectionBlock}>
-              <Text style={styles.sectionHeading}>{tCompat('keyAspects')}</Text>
-              {keyAspects.map((aspect, i) => (
-                <View key={i} style={styles.aspectCard}>
-                  <View style={styles.aspectHeader}>
-                    <Text style={styles.aspectPlanets}>
-                      {aspect.bodyA} — {aspect.bodyB}
+        {/* ── Ready content ── */}
+        {isReady ? (
+          <>
+            {/* Harmony score card */}
+            <View style={styles.harmonyCard}>
+              {/* Person pair header */}
+              <View style={styles.personPairRow}>
+                <View style={styles.personCell}>
+                  <View style={[styles.personAvatar, { backgroundColor: colors.primaryTint }]}>
+                    <Text style={[styles.personInitial, { color: colors.primary }]}>
+                      {primaryName[0]?.toUpperCase() ?? '?'}
                     </Text>
-                    <Text style={styles.aspectKey}>{aspect.aspectKey}</Text>
                   </View>
-                  <Text style={styles.aspectHeadline}>{aspect.headline}</Text>
-                  <Text style={styles.aspectBody}>{aspect.body}</Text>
+                  <View style={styles.personInfo}>
+                    <Text style={styles.personName} numberOfLines={1}>
+                      {primaryName}
+                    </Text>
+                    <Text style={styles.personRole}>{tCompat('primaryChart')}</Text>
+                  </View>
                 </View>
-              ))}
-            </View>
-          ) : null}
+                <Text style={styles.crossSign}>×</Text>
+                <View style={[styles.personCell, styles.personCellRight]}>
+                  <View style={[styles.personAvatar, { backgroundColor: colors.muted }]}>
+                    <Text style={[styles.personInitial, { color: colors.foreground }]}>
+                      {secondaryName[0]?.toUpperCase() ?? '?'}
+                    </Text>
+                  </View>
+                  <View style={[styles.personInfo, styles.personInfoRight]}>
+                    <Text style={[styles.personName, styles.personNameRight]} numberOfLines={1}>
+                      {secondaryName}
+                    </Text>
+                    <Text style={[styles.personRole, styles.personRoleRight]}>
+                      {tCompat('secondaryChart')}
+                    </Text>
+                  </View>
+                </View>
+              </View>
 
-          {/* Placement highlights */}
-          {placementHighlights.length > 0 ? (
-            <View style={styles.sectionBlock}>
-              <Text style={styles.sectionHeading}>{tCompat('keyAspects')}</Text>
-              <View style={styles.highlightsGrid}>
-                {placementHighlights.map((h, i) => (
-                  <View key={i} style={styles.highlightCell}>
-                    <Text style={styles.highlightText}>{h}</Text>
+              {/* Gauge + score */}
+              <View style={styles.gaugeSection}>
+                <Text style={styles.harmonyIndexLabel}>{tCompat('harmonyIndex')}</Text>
+                <SpeedometerGauge score={harmonyScore} accent={harmonyColors.accent} />
+                <View style={styles.scoreRow}>
+                  <Text style={styles.scoreNumber}>{harmonyScore}</Text>
+                  <Text style={styles.scoreOutOf}>{tCompat('outOf100')}</Text>
+                </View>
+                <View
+                  style={[
+                    styles.harmonyPill,
+                    {
+                      backgroundColor: harmonyColors.softAccent,
+                      borderColor: `${harmonyColors.accent}33`,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.harmonyPillText, { color: harmonyColors.accent }]}>
+                    {harmonyLabel}
+                  </Text>
+                </View>
+                <Text style={styles.harmonyDesc}>{harmonyDesc}</Text>
+              </View>
+
+              {/* Info boxes */}
+              <View style={styles.infoBoxes}>
+                <View style={styles.infoBox}>
+                  <Text style={styles.infoBoxTitle}>{tCompat('infoWhatWeCount')}</Text>
+                  <Text style={styles.infoBoxBody}>{tCompat('infoPlanets')}</Text>
+                </View>
+                <View style={styles.infoBox}>
+                  <Text style={styles.infoBoxTitle}>{tCompat('infoBasisTitle')}</Text>
+                  <Text style={styles.infoBoxBody}>{tCompat('infoBasisBody')}</Text>
+                </View>
+                <View style={styles.infoBox}>
+                  <Text style={styles.infoBoxTitle}>{tCompat('infoInterpretTitle')}</Text>
+                  <Text style={styles.infoBoxBody}>
+                    {tCompat(`infoInterpretBody_${compatType}` as Parameters<typeof tCompat>[0])}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Summary */}
+            {content?.summary ? (
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryText}>{content.summary}</Text>
+              </View>
+            ) : null}
+
+            {/* Key Aspects */}
+            {keyAspects.length > 0 ? (
+              <View style={styles.sectionBlock}>
+                <Text style={styles.sectionHeading}>{tCompat('keyAspects')}</Text>
+                {keyAspects.map((aspect, i) => (
+                  <View key={i} style={styles.aspectCard}>
+                    <View style={styles.aspectHeader}>
+                      <Text style={styles.aspectPlanets}>
+                        {aspect.bodyA} — {aspect.bodyB}
+                      </Text>
+                      <Text style={styles.aspectKey}>{aspect.aspectKey}</Text>
+                    </View>
+                    <Text style={styles.aspectHeadline}>{aspect.headline}</Text>
+                    <Text style={styles.aspectBody}>{aspect.body}</Text>
                   </View>
                 ))}
               </View>
-            </View>
-          ) : null}
+            ) : null}
 
-          {/* Sections */}
-          {sections.length > 0 ? (
-            <View style={styles.sectionsBlock}>
-              {sections.map((section, idx) => (
-                <View key={section.key} style={styles.sectionItem}>
-                  <View style={styles.sectionHeader}>
-                    <View style={styles.sectionCircle}>
-                      <Text style={styles.sectionCircleText}>{idx + 1}</Text>
+            {/* Placement highlights */}
+            {placementHighlights.length > 0 ? (
+              <View style={styles.sectionBlock}>
+                <Text style={styles.sectionHeading}>{tCompat('keyAspects')}</Text>
+                <View style={styles.highlightsGrid}>
+                  {placementHighlights.map((h, i) => (
+                    <View key={i} style={styles.highlightCell}>
+                      <Text style={styles.highlightText}>{h}</Text>
                     </View>
-                    <Text style={styles.sectionTitle}>{section.title}</Text>
-                  </View>
-                  <View style={styles.sectionBody}>
-                    {section.content
-                      .split('\n\n')
-                      .filter(Boolean)
-                      .map((para, pIdx) => (
-                        <Text key={pIdx} style={styles.sectionParagraph}>
-                          {para}
-                        </Text>
-                      ))}
-                  </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-          ) : null}
+              </View>
+            ) : null}
 
-          {/* Advice */}
-          {advice.length > 0 ? (
-            <View style={styles.adviceCard}>
-              <Text style={styles.adviceHeading}>{tCompat('adviceHeading')}</Text>
-              {advice.map((item, idx) => (
-                <View key={idx} style={styles.numberedRow}>
-                  <View style={styles.numberCircle}>
-                    <Text style={styles.numberCircleText}>{idx + 1}</Text>
+            {/* Sections */}
+            {sections.length > 0 ? (
+              <View style={styles.sectionsBlock}>
+                {sections.map((section, idx) => (
+                  <View key={section.key} style={styles.sectionItem}>
+                    <View style={styles.sectionHeader}>
+                      <View style={styles.sectionCircle}>
+                        <Text style={styles.sectionCircleText}>{idx + 1}</Text>
+                      </View>
+                      <Text style={styles.sectionTitle}>{section.title}</Text>
+                    </View>
+                    <View style={styles.sectionBody}>
+                      {section.content
+                        .split('\n\n')
+                        .filter(Boolean)
+                        .map((para, pIdx) => (
+                          <Text key={pIdx} style={styles.sectionParagraph}>
+                            {para}
+                          </Text>
+                        ))}
+                    </View>
                   </View>
-                  <Text style={styles.numberedText}>{item}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
+                ))}
+              </View>
+            ) : null}
 
-          {/* Disclaimers */}
-          {disclaimers.length > 0 ? (
-            <View style={styles.disclaimersCard}>
-              <Text style={styles.disclaimersText}>{disclaimers.join(' ')}</Text>
-            </View>
-          ) : null}
-        </>
-      ) : null}
-    </ScrollView>
+            {/* Advice */}
+            {advice.length > 0 ? (
+              <View style={styles.adviceCard}>
+                <Text style={styles.adviceHeading}>{tCompat('adviceHeading')}</Text>
+                {advice.map((item, idx) => (
+                  <View key={idx} style={styles.numberedRow}>
+                    <View style={styles.numberCircle}>
+                      <Text style={styles.numberCircleText}>{idx + 1}</Text>
+                    </View>
+                    <Text style={styles.numberedText}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {/* Disclaimers */}
+            {disclaimers.length > 0 ? (
+              <View style={styles.disclaimersCard}>
+                <Text style={styles.disclaimersText}>{disclaimers.join(' ')}</Text>
+              </View>
+            ) : null}
+          </>
+        ) : null}
+      </ScrollView>
+    </View>
   );
 }
 
