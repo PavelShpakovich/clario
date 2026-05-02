@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { goBackTo, withReturnTo } from '@/lib/navigation';
@@ -19,6 +20,7 @@ import { runToastMutation } from '@/lib/mutation-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { useInsufficientCredits } from '@/lib/insufficient-credits-context';
+import { usePullToRefresh } from '@/lib/refresh';
 
 function HoroscopeSkeleton() {
   const colors = useColors();
@@ -96,24 +98,28 @@ export default function HoroscopeScreen() {
   const tWorkspace = useTranslations('workspace');
   const { showInsufficientCredits } = useInsufficientCredits();
 
-  async function loadForecast() {
+  const loadForecast = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
     try {
       const data: DailyForecastResponse = await forecastsApi.getDailyForecast();
       setForecast(data.forecast);
       setPreview(data.preview);
       setFullAccessRequired(data.fullAccessRequired);
       setDisplayName(data.displayName ?? '');
-      if (data.forecast?.status === 'pending') {
+      if (!isRefresh && data.forecast?.status === 'pending') {
         void forecastsApi.startGeneration(data.forecast.id);
       }
+      return data;
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadForecast(true));
 
   useEffect(() => {
     void loadForecast();
-  }, []);
+  }, [loadForecast]);
 
   useEffect(() => {
     void creditsApi
@@ -386,7 +392,17 @@ export default function HoroscopeScreen() {
   });
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+        />
+      }
+    >
       {/* Header row: back + regenerate (only when user has full access) */}
       <View style={[styles.headerRow, { marginTop: insets.top + 8 }]}>
         <TouchableOpacity

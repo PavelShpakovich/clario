@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { calendarApi } from '@clario/api-client';
@@ -16,6 +17,7 @@ import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { goBackTo } from '@/lib/navigation';
+import { usePullToRefresh } from '@/lib/refresh';
 
 const signLabels = messages.chartDetail.signs as Record<string, string>;
 const phaseLabels = (messages.calendar as { phases: Record<string, string> }).phases;
@@ -115,17 +117,21 @@ export default function CalendarScreen() {
   const tCal = useTranslations('calendar');
   const tNav = useTranslations('navigation');
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const { days: data } = await calendarApi.getCalendar();
-        setDays(data);
-      } finally {
-        setLoading(false);
-      }
+  const loadCalendar = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
+    try {
+      const { days: data } = await calendarApi.getCalendar();
+      setDays(data);
+    } finally {
+      setLoading(false);
     }
-    void load();
   }, []);
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadCalendar(true));
+
+  useEffect(() => {
+    void loadCalendar();
+  }, [loadCalendar]);
 
   if (loading) {
     return <CalendarSkeleton />;
@@ -147,6 +153,13 @@ export default function CalendarScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 8 }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+        />
+      }
     >
       {/* Page header */}
       <View style={styles.headerRow}>

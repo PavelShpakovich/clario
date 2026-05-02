@@ -27,6 +27,7 @@ import { runToastMutation } from '@/lib/mutation-toast';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
+import { usePullToRefresh } from '@/lib/refresh';
 
 // ─── Skeletons ───────────────────────────────────────────────────────────────
 
@@ -605,9 +606,11 @@ export default function AdminScreen() {
   } | null>(null);
 
   // Stable dep-free callback — avoids re-render loop from useTranslations returning new refs
-  const loadAll = useCallback(async (p: number) => {
-    setAnalyticsLoading(true);
-    setUsersLoading(true);
+  const loadAll = useCallback(async (p: number, isRefresh = false) => {
+    if (!isRefresh) {
+      setAnalyticsLoading(true);
+      setUsersLoading(true);
+    }
 
     const [analyticsResult, usersResult] = await Promise.allSettled([
       adminFetch<AdminAnalytics>('/api/admin/analytics'),
@@ -628,6 +631,8 @@ export default function AdminScreen() {
     }
     setUsersLoading(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadAll(page, true));
 
   useFocusEffect(
     useCallback(() => {
@@ -820,8 +825,8 @@ export default function AdminScreen() {
             </View>
           </View>
         }
-        refreshing={usersLoading && users.length > 0}
-        onRefresh={() => void loadAll(page)}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         data={
           usersLoading && users.length === 0
             ? (Array.from({ length: 8 }, (_, i) => ({ id: `sk-${i}` })) as AdminUser[])

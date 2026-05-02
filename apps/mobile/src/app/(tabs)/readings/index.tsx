@@ -21,6 +21,7 @@ import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { SwipeToDeleteRow } from '@/components/SwipeToDeleteRow';
+import { usePullToRefresh } from '@/lib/refresh';
 
 function ReadingsListSkeleton() {
   const colors = useColors();
@@ -84,7 +85,6 @@ export default function ReadingsListScreen() {
   const insets = useSafeAreaInsets();
   const [readings, setReadings] = useState<ReadingRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -100,9 +100,10 @@ export default function ReadingsListScreen() {
       setReadings(data);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadReadings(true));
 
   useEffect(() => {
     void loadReadings();
@@ -130,11 +131,6 @@ export default function ReadingsListScreen() {
       }
     };
   }, [readings, loadReadings]);
-
-  function handleRefresh() {
-    setRefreshing(true);
-    void loadReadings(true);
-  }
 
   async function confirmDelete(reading: ReadingRecord) {
     const ok = await confirm({

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { goBackTo, withReturnTo } from '@/lib/navigation';
@@ -28,6 +29,7 @@ import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleReadyNotification } from '@/lib/notifications';
 import { Skeleton } from '@/components/Skeleton';
+import { usePullToRefresh } from '@/lib/refresh';
 
 const notifMessages = messages.notifications;
 
@@ -333,25 +335,37 @@ export default function CompatibilityDetailScreen() {
 
   const tCompat = useTranslations('compatibility');
 
-  useEffect(() => {
-    if (!reportId) return;
-    async function load() {
+  const loadReport = useCallback(
+    async (isRefresh = false) => {
+      if (!reportId) return null;
+      if (!isRefresh) setLoading(true);
       try {
         const { report: data } = await compatibilityApi.getReport(reportId);
         prevStatusRef.current = data.status;
         setReport(data);
-        if (data.status === 'pending') {
-          void compatibilityApi.startGeneration(reportId).catch(() => {});
-        }
+        return data;
       } finally {
         setLoading(false);
+      }
+    },
+    [reportId],
+  );
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadReport(true));
+
+  useEffect(() => {
+    if (!reportId) return;
+    async function load() {
+      const data = await loadReport();
+      if (data?.status === 'pending') {
+        void compatibilityApi.startGeneration(reportId).catch(() => {});
       }
     }
     void load();
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [reportId]);
+  }, [loadReport, reportId]);
 
   useEffect(() => {
     if (!report) return;
@@ -460,7 +474,17 @@ export default function CompatibilityDetailScreen() {
   const disclaimers = content?.disclaimers ?? [];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+        />
+      }
+    >
       {/* Back + chart links */}
       <View style={[styles.topBar, { marginTop: insets.top + 8 }]}>
         <TouchableOpacity

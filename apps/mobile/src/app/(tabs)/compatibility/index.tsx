@@ -19,6 +19,7 @@ import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { SwipeToDeleteRow } from '@/components/SwipeToDeleteRow';
+import { usePullToRefresh } from '@/lib/refresh';
 
 function CompatibilityListSkeleton() {
   const colors = useColors();
@@ -88,7 +89,6 @@ export default function CompatibilityListScreen() {
   const insets = useSafeAreaInsets();
   const [reports, setReports] = useState<CompatibilityReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const tCompat = useTranslations('compatibility');
   const tCommon = useTranslations('common');
@@ -101,20 +101,16 @@ export default function CompatibilityListScreen() {
       setReports(data);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadReports(true));
 
   useFocusEffect(
     useCallback(() => {
       void loadReports();
     }, [loadReports]),
   );
-
-  function handleRefresh() {
-    setRefreshing(true);
-    void loadReports(true);
-  }
 
   async function handleDelete(report: CompatibilityReport) {
     const personTitle =

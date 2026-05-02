@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
+  RefreshControl,
 } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { goBackTo, withReturnTo } from '@/lib/navigation';
@@ -25,6 +26,7 @@ import type { WheelPosition, WheelAspect } from '@/components/ChartWheel';
 import { Skeleton } from '@/components/Skeleton';
 import { ApiClientError } from '@clario/api-client';
 import { useInsufficientCredits } from '@/lib/insufficient-credits-context';
+import { usePullToRefresh } from '@/lib/refresh';
 
 function ChartDetailSkeleton() {
   const colors = useColors();
@@ -338,6 +340,8 @@ export default function ChartDetailScreen() {
     [PAGE_SIZE, chartId],
   );
 
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadChartDetail(true));
+
   useEffect(() => {
     void loadChartDetail();
   }, [loadChartDetail]);
@@ -559,6 +563,13 @@ export default function ChartDetailScreen() {
         ref={scrollViewRef}
         style={styles.container}
         contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
       >
         {/* ── Nav row ──────────────────────────────────────────────────────── */}
         <View style={[styles.navRow, { marginTop: insets.top + 12 }]}>

@@ -8,6 +8,7 @@ import {
   ScrollView,
   Switch,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +27,7 @@ import { TimezonePickerModal, timezoneLabel } from '@/components/TimezonePickerM
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { Skeleton } from '@/components/Skeleton';
 import { withReturnTo } from '@/lib/navigation';
+import { usePullToRefresh } from '@/lib/refresh';
 
 function SettingsSkeleton() {
   const colors = useColors();
@@ -116,39 +118,42 @@ export default function SettingsScreen() {
   const tAdmin = useTranslations('admin');
   const confirm = useConfirm();
 
+  const loadSettings = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
+
+    try {
+      const [
+        profileData,
+        prefsData,
+        {
+          data: { session },
+        },
+      ] = await Promise.all([
+        profileApi.getProfile(true),
+        preferencesApi.getPreferences(),
+        supabase.auth.getSession(),
+      ]);
+      setDisplayName(profileData.display_name ?? '');
+      setTimezone(profileData.timezone ?? '');
+      setBirthDataConsentAt(profileData.birth_data_consent_at ?? null);
+      setEmail(session?.user?.email ?? '');
+      setPrefs(prefsData);
+      getAuthHeaders().then((headers) =>
+        fetch(resolveUrl('/api/admin/analytics'), { headers })
+          .then((r) => setIsAdmin(r.ok))
+          .catch(() => {}),
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadSettings(true));
+
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
-      async function load() {
-        try {
-          const [
-            profileData,
-            prefsData,
-            {
-              data: { session },
-            },
-          ] = await Promise.all([
-            profileApi.getProfile(true),
-            preferencesApi.getPreferences(),
-            supabase.auth.getSession(),
-          ]);
-          setDisplayName(profileData.display_name ?? '');
-          setTimezone(profileData.timezone ?? '');
-          setBirthDataConsentAt(profileData.birth_data_consent_at ?? null);
-          setEmail(session?.user?.email ?? '');
-          setPrefs(prefsData);
-          // Check admin access silently
-          getAuthHeaders().then((headers) =>
-            fetch(resolveUrl('/api/admin/analytics'), { headers })
-              .then((r) => setIsAdmin(r.ok))
-              .catch(() => {}),
-          );
-        } finally {
-          setLoading(false);
-        }
-      }
-      void load();
-    }, []),
+      void loadSettings();
+    }, [loadSettings]),
   );
 
   async function handleSaveName() {
@@ -228,7 +233,17 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+        />
+      }
+    >
       {/* Page header */}
       <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
         <Text style={styles.eyebrow}>{tSettings('sectionLabel')}</Text>

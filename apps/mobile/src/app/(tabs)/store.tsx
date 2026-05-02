@@ -22,6 +22,7 @@ import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
+import { usePullToRefresh } from '@/lib/refresh';
 
 function StoreSkeleton() {
   const colors = useColors();
@@ -129,7 +130,6 @@ export default function StoreScreen() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 5;
 
@@ -152,9 +152,10 @@ export default function StoreScreen() {
       setPage(1); // always reset to page 1 on (re)focus
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadStatic(true));
 
   useFocusEffect(
     useCallback(() => {
@@ -172,11 +173,6 @@ export default function StoreScreen() {
       .catch(() => {})
       .finally(() => setHistoryLoading(false));
   }, [page, balance]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  function handleRefresh() {
-    setRefreshing(true);
-    void loadStatic(true);
-  }
 
   if (loading) {
     return <StoreSkeleton />;

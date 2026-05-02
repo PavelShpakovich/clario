@@ -18,6 +18,7 @@ import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { withReturnTo } from '@/lib/navigation';
+import { usePullToRefresh } from '@/lib/refresh';
 
 const SIGN_ELEMENT: Record<string, string> = {
   aries: 'fire',
@@ -164,7 +165,6 @@ export default function DashboardScreen() {
 
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [balance, setBalance] = useState(0);
   const [charts, setCharts] = useState<ChartRecord[]>([]);
@@ -228,9 +228,10 @@ export default function DashboardScreen() {
       }
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => load(true));
 
   const isFirstLoad = useRef(true);
 
@@ -241,11 +242,6 @@ export default function DashboardScreen() {
       void load(refresh);
     }, [load]),
   );
-
-  function handleRefresh() {
-    setRefreshing(true);
-    void load(true);
-  }
 
   const hasSky = !!(todaySky.sun ?? todaySky.moon);
 

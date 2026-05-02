@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi } from '@clario/api-client';
@@ -12,6 +12,7 @@ import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { SwipeToDeleteRow } from '@/components/SwipeToDeleteRow';
+import { usePullToRefresh } from '@/lib/refresh';
 
 const subjectTypeLabelsMap = messages.workspace.subjectTypes as Record<string, string>;
 const signsMap = messages.chartDetail.signs as Record<string, string>;
@@ -113,7 +114,6 @@ export default function ChartsListScreen() {
   const insets = useSafeAreaInsets();
   const [charts, setCharts] = useState<ChartRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const tWorkspace = useTranslations('workspace');
   const tCommon = useTranslations('common');
@@ -126,18 +126,14 @@ export default function ChartsListScreen() {
       setCharts(data);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadCharts(true));
 
   useEffect(() => {
     void loadCharts();
   }, [loadCharts]);
-
-  function handleRefresh() {
-    setRefreshing(true);
-    void loadCharts(true);
-  }
 
   async function confirmDelete(chart: ChartRecord) {
     const ok = await confirm({

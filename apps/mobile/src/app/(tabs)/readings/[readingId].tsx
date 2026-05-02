@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { goBackTo, withReturnTo } from '@/lib/navigation';
@@ -22,6 +23,7 @@ import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleReadyNotification } from '@/lib/notifications';
 import { Skeleton } from '@/components/Skeleton';
+import { usePullToRefresh } from '@/lib/refresh';
 
 const readingTypeLabelsMap = messages.readingDetail.readingTypes as Record<string, string>;
 
@@ -129,14 +131,6 @@ export default function ReadingDetailScreen() {
   }, [reading?.status]);
 
   useEffect(() => {
-    if (!readingId) return;
-    void loadReading();
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [readingId]);
-
-  useEffect(() => {
     if (!readingId || !reading) return;
     const { status } = reading;
 
@@ -180,15 +174,30 @@ export default function ReadingDetailScreen() {
     };
   }, [reading?.status, readingId]);
 
-  async function loadReading() {
+  const loadReading = useCallback(
+    async (isRefresh = false) => {
+      if (!readingId) return null;
+      if (!isRefresh) setLoading(true);
+      try {
+        const { reading: data } = await readingsApi.getReading(readingId);
+        setReading(data);
+        return data;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [readingId],
+  );
+
+  const { refreshing, handleRefresh } = usePullToRefresh(() => loadReading(true));
+
+  useEffect(() => {
     if (!readingId) return;
-    try {
-      const { reading: data } = await readingsApi.getReading(readingId);
-      setReading(data);
-    } finally {
-      setLoading(false);
-    }
-  }
+    void loadReading();
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [loadReading, readingId]);
 
   async function handleDownloadPdf() {
     if (!readingId) return;
@@ -260,7 +269,17 @@ export default function ReadingDetailScreen() {
   const isGenerating = status === 'pending' || status === 'generating';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+        />
+      }
+    >
       {/* Back */}
       <TouchableOpacity
         style={[styles.backButton, { marginTop: insets.top + 8 }]}
