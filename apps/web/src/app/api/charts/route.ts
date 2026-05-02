@@ -6,6 +6,7 @@ import { chartCreateSchema } from '@/lib/astrology/chart-schema';
 import { createChart } from '@/lib/astrology/chart-service';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { checkRateLimit, rateLimitHeaders } from '@/lib/rate-limit';
+import { normalizeCreateChartBirthTime, resolveChartTimezone } from '@clario/validation';
 
 const db = supabaseAdmin;
 
@@ -79,7 +80,11 @@ export const POST = withApiHandler(async (req) => {
   }
 
   const json = await req.json();
-  const parsed = chartCreateSchema.safeParse(json);
+  const parsed = chartCreateSchema.safeParse({
+    ...json,
+    birthTime: normalizeCreateChartBirthTime(json.birthTimeKnown ?? true, json.birthTime),
+    timezone: resolveChartTimezone(json.timezone, json.country),
+  });
 
   if (!parsed.success) {
     throw new ValidationError({

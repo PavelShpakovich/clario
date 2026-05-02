@@ -12,6 +12,8 @@ export type ChartRecord = {
   timezone: string | null;
   city: string;
   country: string;
+  latitude: number | null;
+  longitude: number | null;
   house_system: string;
   status: string;
   notes?: string | null;

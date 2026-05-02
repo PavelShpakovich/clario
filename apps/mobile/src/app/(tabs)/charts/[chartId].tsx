@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { goBackTo, withReturnTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, readingsApi } from '@clario/api-client';
@@ -317,9 +317,11 @@ export default function ChartDetailScreen() {
   const tCommon = useTranslations('common');
   const { showInsufficientCredits } = useInsufficientCredits();
 
-  useEffect(() => {
-    if (!chartId) return;
-    async function load() {
+  const loadChartDetail = useCallback(
+    async (isRefresh = false) => {
+      if (!chartId) return;
+      if (!isRefresh) setLoading(true);
+
       try {
         const [chartData, readingsData] = await Promise.all([
           chartsApi.getChart(chartId),
@@ -332,9 +334,20 @@ export default function ChartDetailScreen() {
       } finally {
         setLoading(false);
       }
-    }
-    void load();
-  }, [chartId]);
+    },
+    [PAGE_SIZE, chartId],
+  );
+
+  useEffect(() => {
+    void loadChartDetail();
+  }, [loadChartDetail]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (loading) return;
+      void loadChartDetail(true);
+    }, [loadChartDetail, loading]),
+  );
 
   async function loadReadingsPage(page: number) {
     if (!chartId || readingsLoading) return;

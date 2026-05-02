@@ -8,14 +8,11 @@ import type { Database } from '@/lib/supabase/types';
 import { HOUSE_SYSTEMS, CHART_SUBJECT_TYPES } from '@/lib/astrology/constants';
 import { recalculateChart } from '@/lib/astrology/chart-service';
 import { clearDailyForecastsForChart } from '@/lib/forecasts/service';
+import { normalizeBirthTime, resolveChartTimezone } from '@clario/validation';
 
 const db = supabaseAdmin;
 
 const uuidSchema = z.string().uuid();
-
-function normalizeBirthTime(value: string): string {
-  return value.slice(0, 5);
-}
 
 export const GET = withApiHandler(async (_req, ctx) => {
   const { user } = await requireAuth();
@@ -92,7 +89,15 @@ export const PATCH = withApiHandler(async (req, ctx) => {
     throw new ValidationError({ message: 'Invalid chart ID' });
 
   const json = await req.json();
-  const parsed = chartPatchSchema.safeParse(json);
+  const parsed = chartPatchSchema.safeParse({
+    ...json,
+    ...(Object.prototype.hasOwnProperty.call(json, 'birthTime') && json.birthTime !== null
+      ? { birthTime: normalizeBirthTime(json.birthTime) }
+      : {}),
+    ...(Object.prototype.hasOwnProperty.call(json, 'timezone')
+      ? { timezone: resolveChartTimezone(json.timezone, json.country) ?? null }
+      : {}),
+  });
   if (!parsed.success) {
     throw new ValidationError({
       message: parsed.error.issues.map((i) => i.message).join(', '),

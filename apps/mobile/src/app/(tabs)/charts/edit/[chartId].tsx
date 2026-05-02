@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, locationsApi } from '@clario/api-client';
 import type { ChartRecord, CityOption } from '@clario/api-client';
 import { CHART_SUBJECT_TYPES, HOUSE_SYSTEMS } from '@clario/types';
+import { normalizeUpdateChartBirthTime, resolveChartTimezone } from '@clario/validation';
 import { useTranslations } from '@/lib/i18n';
 import { useColors } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -135,9 +136,9 @@ export default function EditChartScreen() {
             : 'placidus') as HouseSystem,
           city: c.city,
           country: c.country,
-          lat: null,
-          lon: null,
-          timezone: c.timezone ?? '',
+          lat: c.latitude ?? null,
+          lon: c.longitude ?? null,
+          timezone: resolveChartTimezone(c.timezone, c.country) ?? '',
         });
         setCityDisplay(c.city ? `${c.city}, ${c.country}` : '');
       } finally {
@@ -158,7 +159,7 @@ export default function EditChartScreen() {
     update('lat', city.lat);
     update('lon', city.lon);
     const tz = await locationsApi.lookupTimezone(city.lat, city.lon);
-    if (tz) update('timezone', tz);
+    update('timezone', resolveChartTimezone(tz, city.country) ?? '');
   }
 
   function validateStep(): string | null {
@@ -195,16 +196,17 @@ export default function EditChartScreen() {
     setError(null);
     setSubmitting(true);
     try {
+      const timezone = resolveChartTimezone(form.timezone, form.country);
       await chartsApi.updateChart(chartId, {
         label: form.label.trim(),
         personName: form.personName.trim(),
         subjectType: form.subjectType,
         birthDate: form.birthDate.trim(),
-        birthTime: form.birthTimeKnown && form.birthTime ? form.birthTime : null,
+        birthTime: normalizeUpdateChartBirthTime(form.birthTimeKnown, form.birthTime),
         birthTimeKnown: form.birthTimeKnown,
         city: form.city,
         country: form.country,
-        timezone: form.timezone || null,
+        timezone: timezone ?? null,
         latitude: form.lat,
         longitude: form.lon,
         houseSystem: form.houseSystem,

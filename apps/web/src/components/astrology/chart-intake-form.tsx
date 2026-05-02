@@ -21,6 +21,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { TimezoneSelect } from '@/components/ui/timezone-select';
 import { normalizeHouseSystem, type HouseSystem } from '@/lib/astrology/constants';
 import { chartsApi, locationsApi, type CityOption } from '@clario/api-client';
+import {
+  normalizeBirthTime,
+  normalizeCreateChartBirthTime,
+  normalizeUpdateChartBirthTime,
+  resolveChartTimezone,
+} from '@clario/validation';
 
 export interface ChartFormDefaults {
   personName?: string;
@@ -56,50 +62,6 @@ interface ChartIntakeFormProps {
 }
 
 type ChartWizardStep = 0 | 1 | 2;
-
-/** Fallback timezone when geo-tz returns nothing (common for border-area coordinates). */
-const COUNTRY_TIMEZONE_FALLBACK: Record<string, string> = {
-  Беларусь: 'Europe/Minsk',
-  Belarus: 'Europe/Minsk',
-  Россия: 'Europe/Moscow',
-  Russia: 'Europe/Moscow',
-  Україна: 'Europe/Kyiv',
-  Ukraine: 'Europe/Kyiv',
-  Казахстан: 'Asia/Almaty',
-  Kazakhstan: 'Asia/Almaty',
-  Узбекистан: 'Asia/Tashkent',
-  Uzbekistan: 'Asia/Tashkent',
-  Грузия: 'Asia/Tbilisi',
-  Georgia: 'Asia/Tbilisi',
-  Армения: 'Asia/Yerevan',
-  Armenia: 'Asia/Yerevan',
-  Азербайджан: 'Asia/Baku',
-  Azerbaijan: 'Asia/Baku',
-  Молдова: 'Europe/Chisinau',
-  Moldova: 'Europe/Chisinau',
-  Литва: 'Europe/Vilnius',
-  Lithuania: 'Europe/Vilnius',
-  Латвия: 'Europe/Riga',
-  Latvia: 'Europe/Riga',
-  Эстония: 'Europe/Tallinn',
-  Estonia: 'Europe/Tallinn',
-  Польша: 'Europe/Warsaw',
-  Poland: 'Europe/Warsaw',
-  Кыргызстан: 'Asia/Bishkek',
-  Kyrgyzstan: 'Asia/Bishkek',
-  Таджикистан: 'Asia/Dushanbe',
-  Tajikistan: 'Asia/Dushanbe',
-  Туркменистан: 'Asia/Ashgabat',
-  Turkmenistan: 'Asia/Ashgabat',
-};
-
-function normalizeBirthTime(value?: string | null): string {
-  if (!value) return '';
-
-  const trimmed = value.trim();
-  const match = trimmed.match(/^(\d{2}:\d{2})(?::\d{2})?$/);
-  return match ? match[1] : trimmed;
-}
 
 export function ChartIntakeForm({
   defaults,
@@ -215,7 +177,7 @@ export function ChartIntakeForm({
     const timezone = await locationsApi.lookupTimezone(entry.lat, entry.lon);
     setTzAutoDetecting(false);
 
-    const resolved = timezone ?? COUNTRY_TIMEZONE_FALLBACK[entry.country] ?? null;
+    const resolved = resolveChartTimezone(timezone, entry.country) ?? null;
     if (resolved) {
       setForm((current) => ({ ...current, timezone: resolved }));
     }
@@ -278,7 +240,7 @@ export function ChartIntakeForm({
       return;
     }
 
-    const normalizedBirthTime = normalizeBirthTime(form.birthTime);
+    const timezone = resolveChartTimezone(form.timezone, form.country);
 
     startTransition(async () => {
       try {
@@ -290,11 +252,11 @@ export function ChartIntakeForm({
                 personName: form.personName,
                 subjectType: form.subjectType as 'self' | 'partner' | 'child' | 'client' | 'other',
                 birthDate: form.birthDate,
-                birthTime: birthTimeKnown ? normalizedBirthTime : null,
+                birthTime: normalizeUpdateChartBirthTime(birthTimeKnown, form.birthTime),
                 birthTimeKnown,
                 city: form.city,
                 country: form.country,
-                timezone: form.timezone || null,
+                timezone: timezone ?? null,
                 latitude: form.latitude ? Number(form.latitude) : null,
                 longitude: form.longitude ? Number(form.longitude) : null,
                 houseSystem: form.houseSystem as HouseSystem,
@@ -307,11 +269,11 @@ export function ChartIntakeForm({
               personName: form.personName,
               subjectType: form.subjectType as 'self' | 'partner' | 'child' | 'client' | 'other',
               birthDate: form.birthDate,
-              birthTime: birthTimeKnown ? normalizedBirthTime : undefined,
+              birthTime: normalizeCreateChartBirthTime(birthTimeKnown, form.birthTime),
               birthTimeKnown,
               city: form.city,
               country: form.country,
-              timezone: form.timezone || undefined,
+              timezone,
               latitude: form.latitude ? Number(form.latitude) : undefined,
               longitude: form.longitude ? Number(form.longitude) : undefined,
               houseSystem: form.houseSystem as HouseSystem,

@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, locationsApi } from '@clario/api-client';
 import type { CityOption } from '@clario/api-client';
 import { CHART_SUBJECT_TYPES, HOUSE_SYSTEMS } from '@clario/types';
+import { normalizeCreateChartBirthTime, resolveChartTimezone } from '@clario/validation';
 import { useTranslations } from '@/lib/i18n';
 import { useColors } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -83,7 +84,7 @@ export default function NewChartScreen() {
     update('lat', city.lat);
     update('lon', city.lon);
     const tz = await locationsApi.lookupTimezone(city.lat, city.lon);
-    if (tz) update('timezone', tz);
+    update('timezone', resolveChartTimezone(tz, city.country) ?? '');
   }
 
   function validateStep(): string | null {
@@ -120,18 +121,19 @@ export default function NewChartScreen() {
     setError(null);
     setSubmitting(true);
     try {
+      const timezone = resolveChartTimezone(form.timezone, form.country);
       const { chart } = await chartsApi.createChart({
         label: form.label.trim(),
         personName: form.personName.trim(),
         subjectType: form.subjectType,
         birthDate: form.birthDate.trim(),
-        birthTime: form.birthTimeKnown && form.birthTime ? form.birthTime : undefined,
+        birthTime: normalizeCreateChartBirthTime(form.birthTimeKnown, form.birthTime),
         birthTimeKnown: form.birthTimeKnown,
         city: form.city,
         country: form.country,
         latitude: form.lat ?? undefined,
         longitude: form.lon ?? undefined,
-        timezone: form.timezone || undefined,
+        timezone,
         houseSystem: form.houseSystem,
         locale: 'ru',
       });
