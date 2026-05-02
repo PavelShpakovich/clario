@@ -16,6 +16,58 @@ import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { runToastMutation } from '@/lib/mutation-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Skeleton } from '@/components/Skeleton';
+
+function HoroscopeSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <View style={[styles.headerRow, { marginTop: insets.top + 8 }]}>
+        <View style={styles.backRow}>
+          <Skeleton width={18} height={18} borderRadius={9} />
+          <Skeleton width={96} height={14} />
+        </View>
+        <Skeleton width={92} height={36} borderRadius={8} />
+      </View>
+
+      <Skeleton width={88} height={11} style={{ marginBottom: 6 }} />
+      <Skeleton width={'62%'} height={28} style={{ marginBottom: 8 }} />
+      <View style={styles.dateRow}>
+        <Skeleton width={14} height={14} borderRadius={7} />
+        <Skeleton width={160} height={13} />
+      </View>
+
+      <View style={styles.keyThemeChip}>
+        <Skeleton width={14} height={14} borderRadius={7} />
+        <Skeleton width={140} height={13} />
+      </View>
+
+      <View style={styles.moonPhaseRow}>
+        <Skeleton width={'72%'} height={13} />
+      </View>
+
+      <View style={styles.interpretationBlock}>
+        <Skeleton width={'94%'} height={15} />
+        <Skeleton width={'100%'} height={15} style={{ marginTop: 12 }} />
+        <Skeleton width={'88%'} height={15} style={{ marginTop: 12 }} />
+        <Skeleton width={'96%'} height={15} style={{ marginTop: 24 }} />
+        <Skeleton width={'91%'} height={15} style={{ marginTop: 12 }} />
+        <Skeleton width={'78%'} height={15} style={{ marginTop: 12 }} />
+      </View>
+
+      <View style={styles.adviceBlock}>
+        <Skeleton width={72} height={11} style={{ marginBottom: 8 }} />
+        <Skeleton width={'92%'} height={14} />
+        <Skeleton width={'85%'} height={14} style={{ marginTop: 10 }} />
+      </View>
+
+      <Skeleton width={'100%'} height={40} borderRadius={8} style={{ marginTop: 8 }} />
+    </ScrollView>
+  );
+}
 
 export default function HoroscopeScreen() {
   const colors = useColors();
@@ -141,11 +193,7 @@ export default function HoroscopeScreen() {
   }
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <HoroscopeSkeleton />;
   }
 
   if (!forecast) {
