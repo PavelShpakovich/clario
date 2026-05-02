@@ -37,20 +37,29 @@ export const GET = withApiHandler(async (req: Request) => {
 
     const userIds = usersData.users.map((u) => u.id);
 
-    const [{ data: profiles }, { data: allUsage }, { data: monthUsage }, { data: creditRows }] =
-      await Promise.all([
-        supabaseAdmin.from('profiles').select('id, display_name, is_admin').in('id', userIds),
-        supabaseAdmin
-          .from('usage_counters')
-          .select('user_id, readings_generated, charts_created, follow_up_messages_used')
-          .in('user_id', userIds),
-        supabaseAdmin
-          .from('usage_counters')
-          .select('user_id, readings_generated, charts_created')
-          .in('user_id', userIds)
-          .gte('period_start', monthStart),
-        supabaseAdmin.from('user_credits').select('user_id, balance').in('user_id', userIds),
-      ]);
+    const [
+      { data: profiles },
+      { data: allCharts },
+      { data: monthCharts },
+      { data: allReadings },
+      { data: monthReadings },
+      { data: creditRows },
+    ] = await Promise.all([
+      supabaseAdmin.from('profiles').select('id, display_name, is_admin').in('id', userIds),
+      supabaseAdmin.from('charts').select('user_id').in('user_id', userIds),
+      supabaseAdmin
+        .from('charts')
+        .select('user_id')
+        .in('user_id', userIds)
+        .gte('created_at', monthStart),
+      supabaseAdmin.from('readings').select('user_id').in('user_id', userIds),
+      supabaseAdmin
+        .from('readings')
+        .select('user_id')
+        .in('user_id', userIds)
+        .gte('created_at', monthStart),
+      supabaseAdmin.from('user_credits').select('user_id, balance').in('user_id', userIds),
+    ]);
 
     const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
     const creditMap = new Map((creditRows ?? []).map((r) => [r.user_id, r.balance as number]));
@@ -62,34 +71,42 @@ export const GET = withApiHandler(async (req: Request) => {
       chartsThisMonth: number;
     };
 
-    const usageMap = new Map<string, UserTotals>();
+    const metricsMap = new Map<string, UserTotals>();
     const getOrInit = (uid: string): UserTotals => {
-      if (!usageMap.has(uid)) {
-        usageMap.set(uid, {
+      if (!metricsMap.has(uid)) {
+        metricsMap.set(uid, {
           totalReadings: 0,
           totalCharts: 0,
           readingsThisMonth: 0,
           chartsThisMonth: 0,
         });
       }
-      return usageMap.get(uid)!;
+      return metricsMap.get(uid)!;
     };
 
-    for (const row of allUsage ?? []) {
-      const u = getOrInit(row.user_id);
-      u.totalReadings += row.readings_generated ?? 0;
-      u.totalCharts += row.charts_created ?? 0;
+    for (const row of allCharts ?? []) {
+      const metrics = getOrInit(row.user_id);
+      metrics.totalCharts += 1;
     }
 
-    for (const row of monthUsage ?? []) {
-      const u = getOrInit(row.user_id);
-      u.readingsThisMonth += row.readings_generated ?? 0;
-      u.chartsThisMonth += row.charts_created ?? 0;
+    for (const row of monthCharts ?? []) {
+      const metrics = getOrInit(row.user_id);
+      metrics.chartsThisMonth += 1;
+    }
+
+    for (const row of allReadings ?? []) {
+      const metrics = getOrInit(row.user_id);
+      metrics.totalReadings += 1;
+    }
+
+    for (const row of monthReadings ?? []) {
+      const metrics = getOrInit(row.user_id);
+      metrics.readingsThisMonth += 1;
     }
 
     const enrichedUsers = usersData.users.map((authUser) => {
       const profile = profileMap.get(authUser.id);
-      const usage = usageMap.get(authUser.id) ?? {
+      const usage = metricsMap.get(authUser.id) ?? {
         totalReadings: 0,
         totalCharts: 0,
         readingsThisMonth: 0,

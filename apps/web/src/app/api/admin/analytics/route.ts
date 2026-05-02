@@ -52,7 +52,9 @@ export const GET = withApiHandler(async () => {
     totalUsersRes,
     newUsersRes,
     totalChartsRes,
+    chartsThisMonthRes,
     totalReadingsRes,
+    readingsThisMonthRes,
     compatRes,
     totalAiRes,
     aiThisMonthRes,
@@ -60,7 +62,6 @@ export const GET = withApiHandler(async () => {
     followUpCountRes,
     followUpTokensRes,
     generationTokensRes,
-    usageCountersRes,
     readingTypesRes,
     creditsSpentRes,
   } = results;
@@ -69,7 +70,9 @@ export const GET = withApiHandler(async () => {
     totalUsersRes.error,
     newUsersRes.error,
     totalChartsRes.error,
+    chartsThisMonthRes.error,
     totalReadingsRes.error,
+    readingsThisMonthRes.error,
     compatRes.error,
     totalAiRes.error,
     aiThisMonthRes.error,
@@ -77,7 +80,6 @@ export const GET = withApiHandler(async () => {
     followUpCountRes.error,
     followUpTokensRes.error,
     generationTokensRes.error,
-    usageCountersRes.error,
     readingTypesRes.error,
     creditsSpentRes.error,
   ].filter(Boolean);
@@ -100,17 +102,6 @@ export const GET = withApiHandler(async () => {
     0,
   );
 
-  const usageRows = usageCountersRes.data ?? [];
-  const chartsThisMonth = usageRows.reduce(
-    (sum: number, row: { charts_created: number | null }) => sum + (row.charts_created ?? 0),
-    0,
-  );
-  const readingsThisMonth = usageRows.reduce(
-    (sum: number, row: { readings_generated: number | null }) =>
-      sum + (row.readings_generated ?? 0),
-    0,
-  );
-
   const readingsByType: Record<string, number> = {};
   for (const row of readingTypesRes.data ?? []) {
     const type = (row.reading_type as string) ?? 'unknown';
@@ -121,9 +112,9 @@ export const GET = withApiHandler(async () => {
     totalUsers: totalUsersRes.count ?? 0,
     newUsersThisMonth: newUsersRes.count ?? 0,
     totalCharts: totalChartsRes.count ?? 0,
-    chartsThisMonth,
+    chartsThisMonth: chartsThisMonthRes.count ?? 0,
     totalReadings: totalReadingsRes.count ?? 0,
-    readingsThisMonth,
+    readingsThisMonth: readingsThisMonthRes.count ?? 0,
     totalCompatibilityReports: compatRes.count ?? 0,
     totalAiCalls: totalAiRes.count ?? 0,
     aiCallsThisMonth: aiThisMonthRes.count ?? 0,
@@ -142,7 +133,9 @@ async function runQueries(monthStart: string) {
     totalUsersRes,
     newUsersRes,
     totalChartsRes,
+    chartsThisMonthRes,
     totalReadingsRes,
+    readingsThisMonthRes,
     compatRes,
     totalAiRes,
     aiThisMonthRes,
@@ -150,14 +143,15 @@ async function runQueries(monthStart: string) {
     followUpCountRes,
     followUpTokensRes,
     generationTokensRes,
-    usageCountersRes,
     readingTypesRes,
     creditsSpentRes,
   ] = await Promise.all([
     db.from('profiles').select('*', { count: 'exact', head: true }),
     db.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
     db.from('charts').select('*', { count: 'exact', head: true }),
+    db.from('charts').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
     db.from('readings').select('*', { count: 'exact', head: true }),
+    db.from('readings').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
     db.from('compatibility_reports').select('*', { count: 'exact', head: true }),
     db.from('generation_logs').select('*', { count: 'exact', head: true }),
     db
@@ -173,10 +167,6 @@ async function runQueries(monthStart: string) {
     // Only fetch rows where usage_tokens is tracked (non-null) to compute sum
     db.from('follow_up_messages').select('usage_tokens').not('usage_tokens', 'is', null),
     db.from('generation_logs').select('usage_tokens').not('usage_tokens', 'is', null),
-    db
-      .from('usage_counters')
-      .select('readings_generated, charts_created')
-      .gte('period_start', monthStart),
     db.from('readings').select('reading_type'),
     // Sum of all debits (negative amounts) in credit_transactions
     db.from('credit_transactions').select('amount').lt('amount', 0),
@@ -186,7 +176,9 @@ async function runQueries(monthStart: string) {
     totalUsersRes,
     newUsersRes,
     totalChartsRes,
+    chartsThisMonthRes,
     totalReadingsRes,
+    readingsThisMonthRes,
     compatRes,
     totalAiRes,
     aiThisMonthRes,
@@ -194,7 +186,6 @@ async function runQueries(monthStart: string) {
     followUpCountRes,
     followUpTokensRes,
     generationTokensRes,
-    usageCountersRes,
     readingTypesRes,
     creditsSpentRes,
   };
