@@ -27,10 +27,119 @@ import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleReadyNotification } from '@/lib/notifications';
+import { Skeleton } from '@/components/Skeleton';
 
 const notifMessages = messages.notifications;
 
 type CompatType = 'romantic' | 'friendship' | 'business' | 'family';
+
+function CompatibilityDetailSkeleton() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <View style={[styles.topBar, { marginTop: insets.top + 8 }]}>
+        <View style={styles.backButton}>
+          <Skeleton width={18} height={18} borderRadius={9} />
+          <Skeleton width={84} height={13} />
+        </View>
+        <View style={styles.chartLinks}>
+          <Skeleton width={96} height={30} borderRadius={8} />
+          <Skeleton width={96} height={30} borderRadius={8} />
+        </View>
+      </View>
+
+      <View style={styles.titleBlock}>
+        <Skeleton width={84} height={10} />
+        <Skeleton width={'72%'} height={28} style={{ marginTop: 4 }} />
+        <View style={styles.metaRow}>
+          <Skeleton width={120} height={12} />
+          <Skeleton width={72} height={22} borderRadius={11} />
+        </View>
+      </View>
+
+      <View style={styles.harmonyCard}>
+        <View style={styles.personPairRow}>
+          <View style={styles.personCell}>
+            <Skeleton width={40} height={40} borderRadius={20} />
+            <View style={styles.personInfo}>
+              <Skeleton width={78} height={13} />
+              <Skeleton width={58} height={10} style={{ marginTop: 4 }} />
+            </View>
+          </View>
+          <Skeleton width={16} height={16} borderRadius={8} />
+          <View style={[styles.personCell, styles.personCellRight]}>
+            <Skeleton width={40} height={40} borderRadius={20} />
+            <View style={[styles.personInfo, styles.personInfoRight]}>
+              <Skeleton width={78} height={13} />
+              <Skeleton width={58} height={10} style={{ marginTop: 4 }} />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.gaugeSection}>
+          <Skeleton width={92} height={10} />
+          <Skeleton width={'100%'} height={150} borderRadius={18} />
+          <View style={styles.scoreRow}>
+            <Skeleton width={72} height={48} />
+            <Skeleton width={56} height={12} />
+          </View>
+          <Skeleton width={110} height={28} borderRadius={14} />
+          <Skeleton width={'82%'} height={13} />
+        </View>
+
+        <View style={styles.infoBoxes}>
+          {[0, 1, 2].map((index) => (
+            <View key={index} style={styles.infoBox}>
+              <Skeleton width={96} height={10} />
+              <Skeleton width={'92%'} height={12} style={{ marginTop: 6 }} />
+              <Skeleton width={'75%'} height={12} style={{ marginTop: 4 }} />
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.summaryCard}>
+        <Skeleton width={'96%'} height={14} />
+        <Skeleton width={'88%'} height={14} style={{ marginTop: 10 }} />
+        <Skeleton width={'92%'} height={14} style={{ marginTop: 10 }} />
+      </View>
+
+      <View style={styles.sectionBlock}>
+        <Skeleton width={108} height={10} style={{ marginBottom: 10 }} />
+        {[0, 1].map((index) => (
+          <View key={index} style={styles.aspectCard}>
+            <View style={styles.aspectHeader}>
+              <Skeleton width={110} height={12} />
+              <Skeleton width={58} height={10} />
+            </View>
+            <Skeleton width={'70%'} height={13} style={{ marginTop: 4 }} />
+            <Skeleton width={'96%'} height={12} style={{ marginTop: 8 }} />
+            <Skeleton width={'82%'} height={12} style={{ marginTop: 4 }} />
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.sectionsBlock}>
+        {[0, 1].map((index) => (
+          <View key={index} style={styles.sectionItem}>
+            <View style={styles.sectionHeader}>
+              <Skeleton width={28} height={28} borderRadius={14} />
+              <Skeleton width={160} height={18} />
+            </View>
+            <View style={styles.sectionBody}>
+              <Skeleton width={'96%'} height={13} />
+              <Skeleton width={'100%'} height={13} style={{ marginTop: 10 }} />
+              <Skeleton width={'84%'} height={13} style={{ marginTop: 10 }} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
 
 function getHarmonyColors(score: number): { accent: string; softAccent: string } {
   if (score >= 80) return { accent: '#0f9f76', softAccent: 'rgba(16,185,129,0.14)' };
@@ -299,11 +408,7 @@ export default function CompatibilityDetailScreen() {
   }
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <CompatibilityDetailSkeleton />;
   }
 
   if (!report) {

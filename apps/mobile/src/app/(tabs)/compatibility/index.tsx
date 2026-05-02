@@ -11,6 +11,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { compatibilityApi } from '@clario/api-client';
 import type { CompatibilityReport } from '@clario/api-client';
+import { withReturnTo } from '@/lib/navigation';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { runToastMutation } from '@/lib/mutation-toast';
@@ -170,7 +171,11 @@ export default function CompatibilityListScreen() {
           </View>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => router.push('/(tabs)/compatibility/new')}
+            onPress={() =>
+              router.push(
+                withReturnTo('/(tabs)/compatibility/new', '/(tabs)/compatibility') as never,
+              )
+            }
           >
             <Ionicons name="add" size={20} color={colors.primaryForeground} />
           </TouchableOpacity>
@@ -192,13 +197,19 @@ export default function CompatibilityListScreen() {
             <View style={styles.emptyButtons}>
               <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={() => router.push('/(tabs)/compatibility/new')}
+                onPress={() =>
+                  router.push(
+                    withReturnTo('/(tabs)/compatibility/new', '/(tabs)/compatibility') as never,
+                  )
+                }
               >
                 <Text style={styles.primaryButtonText}>{tCompat('createReport')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.outlineButton}
-                onPress={() => router.push('/(tabs)/charts')}
+                onPress={() =>
+                  router.push(withReturnTo('/(tabs)/charts', '/(tabs)/compatibility') as never)
+                }
               >
                 <Text style={styles.outlineButtonText}>{tCompat('goToCharts')}</Text>
               </TouchableOpacity>
@@ -220,7 +231,14 @@ export default function CompatibilityListScreen() {
             <SwipeToDeleteRow onDeletePress={() => handleDelete(item)}>
               <TouchableOpacity
                 style={styles.card}
-                onPress={() => router.push(`/(tabs)/compatibility/${item.id}`)}
+                onPress={() =>
+                  router.push(
+                    withReturnTo(
+                      `/(tabs)/compatibility/${item.id}`,
+                      '/(tabs)/compatibility',
+                    ) as never,
+                  )
+                }
                 activeOpacity={0.75}
               >
                 {/* Type row */}

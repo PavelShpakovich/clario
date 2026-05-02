@@ -1117,7 +1117,14 @@ export default function ChartDetailScreen() {
                   <TouchableOpacity
                     key={r.id}
                     style={styles.readingCard}
-                    onPress={() => router.push(`/(tabs)/readings/${r.id}`)}
+                    onPress={() =>
+                      router.push(
+                        withReturnTo(
+                          `/(tabs)/readings/${r.id}`,
+                          `/(tabs)/charts/${chartId}`,
+                        ) as never,
+                      )
+                    }
                   >
                     <View style={styles.readingCardRow}>
                       <View style={styles.readingCardLeft}>

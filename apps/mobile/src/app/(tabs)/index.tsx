@@ -370,7 +370,9 @@ export default function DashboardScreen() {
         <View style={styles.quickActionsButtons}>
           <TouchableOpacity
             style={[styles.quickActionButton, styles.quickActionPrimary]}
-            onPress={() => router.push('/(tabs)/charts/new')}
+            onPress={() =>
+              router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/charts') as never)
+            }
           >
             <Text style={styles.quickActionPrimaryText}>{tDashboard('createNewChart')}</Text>
           </TouchableOpacity>
@@ -405,7 +407,9 @@ export default function DashboardScreen() {
           <TouchableOpacity
             key={chart.id}
             style={styles.chartCard}
-            onPress={() => router.push(`/(tabs)/charts/${chart.id}`)}
+            onPress={() =>
+              router.push(withReturnTo(`/(tabs)/charts/${chart.id}`, '/(tabs)/charts') as never)
+            }
           >
             <View style={styles.chartCardRow}>
               <View style={styles.avatar}>
@@ -446,7 +450,11 @@ export default function DashboardScreen() {
           <TouchableOpacity
             key={reading.id}
             style={styles.readingCard}
-            onPress={() => router.push(`/(tabs)/readings/${reading.id}`)}
+            onPress={() =>
+              router.push(
+                withReturnTo(`/(tabs)/readings/${reading.id}`, '/(tabs)/readings') as never,
+              )
+            }
           >
             <Text style={styles.readingIcon}>✦</Text>
             <View style={styles.readingInfo}>

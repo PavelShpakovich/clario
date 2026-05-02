@@ -24,7 +24,12 @@ export function resolveParentRoute(
 }
 
 export function goBackTo(returnTo: string | string[] | undefined, fallback: string): void {
-  goBack(resolveParentRoute(returnTo, fallback));
+  if (typeof returnTo === 'string' && returnTo.startsWith('/')) {
+    router.replace(returnTo as never);
+    return;
+  }
+
+  goBack(fallback);
 }
 
 export function withReturnTo(pathname: string, returnTo: string): string {

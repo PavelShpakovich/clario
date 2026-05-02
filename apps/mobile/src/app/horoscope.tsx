@@ -291,7 +291,9 @@ export default function HoroscopeScreen() {
       <View style={styles.center}>
         <Ionicons name="planet-outline" size={48} color={colors.border} />
         <Text style={styles.noChartText}>{tHoro('noChartMessage')}</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/charts/new')}>
+        <TouchableOpacity
+          onPress={() => router.push(withReturnTo('/(tabs)/charts/new', '/horoscope') as never)}
+        >
           <Text style={styles.linkText}>{tWorkspace('createChart')}</Text>
         </TouchableOpacity>
       </View>

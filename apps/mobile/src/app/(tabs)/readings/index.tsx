@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { readingsApi } from '@clario/api-client';
 import type { ReadingRecord } from '@clario/api-client';
+import { withReturnTo } from '@/lib/navigation';
 import { READING_TYPES } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
@@ -258,13 +259,17 @@ export default function ReadingsListScreen() {
           <View style={styles.emptyButtons}>
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() => router.push('/(tabs)/charts/new')}
+              onPress={() =>
+                router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/readings') as never)
+              }
             >
               <Text style={styles.primaryButtonText}>{tReadings('createChart')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.outlineButton}
-              onPress={() => router.push('/(tabs)/charts')}
+              onPress={() =>
+                router.push(withReturnTo('/(tabs)/charts', '/(tabs)/readings') as never)
+              }
             >
               <Text style={styles.outlineButtonText}>{tReadings('openCharts')}</Text>
             </TouchableOpacity>
@@ -287,7 +292,11 @@ export default function ReadingsListScreen() {
               <SwipeToDeleteRow onDeletePress={() => confirmDelete(item)}>
                 <TouchableOpacity
                   style={styles.card}
-                  onPress={() => router.push(`/(tabs)/readings/${item.id}`)}
+                  onPress={() =>
+                    router.push(
+                      withReturnTo(`/(tabs)/readings/${item.id}`, '/(tabs)/readings') as never,
+                    )
+                  }
                   activeOpacity={0.75}
                 >
                   {/* Type label row */}

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi } from '@clario/api-client';
 import type { ChartRecord } from '@clario/api-client';
+import { withReturnTo } from '@/lib/navigation';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { messages } from '@clario/i18n';
@@ -168,7 +169,9 @@ export default function ChartsListScreen() {
           </View>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => router.push('/(tabs)/charts/new')}
+            onPress={() =>
+              router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/charts') as never)
+            }
           >
             <Ionicons name="add" size={20} color={colors.primaryForeground} />
           </TouchableOpacity>
@@ -183,7 +186,9 @@ export default function ChartsListScreen() {
             <Text style={styles.emptyDesc}>{tWorkspace('noChartsDescription')}</Text>
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() => router.push('/(tabs)/charts/new')}
+              onPress={() =>
+                router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/charts') as never)
+              }
             >
               <Text style={styles.primaryButtonText}>{tWorkspace('createChart')}</Text>
             </TouchableOpacity>
@@ -218,7 +223,11 @@ export default function ChartsListScreen() {
               <SwipeToDeleteRow onDeletePress={() => confirmDelete(item)}>
                 <TouchableOpacity
                   style={styles.card}
-                  onPress={() => router.push(`/(tabs)/charts/${item.id}`)}
+                  onPress={() =>
+                    router.push(
+                      withReturnTo(`/(tabs)/charts/${item.id}`, '/(tabs)/charts') as never,
+                    )
+                  }
                 >
                   {/* Element accent bar */}
                   <View style={[styles.cardAccent, { backgroundColor: elementColors.text }]} />
