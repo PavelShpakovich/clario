@@ -83,7 +83,6 @@ export default function RootLayout() {
                   screenOptions={{
                     headerShown: false,
                     gestureEnabled: true,
-                    fullScreenGestureEnabled: true,
                     contentStyle: { backgroundColor: themeColors.background },
                   }}
                 />

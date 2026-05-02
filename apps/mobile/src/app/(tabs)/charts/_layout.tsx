@@ -6,7 +6,6 @@ export default function ChartsLayout() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        fullScreenGestureEnabled: true,
       }}
     />
   );

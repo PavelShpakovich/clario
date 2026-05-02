@@ -6,7 +6,6 @@ export default function AuthLayout() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        fullScreenGestureEnabled: true,
       }}
     />
   );

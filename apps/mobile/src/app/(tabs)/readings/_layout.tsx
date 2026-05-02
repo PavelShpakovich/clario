@@ -6,7 +6,6 @@ export default function ReadingsLayout() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        fullScreenGestureEnabled: true,
       }}
     />
   );

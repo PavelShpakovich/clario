@@ -6,7 +6,6 @@ export default function CompatibilityLayout() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        fullScreenGestureEnabled: true,
       }}
     />
   );
