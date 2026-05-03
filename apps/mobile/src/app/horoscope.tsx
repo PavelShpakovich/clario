@@ -391,7 +391,17 @@ export default function HoroscopeScreen() {
   });
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+        />
+      }
+    >
       <View style={[styles.headerRow, { marginTop: insets.top + 8 }]}>
         <TouchableOpacity
           onPress={() => goBackTo(returnTo, '/(tabs)/index')}
@@ -421,85 +431,72 @@ export default function HoroscopeScreen() {
         <Ionicons name="calendar-outline" size={14} color={colors.mutedForeground} />
         <Text style={styles.date}>{today}</Text>
       </View>
+      {/* Key theme chip — shown in both preview and full */}
+      {keyTheme ? (
+        <View style={styles.keyThemeChip}>
+          <Ionicons name="sparkles" size={14} color={colors.primary} />
+          <Text style={styles.keyThemeText}>{keyTheme}</Text>
+        </View>
+      ) : null}
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        {/* Key theme chip — shown in both preview and full */}
-        {keyTheme ? (
-          <View style={styles.keyThemeChip}>
-            <Ionicons name="sparkles" size={14} color={colors.primary} />
-            <Text style={styles.keyThemeText}>{keyTheme}</Text>
-          </View>
-        ) : null}
+      {/* Moon phase — full access only */}
+      {!preview && moonPhase ? (
+        <View style={styles.moonPhaseRow}>
+          <Text style={styles.moonPhaseText}>{moonPhase}</Text>
+        </View>
+      ) : null}
 
-        {/* Moon phase — full access only */}
-        {!preview && moonPhase ? (
-          <View style={styles.moonPhaseRow}>
-            <Text style={styles.moonPhaseText}>{moonPhase}</Text>
-          </View>
-        ) : null}
+      {/* Interpretation card */}
+      {paragraphs.length > 0 ? (
+        <View style={styles.interpretationBlock}>
+          {paragraphs.map((para, i) => (
+            <Text key={i} style={[styles.interpretationText, i > 0 && { marginTop: 12 }]}>
+              {para}
+            </Text>
+          ))}
+          {/* Fade overlay for preview */}
+          {preview && <View style={styles.previewFade} pointerEvents="none" />}
+        </View>
+      ) : null}
 
-        {/* Interpretation card */}
-        {paragraphs.length > 0 ? (
-          <View style={styles.interpretationBlock}>
-            {paragraphs.map((para, i) => (
-              <Text key={i} style={[styles.interpretationText, i > 0 && { marginTop: 12 }]}>
-                {para}
+      {/* Preview unlock CTA */}
+      {fullAccessRequired && (
+        <View style={styles.unlockCta}>
+          <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
+          <Text style={styles.unlockCtaNote}>{tHoro('previewNote')}</Text>
+          <TouchableOpacity
+            style={styles.unlockButton}
+            onPress={handleUnlockPress}
+            disabled={unlocking}
+          >
+            {unlocking ? (
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
+            ) : (
+              <Text style={styles.unlockButtonText}>
+                {forecastIsFree ? tHoro('unlockForecastFree') : tHoro('unlockForecast')}
               </Text>
-            ))}
-            {/* Fade overlay for preview */}
-            {preview && <View style={styles.previewFade} pointerEvents="none" />}
-          </View>
-        ) : null}
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
-        {/* Preview unlock CTA */}
-        {fullAccessRequired && (
-          <View style={styles.unlockCta}>
-            <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
-            <Text style={styles.unlockCtaNote}>{tHoro('previewNote')}</Text>
-            <TouchableOpacity
-              style={styles.unlockButton}
-              onPress={handleUnlockPress}
-              disabled={unlocking}
-            >
-              {unlocking ? (
-                <ActivityIndicator size="small" color={colors.primaryForeground} />
-              ) : (
-                <Text style={styles.unlockButtonText}>
-                  {forecastIsFree ? tHoro('unlockForecastFree') : tHoro('unlockForecast')}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+      {/* Advice block — full access only */}
+      {!preview && advice ? (
+        <View style={styles.adviceBlock}>
+          <Text style={styles.adviceLabel}>{tHoro('adviceLabel')}</Text>
+          <Text style={styles.adviceText}>{advice}</Text>
+        </View>
+      ) : null}
 
-        {/* Advice block — full access only */}
-        {!preview && advice ? (
-          <View style={styles.adviceBlock}>
-            <Text style={styles.adviceLabel}>{tHoro('adviceLabel')}</Text>
-            <Text style={styles.adviceText}>{advice}</Text>
-          </View>
-        ) : null}
-
-        {/* Calendar link — outline button */}
-        <TouchableOpacity
-          style={styles.calendarLink}
-          onPress={() => router.push(withReturnTo('/calendar', '/horoscope') as never)}
-        >
-          <Ionicons name="calendar-outline" size={16} color={colors.foreground} />
-          <Text style={styles.calendarLinkText}>{tHoro('calendarLink')}</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+      {/* Calendar link — outline button */}
+      <TouchableOpacity
+        style={styles.calendarLink}
+        onPress={() => router.push(withReturnTo('/calendar', '/horoscope') as never)}
+      >
+        <Ionicons name="calendar-outline" size={16} color={colors.foreground} />
+        <Text style={styles.calendarLinkText}>{tHoro('calendarLink')}</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 

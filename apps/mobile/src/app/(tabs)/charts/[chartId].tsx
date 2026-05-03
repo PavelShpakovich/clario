@@ -559,7 +559,18 @@ export default function ChartDetailScreen() {
 
   return (
     <>
-      <View style={styles.container}>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
         <View style={[styles.navRow, { marginTop: insets.top + 12 }]}>
           <TouchableOpacity
             style={styles.navLink}
@@ -583,303 +594,156 @@ export default function ChartDetailScreen() {
             <Text style={styles.navLinkText}>{tChart('editChart')}</Text>
           </TouchableOpacity>
         </View>
-
-        <ScrollView
-          ref={scrollViewRef}
-          style={{ flex: 1 }}
-          contentContainerStyle={styles.content}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={colors.primary}
-            />
-          }
-        >
-          {/* ── Person hero card ─────────────────────────────────────────────── */}
-          <View style={styles.heroCard}>
-            {/* Avatar + identity */}
-            <View style={styles.heroRow}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initial}</Text>
-              </View>
-              <View style={styles.heroInfo}>
-                <Text style={styles.personName}>{chart.person_name}</Text>
-                <Text style={styles.chartLabel}>{chart.label}</Text>
-                <Text style={styles.subjectTypeBadge}>
-                  {subjectTypeLabels[chart.subject_type] ?? chart.subject_type}
-                </Text>
-                {/* Big three */}
-                {sunSign || moonSign || ascSign ? (
-                  <View style={styles.bigThreeRow}>
-                    {sunSign ? (
-                      <View style={[styles.bigThreeBadge, styles.sunBadge]}>
-                        <Text style={[styles.bigThreeText, styles.sunText]}>☉ {sunSign}</Text>
-                      </View>
-                    ) : null}
-                    {moonSign ? (
-                      <View style={[styles.bigThreeBadge, styles.moonBadge]}>
-                        <Text style={[styles.bigThreeText, styles.moonText]}>☽ {moonSign}</Text>
-                      </View>
-                    ) : null}
-                    {ascSign ? (
-                      <View style={[styles.bigThreeBadge, styles.ascBadge]}>
-                        <Text style={[styles.bigThreeText, styles.ascText]}>↑ {ascSign}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                ) : null}
-              </View>
+        {/* ── Person hero card ─────────────────────────────────────────────── */}
+        <View style={styles.heroCard}>
+          {/* Avatar + identity */}
+          <View style={styles.heroRow}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initial}</Text>
             </View>
-
-            {/* Birth details grid */}
-            <View style={styles.detailsGrid}>
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>{tChart('birthDateLabel')}</Text>
-                <Text style={styles.detailValue}>
-                  {chart.birth_date}
-                  {chart.birth_time_known && chart.birth_time
-                    ? ` · ${chart.birth_time}`
-                    : ` · ${tChart('birthTimeUnknown')}`}
-                </Text>
-              </View>
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>{tChart('birthPlaceLabel')}</Text>
-                <Text style={styles.detailValue}>
-                  {chart.city}, {chart.country}
-                </Text>
-              </View>
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>{tChart('houseSystemLabel')}</Text>
-                <Text style={styles.detailValue}>{houseSystemLabel}</Text>
-              </View>
+            <View style={styles.heroInfo}>
+              <Text style={styles.personName}>{chart.person_name}</Text>
+              <Text style={styles.chartLabel}>{chart.label}</Text>
+              <Text style={styles.subjectTypeBadge}>
+                {subjectTypeLabels[chart.subject_type] ?? chart.subject_type}
+              </Text>
+              {/* Big three */}
+              {sunSign || moonSign || ascSign ? (
+                <View style={styles.bigThreeRow}>
+                  {sunSign ? (
+                    <View style={[styles.bigThreeBadge, styles.sunBadge]}>
+                      <Text style={[styles.bigThreeText, styles.sunText]}>☉ {sunSign}</Text>
+                    </View>
+                  ) : null}
+                  {moonSign ? (
+                    <View style={[styles.bigThreeBadge, styles.moonBadge]}>
+                      <Text style={[styles.bigThreeText, styles.moonText]}>☽ {moonSign}</Text>
+                    </View>
+                  ) : null}
+                  {ascSign ? (
+                    <View style={[styles.bigThreeBadge, styles.ascBadge]}>
+                      <Text style={[styles.bigThreeText, styles.ascText]}>↑ {ascSign}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
             </View>
           </View>
 
-          {/* ── Actions ──────────────────────────────────────────────────────── */}
-          <View style={styles.actionsGroup}>
-            <TouchableOpacity
-              style={[
-                styles.primaryButton,
-                chart.status !== 'ready' && styles.primaryButtonDisabled,
-              ]}
-              onPress={() => setShowReadingModal(true)}
-              disabled={chart.status !== 'ready'}
-            >
-              <Text style={styles.primaryButtonText}>{tCreateReading('submit')}</Text>
-            </TouchableOpacity>
-            {chart.status !== 'ready' && (
-              <Text style={styles.notReadyHint}>{tChart('createReadingNotReady')}</Text>
-            )}
-            <TouchableOpacity
-              style={styles.outlineButton}
-              onPress={() =>
-                router.push(
-                  withReturnTo(
-                    `/(tabs)/compatibility/new?primaryChartId=${chartId}`,
-                    `/(tabs)/charts/${chartId}`,
-                  ) as never,
-                )
-              }
-            >
-              <Ionicons name="link-outline" size={16} color={colors.primary} />
-              <Text style={styles.outlineButtonText}>{tChart('compareWithChart')}</Text>
-            </TouchableOpacity>
+          {/* Birth details grid */}
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>{tChart('birthDateLabel')}</Text>
+              <Text style={styles.detailValue}>
+                {chart.birth_date}
+                {chart.birth_time_known && chart.birth_time
+                  ? ` · ${chart.birth_time}`
+                  : ` · ${tChart('birthTimeUnknown')}`}
+              </Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>{tChart('birthPlaceLabel')}</Text>
+              <Text style={styles.detailValue}>
+                {chart.city}, {chart.country}
+              </Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>{tChart('houseSystemLabel')}</Text>
+              <Text style={styles.detailValue}>{houseSystemLabel}</Text>
+            </View>
           </View>
+        </View>
 
-          {/* ── Status banners ───────────────────────────────────────────────── */}
-          {chart.status === 'pending' ? (
-            <View style={styles.infoBanner}>
-              <Text style={styles.infoBannerTitle}>{tChart('statusPendingBannerTitle')}</Text>
-              <Text style={styles.infoBannerDesc}>{tChart('statusPendingBannerDesc')}</Text>
+        {/* ── Actions ──────────────────────────────────────────────────────── */}
+        <View style={styles.actionsGroup}>
+          <TouchableOpacity
+            style={[styles.primaryButton, chart.status !== 'ready' && styles.primaryButtonDisabled]}
+            onPress={() => setShowReadingModal(true)}
+            disabled={chart.status !== 'ready'}
+          >
+            <Text style={styles.primaryButtonText}>{tCreateReading('submit')}</Text>
+          </TouchableOpacity>
+          {chart.status !== 'ready' && (
+            <Text style={styles.notReadyHint}>{tChart('createReadingNotReady')}</Text>
+          )}
+          <TouchableOpacity
+            style={styles.outlineButton}
+            onPress={() =>
+              router.push(
+                withReturnTo(
+                  `/(tabs)/compatibility/new?primaryChartId=${chartId}`,
+                  `/(tabs)/charts/${chartId}`,
+                ) as never,
+              )
+            }
+          >
+            <Ionicons name="link-outline" size={16} color={colors.primary} />
+            <Text style={styles.outlineButtonText}>{tChart('compareWithChart')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Status banners ───────────────────────────────────────────────── */}
+        {chart.status === 'pending' ? (
+          <View style={styles.infoBanner}>
+            <Text style={styles.infoBannerTitle}>{tChart('statusPendingBannerTitle')}</Text>
+            <Text style={styles.infoBannerDesc}>{tChart('statusPendingBannerDesc')}</Text>
+          </View>
+        ) : chart.status === 'error' ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerTitle}>{tChart('statusErrorBannerTitle')}</Text>
+            <Text style={styles.errorBannerDesc}>{tChart('statusErrorBannerDesc')}</Text>
+          </View>
+        ) : null}
+
+        {/* ── Notes ────────────────────────────────────────────────────────── */}
+        {chart.notes ? (
+          <View style={styles.notesBlock}>
+            <Text style={styles.notesLabel}>{tChart('notesLabel')}</Text>
+            <Text style={styles.notesText}>{chart.notes}</Text>
+          </View>
+        ) : null}
+
+        {/* ── Chart wheel ──────────────────────────────────────────────────── */}
+        {wheelPositions.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{tChart('chartWheel')}</Text>
+            <View style={styles.wheelContainer}>
+              <ChartWheel
+                positions={wheelPositions}
+                aspects={wheelAspects}
+                houseSystem={chart.house_system}
+              />
             </View>
-          ) : chart.status === 'error' ? (
-            <View style={styles.errorBanner}>
-              <Text style={styles.errorBannerTitle}>{tChart('statusErrorBannerTitle')}</Text>
-              <Text style={styles.errorBannerDesc}>{tChart('statusErrorBannerDesc')}</Text>
-            </View>
-          ) : null}
+          </View>
+        ) : null}
 
-          {/* ── Notes ────────────────────────────────────────────────────────── */}
-          {chart.notes ? (
-            <View style={styles.notesBlock}>
-              <Text style={styles.notesLabel}>{tChart('notesLabel')}</Text>
-              <Text style={styles.notesText}>{chart.notes}</Text>
-            </View>
-          ) : null}
-
-          {/* ── Chart wheel ──────────────────────────────────────────────────── */}
-          {wheelPositions.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{tChart('chartWheel')}</Text>
-              <View style={styles.wheelContainer}>
-                <ChartWheel
-                  positions={wheelPositions}
-                  aspects={wheelAspects}
-                  houseSystem={chart.house_system}
-                />
-              </View>
-            </View>
-          ) : null}
-
-          {/* ── Chart Stats ──────────────────────────────────────────────────── */}
-          {balancePlanets.length > 0 ? (
-            <View style={styles.statsSection}>
-              {/* Elements + Modalities side by side */}
-              <View style={styles.statsRow}>
-                {/* Elements */}
-                <View style={styles.statCard}>
-                  <Text style={styles.statCardTitle}>{tChart('elementsTitle')}</Text>
-                  {(
-                    [
-                      { key: 'fire' as const, dot: '#F97316' },
-                      { key: 'earth' as const, dot: '#059669' },
-                      { key: 'air' as const, dot: '#38BDF8' },
-                      { key: 'water' as const, dot: '#3B82F6' },
-                    ] as const
-                  ).map((el) => {
-                    const count = elementCounts[el.key];
-                    return (
-                      <View key={el.key} style={styles.statRow}>
-                        <Text style={styles.statLabel}>{elementLabels[el.key] ?? el.key}</Text>
-                        <View style={styles.dotRow}>
-                          {Array.from({ length: 7 }).map((_, i) => (
-                            <View
-                              key={i}
-                              style={[
-                                styles.dot,
-                                { backgroundColor: i < count ? el.dot : colors.muted },
-                              ]}
-                            />
-                          ))}
-                        </View>
-                        <Text style={styles.statCount}>{count}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-
-                {/* Modalities */}
-                <View style={styles.statCard}>
-                  <Text style={styles.statCardTitle}>{tChart('modalitiesTitle')}</Text>
-                  {(
-                    [
-                      { key: 'cardinal' as const, dot: colors.primary },
-                      { key: 'fixed' as const, dot: '#A855F7' },
-                      { key: 'mutable' as const, dot: '#10B981' },
-                    ] as const
-                  ).map((mod) => {
-                    const count = modalityCounts[mod.key];
-                    return (
-                      <View key={mod.key} style={styles.statRow}>
-                        <Text style={styles.statLabel}>{modalityLabels[mod.key] ?? mod.key}</Text>
-                        <View style={styles.dotRow}>
-                          {Array.from({ length: 7 }).map((_, i) => (
-                            <View
-                              key={i}
-                              style={[
-                                styles.dot,
-                                { backgroundColor: i < count ? mod.dot : colors.muted },
-                              ]}
-                            />
-                          ))}
-                        </View>
-                        <Text style={styles.statCount}>{count}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* About Chart */}
+        {/* ── Chart Stats ──────────────────────────────────────────────────── */}
+        {balancePlanets.length > 0 ? (
+          <View style={styles.statsSection}>
+            {/* Elements + Modalities side by side */}
+            <View style={styles.statsRow}>
+              {/* Elements */}
               <View style={styles.statCard}>
-                <Text style={styles.statCardTitle}>{tChart('aboutChart')}</Text>
-                {chartRulerPos && chartRulerKey ? (
-                  <View style={styles.aboutRow}>
-                    <View
-                      style={[
-                        styles.aboutIcon,
-                        {
-                          backgroundColor:
-                            (PLANET_COLORS_HEX[chartRulerKey] ?? colors.primary) + '22',
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.aboutIconText,
-                          { color: PLANET_COLORS_HEX[chartRulerKey] ?? colors.primary },
-                        ]}
-                      >
-                        {PLANET_SYMBOLS[chartRulerKey] ?? chartRulerKey.slice(0, 2)}
-                      </Text>
-                    </View>
-                    <View style={styles.aboutInfo}>
-                      <Text style={styles.aboutMeta}>{tChart('chartRuler')}</Text>
-                      <Text style={styles.aboutValue}>
-                        {planetLabels[chartRulerKey] ?? chartRulerKey}
-                        {chartRulerPos.sign_key ? (
-                          <Text style={styles.aboutValueMuted}>
-                            {' '}
-                            {tChart('inSign')}{' '}
-                            {signLabels[chartRulerPos.sign_key] ?? chartRulerPos.sign_key}
-                          </Text>
-                        ) : null}
-                      </Text>
-                      {chartRulerPos.house_number != null ? (
-                        <Text style={styles.aboutMeta}>
-                          {tChart('houseLabel', { number: chartRulerPos.house_number })}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </View>
-                ) : null}
-                {hasTimeData ? (
-                  <View style={styles.aboutRow}>
-                    <View
-                      style={[styles.aboutIcon, { backgroundColor: isDay ? '#FEF3C7' : '#E0F2FE' }]}
-                    >
-                      <Text style={styles.aboutIconText}>{isDay ? '☀' : '☽'}</Text>
-                    </View>
-                    <View style={styles.aboutInfo}>
-                      <Text style={styles.aboutMeta}>{tChart('chartType')}</Text>
-                      <Text style={styles.aboutValue}>
-                        {isDay ? tChart('dayChart') : tChart('nightChart')}
-                      </Text>
-                      <Text style={styles.aboutMeta}>
-                        {isDay ? tChart('dayChartDesc') : tChart('nightChartDesc')}
-                      </Text>
-                    </View>
-                  </View>
-                ) : null}
-                {!chartRulerPos && !hasTimeData ? (
-                  <Text style={styles.aboutHint}>{tChart('addLocationHint')}</Text>
-                ) : null}
-              </View>
-
-              {/* Polarity */}
-              <View style={styles.statCard}>
-                <Text style={styles.statCardTitle}>{tChart('polarityTitle')}</Text>
-                <Text style={styles.statCardDesc}>{tChart('polarityDesc')}</Text>
-                {(['masculine', 'feminine'] as const).map((pol) => {
-                  const count = polarityCounts[pol];
+                <Text style={styles.statCardTitle}>{tChart('elementsTitle')}</Text>
+                {(
+                  [
+                    { key: 'fire' as const, dot: '#F97316' },
+                    { key: 'earth' as const, dot: '#059669' },
+                    { key: 'air' as const, dot: '#38BDF8' },
+                    { key: 'water' as const, dot: '#3B82F6' },
+                  ] as const
+                ).map((el) => {
+                  const count = elementCounts[el.key];
                   return (
-                    <View key={pol} style={styles.statRow}>
-                      <Text style={styles.statLabel}>{polarityLabels[pol] ?? pol}</Text>
+                    <View key={el.key} style={styles.statRow}>
+                      <Text style={styles.statLabel}>{elementLabels[el.key] ?? el.key}</Text>
                       <View style={styles.dotRow}>
                         {Array.from({ length: 7 }).map((_, i) => (
                           <View
                             key={i}
                             style={[
                               styles.dot,
-                              {
-                                backgroundColor:
-                                  i < count
-                                    ? pol === 'masculine'
-                                      ? '#F97316'
-                                      : '#6366F1'
-                                    : colors.muted,
-                              },
+                              { backgroundColor: i < count ? el.dot : colors.muted },
                             ]}
                           />
                         ))}
@@ -890,353 +754,476 @@ export default function ChartDetailScreen() {
                 })}
               </View>
 
-              {/* Stelliums */}
+              {/* Modalities */}
               <View style={styles.statCard}>
-                <Text style={styles.statCardTitle}>{tChart('stelliumsTitle')}</Text>
-                <Text style={styles.statCardDesc}>{tChart('stelliumsDesc')}</Text>
-                {signStelliums.length === 0 && houseStelliums.length === 0 ? (
-                  <Text style={styles.statEmptyText}>{tChart('noStelliums')}</Text>
-                ) : (
-                  <>
-                    {signStelliums.map(([sign, bodies]) => (
-                      <View key={`s-${sign}`} style={styles.stelliumItem}>
-                        <Text style={styles.stelliumTitle}>
-                          {tChart('stelliumSign', { sign: signLabels[sign] ?? sign })}
-                        </Text>
-                        <Text style={styles.stelliumBodies}>
-                          {bodies.map((b) => planetLabels[b] ?? b).join(', ')}
-                        </Text>
+                <Text style={styles.statCardTitle}>{tChart('modalitiesTitle')}</Text>
+                {(
+                  [
+                    { key: 'cardinal' as const, dot: colors.primary },
+                    { key: 'fixed' as const, dot: '#A855F7' },
+                    { key: 'mutable' as const, dot: '#10B981' },
+                  ] as const
+                ).map((mod) => {
+                  const count = modalityCounts[mod.key];
+                  return (
+                    <View key={mod.key} style={styles.statRow}>
+                      <Text style={styles.statLabel}>{modalityLabels[mod.key] ?? mod.key}</Text>
+                      <View style={styles.dotRow}>
+                        {Array.from({ length: 7 }).map((_, i) => (
+                          <View
+                            key={i}
+                            style={[
+                              styles.dot,
+                              { backgroundColor: i < count ? mod.dot : colors.muted },
+                            ]}
+                          />
+                        ))}
                       </View>
-                    ))}
-                    {houseStelliums.map(([house, bodies]) => (
-                      <View key={`h-${house}`} style={styles.stelliumItem}>
-                        <Text style={styles.stelliumTitle}>
-                          {tChart('stelliumHouse', { house })}
-                        </Text>
-                        <Text style={styles.stelliumBodies}>
-                          {bodies.map((b) => planetLabels[b] ?? b).join(', ')}
-                        </Text>
-                      </View>
-                    ))}
-                  </>
-                )}
+                      <Text style={styles.statCount}>{count}</Text>
+                    </View>
+                  );
+                })}
               </View>
+            </View>
 
-              {/* Dignities */}
-              {dignities.length > 0 ? (
-                <View style={styles.statCard}>
-                  <Text style={styles.statCardTitle}>{tChart('dignityTitle')}</Text>
-                  <Text style={styles.statCardDesc}>{tChart('dignityDesc')}</Text>
-                  {dignities.map((d) => {
-                    const dc = DIGNITY_COLORS[d.dignity!];
-                    return (
-                      <View key={d.body} style={[styles.dignityRow, { backgroundColor: dc.bg }]}>
-                        <Text
-                          style={[
-                            styles.dignitySymbol,
-                            { color: PLANET_COLORS_HEX[d.body] ?? dc.text },
-                          ]}
-                        >
-                          {PLANET_SYMBOLS[d.body] ?? d.body.slice(0, 2)}
+            {/* About Chart */}
+            <View style={styles.statCard}>
+              <Text style={styles.statCardTitle}>{tChart('aboutChart')}</Text>
+              {chartRulerPos && chartRulerKey ? (
+                <View style={styles.aboutRow}>
+                  <View
+                    style={[
+                      styles.aboutIcon,
+                      {
+                        backgroundColor:
+                          (PLANET_COLORS_HEX[chartRulerKey] ?? colors.primary) + '22',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.aboutIconText,
+                        { color: PLANET_COLORS_HEX[chartRulerKey] ?? colors.primary },
+                      ]}
+                    >
+                      {PLANET_SYMBOLS[chartRulerKey] ?? chartRulerKey.slice(0, 2)}
+                    </Text>
+                  </View>
+                  <View style={styles.aboutInfo}>
+                    <Text style={styles.aboutMeta}>{tChart('chartRuler')}</Text>
+                    <Text style={styles.aboutValue}>
+                      {planetLabels[chartRulerKey] ?? chartRulerKey}
+                      {chartRulerPos.sign_key ? (
+                        <Text style={styles.aboutValueMuted}>
+                          {' '}
+                          {tChart('inSign')}{' '}
+                          {signLabels[chartRulerPos.sign_key] ?? chartRulerPos.sign_key}
                         </Text>
-                        <Text style={[styles.dignityPlanet, { color: dc.text }]}>
-                          {planetLabels[d.body] ?? d.body}
-                        </Text>
-                        <Text style={[styles.dignityType, { color: dc.text }]}>
-                          {dignityLabels[d.dignity!] ?? d.dignity}
-                        </Text>
-                        <Text style={[styles.dignityShort, { color: dc.text }]}>
-                          {dignityShortLabels[d.dignity!] ?? ''}
-                        </Text>
-                      </View>
-                    );
-                  })}
+                      ) : null}
+                    </Text>
+                    {chartRulerPos.house_number != null ? (
+                      <Text style={styles.aboutMeta}>
+                        {tChart('houseLabel', { number: chartRulerPos.house_number })}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
               ) : null}
+              {hasTimeData ? (
+                <View style={styles.aboutRow}>
+                  <View
+                    style={[styles.aboutIcon, { backgroundColor: isDay ? '#FEF3C7' : '#E0F2FE' }]}
+                  >
+                    <Text style={styles.aboutIconText}>{isDay ? '☀' : '☽'}</Text>
+                  </View>
+                  <View style={styles.aboutInfo}>
+                    <Text style={styles.aboutMeta}>{tChart('chartType')}</Text>
+                    <Text style={styles.aboutValue}>
+                      {isDay ? tChart('dayChart') : tChart('nightChart')}
+                    </Text>
+                    <Text style={styles.aboutMeta}>
+                      {isDay ? tChart('dayChartDesc') : tChart('nightChartDesc')}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+              {!chartRulerPos && !hasTimeData ? (
+                <Text style={styles.aboutHint}>{tChart('addLocationHint')}</Text>
+              ) : null}
+            </View>
 
-              {/* Unaspected planets */}
-              {unaspected.length > 0 ? (
-                <View style={styles.statCard}>
-                  <Text style={styles.statCardTitle}>{tChart('unaspectedTitle')}</Text>
-                  <Text style={styles.statCardDesc}>{tChart('unaspectedDesc')}</Text>
-                  {unaspected.map((p) => (
-                    <View key={p.id} style={styles.unaspectedRow}>
-                      <Text
-                        style={[
-                          styles.dignitySymbol,
-                          { color: PLANET_COLORS_HEX[p.body_key] ?? colors.mutedForeground },
-                        ]}
-                      >
-                        {PLANET_SYMBOLS[p.body_key] ?? p.body_key.slice(0, 2)}
+            {/* Polarity */}
+            <View style={styles.statCard}>
+              <Text style={styles.statCardTitle}>{tChart('polarityTitle')}</Text>
+              <Text style={styles.statCardDesc}>{tChart('polarityDesc')}</Text>
+              {(['masculine', 'feminine'] as const).map((pol) => {
+                const count = polarityCounts[pol];
+                return (
+                  <View key={pol} style={styles.statRow}>
+                    <Text style={styles.statLabel}>{polarityLabels[pol] ?? pol}</Text>
+                    <View style={styles.dotRow}>
+                      {Array.from({ length: 7 }).map((_, i) => (
+                        <View
+                          key={i}
+                          style={[
+                            styles.dot,
+                            {
+                              backgroundColor:
+                                i < count
+                                  ? pol === 'masculine'
+                                    ? '#F97316'
+                                    : '#6366F1'
+                                  : colors.muted,
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                    <Text style={styles.statCount}>{count}</Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Stelliums */}
+            <View style={styles.statCard}>
+              <Text style={styles.statCardTitle}>{tChart('stelliumsTitle')}</Text>
+              <Text style={styles.statCardDesc}>{tChart('stelliumsDesc')}</Text>
+              {signStelliums.length === 0 && houseStelliums.length === 0 ? (
+                <Text style={styles.statEmptyText}>{tChart('noStelliums')}</Text>
+              ) : (
+                <>
+                  {signStelliums.map(([sign, bodies]) => (
+                    <View key={`s-${sign}`} style={styles.stelliumItem}>
+                      <Text style={styles.stelliumTitle}>
+                        {tChart('stelliumSign', { sign: signLabels[sign] ?? sign })}
                       </Text>
-                      <Text style={styles.unaspectedPlanet}>
-                        {planetLabels[p.body_key] ?? p.body_key}
-                      </Text>
-                      <Text style={styles.unaspectedSign}>
-                        {signLabels[p.sign_key] ?? p.sign_key}
-                        {p.house_number != null
-                          ? ` · ${tChart('houseLabel', { number: p.house_number })}`
-                          : ''}
+                      <Text style={styles.stelliumBodies}>
+                        {bodies.map((b) => planetLabels[b] ?? b).join(', ')}
                       </Text>
                     </View>
                   ))}
-                </View>
-              ) : null}
-            </View>
-          ) : null}
-
-          {/* ── Positions ────────────────────────────────────────────────────── */}
-          {sortedPlanets.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{tChart('positions')}</Text>
-              {sortedPlanets.map((pos) => {
-                const symbol =
-                  PLANET_SYMBOLS[pos.body_key] ?? pos.body_key.slice(0, 2).toUpperCase();
-                const planetColor = PLANET_COLORS_HEX[pos.body_key] ?? colors.mutedForeground;
-                const planetName = planetLabels[pos.body_key] ?? pos.body_key;
-                const signName = signLabels[pos.sign_key] ?? pos.sign_key;
-                const meaning = planetMeanings[pos.body_key] ?? '';
-                const keyword = signKeywords[pos.sign_key] ?? '';
-                const dignity = getDignity(pos.body_key, pos.sign_key);
-                const dignityStyle = dignity ? DIGNITY_COLORS[dignity] : null;
-
-                return (
-                  <View key={pos.id} style={styles.positionRow}>
-                    <View style={[styles.planetSymbol, { backgroundColor: planetColor + '22' }]}>
-                      <Text style={[styles.planetSymbolText, { color: planetColor }]}>
-                        {symbol}
+                  {houseStelliums.map(([house, bodies]) => (
+                    <View key={`h-${house}`} style={styles.stelliumItem}>
+                      <Text style={styles.stelliumTitle}>{tChart('stelliumHouse', { house })}</Text>
+                      <Text style={styles.stelliumBodies}>
+                        {bodies.map((b) => planetLabels[b] ?? b).join(', ')}
                       </Text>
                     </View>
-                    <View style={styles.positionInfo}>
-                      <View style={styles.positionNameRow}>
-                        <Text style={styles.positionPlanetName}>{planetName}</Text>
-                        {pos.retrograde ? (
-                          <View style={styles.rxBadge}>
-                            <Text style={styles.rxBadgeText}>Rx</Text>
-                          </View>
-                        ) : null}
-                        {meaning ? (
-                          <Text style={styles.positionMeaning} numberOfLines={1}>
-                            {meaning}
-                          </Text>
-                        ) : null}
-                      </View>
-                      <View style={styles.positionSignRow}>
-                        <Text style={styles.positionSign}>
-                          {signName} {formatDeg(pos.degree_decimal)}
-                        </Text>
-                        {pos.house_number != null ? (
-                          <Text style={styles.positionHouse}>
-                            · {tChart('houseLabel', { number: pos.house_number })}
-                          </Text>
-                        ) : null}
-                        {dignityStyle ? (
-                          <View style={[styles.dignityBadge, { backgroundColor: dignityStyle.bg }]}>
-                            <Text style={[styles.dignityBadgeText, { color: dignityStyle.text }]}>
-                              {dignityLabels[dignity!] ?? dignity}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-                      {keyword ? (
-                        <Text style={styles.positionKeyword} numberOfLines={1}>
-                          {keyword}
+                  ))}
+                </>
+              )}
+            </View>
+
+            {/* Dignities */}
+            {dignities.length > 0 ? (
+              <View style={styles.statCard}>
+                <Text style={styles.statCardTitle}>{tChart('dignityTitle')}</Text>
+                <Text style={styles.statCardDesc}>{tChart('dignityDesc')}</Text>
+                {dignities.map((d) => {
+                  const dc = DIGNITY_COLORS[d.dignity!];
+                  return (
+                    <View key={d.body} style={[styles.dignityRow, { backgroundColor: dc.bg }]}>
+                      <Text
+                        style={[
+                          styles.dignitySymbol,
+                          { color: PLANET_COLORS_HEX[d.body] ?? dc.text },
+                        ]}
+                      >
+                        {PLANET_SYMBOLS[d.body] ?? d.body.slice(0, 2)}
+                      </Text>
+                      <Text style={[styles.dignityPlanet, { color: dc.text }]}>
+                        {planetLabels[d.body] ?? d.body}
+                      </Text>
+                      <Text style={[styles.dignityType, { color: dc.text }]}>
+                        {dignityLabels[d.dignity!] ?? d.dignity}
+                      </Text>
+                      <Text style={[styles.dignityShort, { color: dc.text }]}>
+                        {dignityShortLabels[d.dignity!] ?? ''}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
+
+            {/* Unaspected planets */}
+            {unaspected.length > 0 ? (
+              <View style={styles.statCard}>
+                <Text style={styles.statCardTitle}>{tChart('unaspectedTitle')}</Text>
+                <Text style={styles.statCardDesc}>{tChart('unaspectedDesc')}</Text>
+                {unaspected.map((p) => (
+                  <View key={p.id} style={styles.unaspectedRow}>
+                    <Text
+                      style={[
+                        styles.dignitySymbol,
+                        { color: PLANET_COLORS_HEX[p.body_key] ?? colors.mutedForeground },
+                      ]}
+                    >
+                      {PLANET_SYMBOLS[p.body_key] ?? p.body_key.slice(0, 2)}
+                    </Text>
+                    <Text style={styles.unaspectedPlanet}>
+                      {planetLabels[p.body_key] ?? p.body_key}
+                    </Text>
+                    <Text style={styles.unaspectedSign}>
+                      {signLabels[p.sign_key] ?? p.sign_key}
+                      {p.house_number != null
+                        ? ` · ${tChart('houseLabel', { number: p.house_number })}`
+                        : ''}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* ── Positions ────────────────────────────────────────────────────── */}
+        {sortedPlanets.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{tChart('positions')}</Text>
+            {sortedPlanets.map((pos) => {
+              const symbol = PLANET_SYMBOLS[pos.body_key] ?? pos.body_key.slice(0, 2).toUpperCase();
+              const planetColor = PLANET_COLORS_HEX[pos.body_key] ?? colors.mutedForeground;
+              const planetName = planetLabels[pos.body_key] ?? pos.body_key;
+              const signName = signLabels[pos.sign_key] ?? pos.sign_key;
+              const meaning = planetMeanings[pos.body_key] ?? '';
+              const keyword = signKeywords[pos.sign_key] ?? '';
+              const dignity = getDignity(pos.body_key, pos.sign_key);
+              const dignityStyle = dignity ? DIGNITY_COLORS[dignity] : null;
+
+              return (
+                <View key={pos.id} style={styles.positionRow}>
+                  <View style={[styles.planetSymbol, { backgroundColor: planetColor + '22' }]}>
+                    <Text style={[styles.planetSymbolText, { color: planetColor }]}>{symbol}</Text>
+                  </View>
+                  <View style={styles.positionInfo}>
+                    <View style={styles.positionNameRow}>
+                      <Text style={styles.positionPlanetName}>{planetName}</Text>
+                      {pos.retrograde ? (
+                        <View style={styles.rxBadge}>
+                          <Text style={styles.rxBadgeText}>Rx</Text>
+                        </View>
+                      ) : null}
+                      {meaning ? (
+                        <Text style={styles.positionMeaning} numberOfLines={1}>
+                          {meaning}
                         </Text>
                       ) : null}
                     </View>
+                    <View style={styles.positionSignRow}>
+                      <Text style={styles.positionSign}>
+                        {signName} {formatDeg(pos.degree_decimal)}
+                      </Text>
+                      {pos.house_number != null ? (
+                        <Text style={styles.positionHouse}>
+                          · {tChart('houseLabel', { number: pos.house_number })}
+                        </Text>
+                      ) : null}
+                      {dignityStyle ? (
+                        <View style={[styles.dignityBadge, { backgroundColor: dignityStyle.bg }]}>
+                          <Text style={[styles.dignityBadgeText, { color: dignityStyle.text }]}>
+                            {dignityLabels[dignity!] ?? dignity}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    {keyword ? (
+                      <Text style={styles.positionKeyword} numberOfLines={1}>
+                        {keyword}
+                      </Text>
+                    ) : null}
                   </View>
+                </View>
+              );
+            })}
+
+            {/* Angles strip */}
+            {angles.length > 0 ? (
+              <View style={styles.anglesStrip}>
+                {angles.map((pos) => {
+                  const isAsc = pos.body_key === 'ascendant';
+                  const signName = signLabels[pos.sign_key] ?? pos.sign_key;
+                  const label = isAsc ? tChart('ascendantLabel') : tChart('midheavenLabel');
+                  // Short display label
+                  const shortLabel = isAsc ? 'AC' : 'MC';
+                  return (
+                    <View key={pos.id} style={styles.angleRow}>
+                      <View style={[styles.planetSymbol, { backgroundColor: colors.primaryTint }]}>
+                        <Text style={[styles.planetSymbolText, { color: colors.primary }]}>
+                          {shortLabel}
+                        </Text>
+                      </View>
+                      <View style={styles.positionInfo}>
+                        <Text style={styles.positionPlanetName} numberOfLines={1}>
+                          {label}
+                        </Text>
+                        <Text style={styles.positionSign}>
+                          {signName} {formatDeg(pos.degree_decimal)}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* ── Aspects ──────────────────────────────────────────────────────── */}
+        {sortedAspects.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{tChart('aspects')}</Text>
+            {sortedAspects.map((asp) => {
+              const symbol = ASPECT_SYMBOLS[asp.aspect_key] ?? asp.aspect_key;
+              const aspectColor = ASPECT_COLORS_HEX[asp.aspect_key] ?? colors.mutedForeground;
+              const aspectName = aspectNames[asp.aspect_key] ?? asp.aspect_key;
+              const planetA = planetLabels[asp.body_a] ?? asp.body_a;
+              const planetB = planetLabels[asp.body_b] ?? asp.body_b;
+              return (
+                <View key={asp.id} style={styles.aspectRow}>
+                  <View style={[styles.aspectSymbolBox, { backgroundColor: aspectColor + '18' }]}>
+                    <Text style={[styles.aspectSymbol, { color: aspectColor }]}>{symbol}</Text>
+                  </View>
+                  <View style={styles.aspectInfo}>
+                    <Text style={styles.aspectPlanets}>
+                      {planetA} · {planetB}
+                    </Text>
+                    <Text style={styles.aspectMeta}>
+                      {aspectName} · {asp.orb_decimal.toFixed(1)}° {tChart('orbSuffix')}
+                      {asp.applying != null
+                        ? ` · ${asp.applying ? tChart('applying') : tChart('separating')}`
+                        : ''}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
+
+        {/* ── Linked readings ──────────────────────────────────────────────── */}
+        <View
+          style={styles.section}
+          onLayout={(e) => {
+            readingsSectionY.current = e.nativeEvent.layout.y;
+          }}
+        >
+          <Text style={styles.sectionTitle}>{tChart('linkedReadings')}</Text>
+          {linkedReadings.length === 0 && !readingsLoading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>{tChart('noReadingsYet')}</Text>
+              <Text style={styles.emptyStateHint}>{tChart('noReadingsHint')}</Text>
+            </View>
+          ) : (
+            <View style={readingsLoading ? { opacity: 0.5, gap: 8 } : { gap: 8 }}>
+              {linkedReadings.map((r) => {
+                const readingTypeLabel =
+                  (messages.chartDetail.readingTypes as Record<string, string>)[r.reading_type] ??
+                  r.reading_type.replace(/_/g, ' ');
+                const dateStr = new Date(r.created_at).toLocaleDateString('ru-RU');
+                return (
+                  <TouchableOpacity
+                    key={r.id}
+                    style={styles.readingCard}
+                    onPress={() =>
+                      router.push(
+                        withReturnTo(
+                          `/(tabs)/readings/${r.id}`,
+                          `/(tabs)/charts/${chartId}`,
+                        ) as never,
+                      )
+                    }
+                  >
+                    <View style={styles.readingCardRow}>
+                      <View style={styles.readingCardLeft}>
+                        <Text style={styles.readingCardTitle} numberOfLines={1}>
+                          {r.title}
+                        </Text>
+                        <Text style={styles.readingCardMeta}>
+                          {readingTypeLabel} · {dateStr}
+                        </Text>
+                        {r.summary ? (
+                          <Text style={styles.readingCardSub} numberOfLines={2}>
+                            {r.summary}
+                          </Text>
+                        ) : null}
+                      </View>
+                      {r.status !== 'ready' ? (
+                        <View
+                          style={[
+                            styles.statusChip,
+                            { backgroundColor: readingStatusColors[r.status] ?? '#6b7280' },
+                          ]}
+                        >
+                          <Text style={styles.statusChipText}>
+                            {readingStatusLabels[r.status] ?? r.status}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
                 );
               })}
 
-              {/* Angles strip */}
-              {angles.length > 0 ? (
-                <View style={styles.anglesStrip}>
-                  {angles.map((pos) => {
-                    const isAsc = pos.body_key === 'ascendant';
-                    const signName = signLabels[pos.sign_key] ?? pos.sign_key;
-                    const label = isAsc ? tChart('ascendantLabel') : tChart('midheavenLabel');
-                    // Short display label
-                    const shortLabel = isAsc ? 'AC' : 'MC';
-                    return (
-                      <View key={pos.id} style={styles.angleRow}>
-                        <View
-                          style={[styles.planetSymbol, { backgroundColor: colors.primaryTint }]}
-                        >
-                          <Text style={[styles.planetSymbolText, { color: colors.primary }]}>
-                            {shortLabel}
-                          </Text>
-                        </View>
-                        <View style={styles.positionInfo}>
-                          <Text style={styles.positionPlanetName} numberOfLines={1}>
-                            {label}
-                          </Text>
-                          <Text style={styles.positionSign}>
-                            {signName} {formatDeg(pos.degree_decimal)}
-                          </Text>
-                        </View>
-                      </View>
-                    );
-                  })}
+              {/* Pagination */}
+              {Math.ceil(readingsTotal / PAGE_SIZE) > 1 ? (
+                <View style={styles.pagination}>
+                  <TouchableOpacity
+                    style={[
+                      styles.pageBtn,
+                      (readingsPage <= 1 || readingsLoading) && styles.pageBtnDisabled,
+                    ]}
+                    onPress={() => loadReadingsPage(readingsPage - 1)}
+                    disabled={readingsPage <= 1 || readingsLoading}
+                  >
+                    <Ionicons
+                      name="chevron-back"
+                      size={16}
+                      color={readingsPage <= 1 ? colors.mutedForeground : colors.foreground}
+                    />
+                  </TouchableOpacity>
+                  {readingsLoading ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={colors.primary}
+                      style={{ marginHorizontal: 8 }}
+                    />
+                  ) : (
+                    <Text style={styles.pageLabel}>
+                      {tChart('pageLabel', {
+                        current: readingsPage,
+                        total: Math.ceil(readingsTotal / PAGE_SIZE),
+                      })}
+                    </Text>
+                  )}
+                  <TouchableOpacity
+                    style={[
+                      styles.pageBtn,
+                      (readingsPage >= Math.ceil(readingsTotal / PAGE_SIZE) || readingsLoading) &&
+                        styles.pageBtnDisabled,
+                    ]}
+                    onPress={() => loadReadingsPage(readingsPage + 1)}
+                    disabled={
+                      readingsPage >= Math.ceil(readingsTotal / PAGE_SIZE) || readingsLoading
+                    }
+                  >
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={
+                        readingsPage >= Math.ceil(readingsTotal / PAGE_SIZE)
+                          ? colors.mutedForeground
+                          : colors.foreground
+                      }
+                    />
+                  </TouchableOpacity>
                 </View>
               ) : null}
             </View>
-          ) : null}
-
-          {/* ── Aspects ──────────────────────────────────────────────────────── */}
-          {sortedAspects.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{tChart('aspects')}</Text>
-              {sortedAspects.map((asp) => {
-                const symbol = ASPECT_SYMBOLS[asp.aspect_key] ?? asp.aspect_key;
-                const aspectColor = ASPECT_COLORS_HEX[asp.aspect_key] ?? colors.mutedForeground;
-                const aspectName = aspectNames[asp.aspect_key] ?? asp.aspect_key;
-                const planetA = planetLabels[asp.body_a] ?? asp.body_a;
-                const planetB = planetLabels[asp.body_b] ?? asp.body_b;
-                return (
-                  <View key={asp.id} style={styles.aspectRow}>
-                    <View style={[styles.aspectSymbolBox, { backgroundColor: aspectColor + '18' }]}>
-                      <Text style={[styles.aspectSymbol, { color: aspectColor }]}>{symbol}</Text>
-                    </View>
-                    <View style={styles.aspectInfo}>
-                      <Text style={styles.aspectPlanets}>
-                        {planetA} · {planetB}
-                      </Text>
-                      <Text style={styles.aspectMeta}>
-                        {aspectName} · {asp.orb_decimal.toFixed(1)}° {tChart('orbSuffix')}
-                        {asp.applying != null
-                          ? ` · ${asp.applying ? tChart('applying') : tChart('separating')}`
-                          : ''}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          ) : null}
-
-          {/* ── Linked readings ──────────────────────────────────────────────── */}
-          <View
-            style={styles.section}
-            onLayout={(e) => {
-              readingsSectionY.current = e.nativeEvent.layout.y;
-            }}
-          >
-            <Text style={styles.sectionTitle}>{tChart('linkedReadings')}</Text>
-            {linkedReadings.length === 0 && !readingsLoading ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>{tChart('noReadingsYet')}</Text>
-                <Text style={styles.emptyStateHint}>{tChart('noReadingsHint')}</Text>
-              </View>
-            ) : (
-              <View style={readingsLoading ? { opacity: 0.5, gap: 8 } : { gap: 8 }}>
-                {linkedReadings.map((r) => {
-                  const readingTypeLabel =
-                    (messages.chartDetail.readingTypes as Record<string, string>)[r.reading_type] ??
-                    r.reading_type.replace(/_/g, ' ');
-                  const dateStr = new Date(r.created_at).toLocaleDateString('ru-RU');
-                  return (
-                    <TouchableOpacity
-                      key={r.id}
-                      style={styles.readingCard}
-                      onPress={() =>
-                        router.push(
-                          withReturnTo(
-                            `/(tabs)/readings/${r.id}`,
-                            `/(tabs)/charts/${chartId}`,
-                          ) as never,
-                        )
-                      }
-                    >
-                      <View style={styles.readingCardRow}>
-                        <View style={styles.readingCardLeft}>
-                          <Text style={styles.readingCardTitle} numberOfLines={1}>
-                            {r.title}
-                          </Text>
-                          <Text style={styles.readingCardMeta}>
-                            {readingTypeLabel} · {dateStr}
-                          </Text>
-                          {r.summary ? (
-                            <Text style={styles.readingCardSub} numberOfLines={2}>
-                              {r.summary}
-                            </Text>
-                          ) : null}
-                        </View>
-                        {r.status !== 'ready' ? (
-                          <View
-                            style={[
-                              styles.statusChip,
-                              { backgroundColor: readingStatusColors[r.status] ?? '#6b7280' },
-                            ]}
-                          >
-                            <Text style={styles.statusChipText}>
-                              {readingStatusLabels[r.status] ?? r.status}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-
-                {/* Pagination */}
-                {Math.ceil(readingsTotal / PAGE_SIZE) > 1 ? (
-                  <View style={styles.pagination}>
-                    <TouchableOpacity
-                      style={[
-                        styles.pageBtn,
-                        (readingsPage <= 1 || readingsLoading) && styles.pageBtnDisabled,
-                      ]}
-                      onPress={() => loadReadingsPage(readingsPage - 1)}
-                      disabled={readingsPage <= 1 || readingsLoading}
-                    >
-                      <Ionicons
-                        name="chevron-back"
-                        size={16}
-                        color={readingsPage <= 1 ? colors.mutedForeground : colors.foreground}
-                      />
-                    </TouchableOpacity>
-                    {readingsLoading ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={colors.primary}
-                        style={{ marginHorizontal: 8 }}
-                      />
-                    ) : (
-                      <Text style={styles.pageLabel}>
-                        {tChart('pageLabel', {
-                          current: readingsPage,
-                          total: Math.ceil(readingsTotal / PAGE_SIZE),
-                        })}
-                      </Text>
-                    )}
-                    <TouchableOpacity
-                      style={[
-                        styles.pageBtn,
-                        (readingsPage >= Math.ceil(readingsTotal / PAGE_SIZE) || readingsLoading) &&
-                          styles.pageBtnDisabled,
-                      ]}
-                      onPress={() => loadReadingsPage(readingsPage + 1)}
-                      disabled={
-                        readingsPage >= Math.ceil(readingsTotal / PAGE_SIZE) || readingsLoading
-                      }
-                    >
-                      <Ionicons
-                        name="chevron-forward"
-                        size={16}
-                        color={
-                          readingsPage >= Math.ceil(readingsTotal / PAGE_SIZE)
-                            ? colors.mutedForeground
-                            : colors.foreground
-                        }
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ) : null}
-              </View>
-            )}
-          </View>
-        </ScrollView>
-      </View>
+          )}
+        </View>
+      </ScrollView>
 
       {/* ── Reading type bottom sheet ─────────────────────────────────────── */}
       <Modal

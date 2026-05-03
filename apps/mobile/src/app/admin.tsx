@@ -758,79 +758,85 @@ export default function AdminScreen() {
     : [];
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => goBackTo(returnTo, '/(tabs)/settings')}
-          style={styles.backBtn}
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.foreground} />
-        </TouchableOpacity>
-        <Text style={styles.title}>{t('title')}</Text>
-        <TouchableOpacity onPress={() => void loadAll(page)} style={styles.refreshBtn} hitSlop={8}>
-          <Ionicons name="refresh-outline" size={20} color={colors.mutedForeground} />
-        </TouchableOpacity>
-      </View>
-
+    <View style={styles.root}>
       <FlatList
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
-          <View style={styles.headerSection}>
-            {analyticsLoading ? (
-              <AnalyticsSkeleton />
-            ) : (
+          <>
+            <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+              <TouchableOpacity
+                onPress={() => goBackTo(returnTo, '/(tabs)/settings')}
+                style={styles.backBtn}
+                hitSlop={8}
+              >
+                <Ionicons name="chevron-back" size={22} color={colors.foreground} />
+              </TouchableOpacity>
+              <Text style={styles.title}>{t('title')}</Text>
+              <TouchableOpacity
+                onPress={() => void loadAll(page)}
+                style={styles.refreshBtn}
+                hitSlop={8}
+              >
+                <Ionicons name="refresh-outline" size={20} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.headerSection}>
+              {analyticsLoading ? (
+                <AnalyticsSkeleton />
+              ) : (
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Ionicons name="bar-chart-outline" size={15} color={colors.primary} />
+                    <Text style={styles.cardTitle}>{t('analyticsTitle')}</Text>
+                  </View>
+                  <View style={styles.statsGrid}>
+                    {analyticsStats.map((s) => (
+                      <View key={s.label} style={[styles.statCard, s.wide && styles.statCardWide]}>
+                        <Ionicons
+                          name={s.icon}
+                          size={16}
+                          color={colors.primary}
+                          style={styles.statIcon}
+                        />
+                        <Text style={styles.statValue}>{s.value}</Text>
+                        <Text style={styles.statLabel}>{s.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
               <View style={styles.card}>
                 <View style={styles.cardHeader}>
-                  <Ionicons name="bar-chart-outline" size={15} color={colors.primary} />
-                  <Text style={styles.cardTitle}>{t('analyticsTitle')}</Text>
-                </View>
-                <View style={styles.statsGrid}>
-                  {analyticsStats.map((s) => (
-                    <View key={s.label} style={[styles.statCard, s.wide && styles.statCardWide]}>
-                      <Ionicons
-                        name={s.icon}
-                        size={16}
-                        color={colors.primary}
-                        style={styles.statIcon}
-                      />
-                      <Text style={styles.statValue}>{s.value}</Text>
-                      <Text style={styles.statLabel}>{s.label}</Text>
+                  <Ionicons name="people-outline" size={15} color={colors.primary} />
+                  <Text style={styles.cardTitle}>{t('usersTitle')}</Text>
+                  {total > 0 && (
+                    <View style={styles.countPill}>
+                      <Text style={styles.countPillText}>{total}</Text>
                     </View>
-                  ))}
+                  )}
                 </View>
-              </View>
-            )}
-
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="people-outline" size={15} color={colors.primary} />
-                <Text style={styles.cardTitle}>{t('usersTitle')}</Text>
-                {total > 0 && (
-                  <View style={styles.countPill}>
-                    <Text style={styles.countPillText}>{total}</Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.searchBox}>
-                <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
-                <TextInput
-                  style={styles.searchInput}
-                  value={search}
-                  onChangeText={setSearch}
-                  placeholder="Email или имя…"
-                  placeholderTextColor={colors.mutedForeground}
-                />
-                {search.length > 0 && (
-                  <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
-                    <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
-                  </TouchableOpacity>
-                )}
+                <View style={styles.searchBox}>
+                  <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
+                  <TextInput
+                    style={styles.searchInput}
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholder="Email или имя…"
+                    placeholderTextColor={colors.mutedForeground}
+                  />
+                  {search.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+                      <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
+          </>
         }
         refreshing={refreshing}
         onRefresh={handleRefresh}

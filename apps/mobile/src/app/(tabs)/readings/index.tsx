@@ -188,154 +188,161 @@ export default function ReadingsListScreen() {
     return <ReadingsListSkeleton />;
   }
 
+  const listEmptyComponent =
+    readings.length === 0 ? (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="sparkles-outline" size={48} color={colors.border} />
+        <Text style={styles.emptyTitle}>{tReadings('noReadingsTitle')}</Text>
+        <Text style={styles.emptyDesc}>{tReadings('noReadingsDescription')}</Text>
+        <View style={styles.emptyButtons}>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() =>
+              router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/readings') as never)
+            }
+          >
+            <Text style={styles.primaryButtonText}>{tReadings('createChart')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.outlineButton}
+            onPress={() => router.push(withReturnTo('/(tabs)/charts', '/(tabs)/readings') as never)}
+          >
+            <Text style={styles.outlineButtonText}>{tReadings('openCharts')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    ) : filtered.length === 0 ? (
+      <View style={styles.noResultsContainer}>
+        <Text style={styles.noResultsText}>{tReadings('noResults')}</Text>
+      </View>
+    ) : null;
+
   return (
     <View style={styles.container}>
-      {/* Page header */}
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.eyebrow}>{tReadings('sectionLabel')}</Text>
-        <Text style={styles.pageTitle}>{tReadings('heading')}</Text>
-        <Text style={styles.pageDesc}>{tReadings('description')}</Text>
-      </View>
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={
+          <>
+            <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+              <Text style={styles.eyebrow}>{tReadings('sectionLabel')}</Text>
+              <Text style={styles.pageTitle}>{tReadings('heading')}</Text>
+              <Text style={styles.pageDesc}>{tReadings('description')}</Text>
+            </View>
 
-      {/* Search bar */}
-      <View style={styles.searchWrapper}>
-        <Ionicons
-          name="search-outline"
-          size={16}
-          color={colors.mutedForeground}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder={tReadings('searchPlaceholder')}
-          placeholderTextColor={colors.mutedForeground}
-          clearButtonMode="while-editing"
-        />
-      </View>
+            <View style={styles.searchWrapper}>
+              <Ionicons
+                name="search-outline"
+                size={16}
+                color={colors.mutedForeground}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.searchInput}
+                value={search}
+                onChangeText={setSearch}
+                placeholder={tReadings('searchPlaceholder')}
+                placeholderTextColor={colors.mutedForeground}
+                clearButtonMode="while-editing"
+              />
+            </View>
 
-      {/* Type filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterScroll}
-        contentContainerStyle={styles.filterRow}
-      >
-        <TouchableOpacity
-          style={[styles.filterChip, typeFilter === 'all' && styles.filterChipActive]}
-          onPress={() => setTypeFilter('all')}
-        >
-          <Text
-            style={[styles.filterChipText, typeFilter === 'all' && styles.filterChipTextActive]}
-          >
-            {tReadings('filterAll')}
-          </Text>
-        </TouchableOpacity>
-        {READING_TYPES.map((type) => (
-          <TouchableOpacity
-            key={type}
-            style={[styles.filterChip, typeFilter === type && styles.filterChipActive]}
-            onPress={() => setTypeFilter(type)}
-          >
-            <Text
-              style={[styles.filterChipText, typeFilter === type && styles.filterChipTextActive]}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterScroll}
+              contentContainerStyle={styles.filterRow}
             >
-              {readingTypeLabels[type] ?? type}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {readings.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="sparkles-outline" size={48} color={colors.border} />
-          <Text style={styles.emptyTitle}>{tReadings('noReadingsTitle')}</Text>
-          <Text style={styles.emptyDesc}>{tReadings('noReadingsDescription')}</Text>
-          <View style={styles.emptyButtons}>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() =>
-                router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/readings') as never)
-              }
-            >
-              <Text style={styles.primaryButtonText}>{tReadings('createChart')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.outlineButton}
-              onPress={() =>
-                router.push(withReturnTo('/(tabs)/charts', '/(tabs)/readings') as never)
-              }
-            >
-              <Text style={styles.outlineButtonText}>{tReadings('openCharts')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : filtered.length === 0 ? (
-        <View style={styles.noResultsContainer}>
-          <Text style={styles.noResultsText}>{tReadings('noResults')}</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          renderItem={({ item }) => {
-            const statusStyle = getStatusStyle(item.status);
-            return (
-              <SwipeToDeleteRow onDeletePress={() => confirmDelete(item)}>
-                <TouchableOpacity
-                  style={styles.card}
-                  onPress={() =>
-                    router.push(
-                      withReturnTo(`/(tabs)/readings/${item.id}`, '/(tabs)/readings') as never,
-                    )
-                  }
-                  activeOpacity={0.75}
+              <TouchableOpacity
+                style={[styles.filterChip, typeFilter === 'all' && styles.filterChipActive]}
+                onPress={() => setTypeFilter('all')}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    typeFilter === 'all' && styles.filterChipTextActive,
+                  ]}
                 >
-                  {/* Type label row */}
-                  <View style={styles.cardTypeRow}>
-                    <Ionicons name="sparkles" size={11} color={colors.primary} />
-                    <Text style={styles.cardTypeLabel}>
-                      {readingTypeLabels[item.reading_type] ?? item.reading_type}
-                    </Text>
-                  </View>
-
-                  {/* Title */}
-                  <Text style={styles.cardTitle}>
-                    {item.title || readingTypeLabels[item.reading_type]}
+                  {tReadings('filterAll')}
+                </Text>
+              </TouchableOpacity>
+              {READING_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[styles.filterChip, typeFilter === type && styles.filterChipActive]}
+                  onPress={() => setTypeFilter(type)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      typeFilter === type && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {readingTypeLabels[type] ?? type}
                   </Text>
-
-                  {/* Summary */}
-                  {item.summary ? (
-                    <Text style={styles.cardSummary} numberOfLines={2}>
-                      {item.summary}
-                    </Text>
-                  ) : null}
-
-                  {/* Footer: date + status badge */}
-                  <View style={styles.cardFooter}>
-                    <View style={styles.cardFooterLeft}>
-                      {item.status !== 'ready' ? (
-                        <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                          <Text style={[styles.statusBadgeText, { color: statusStyle.fg }]}>
-                            {getStatusLabel(item.status)}
-                          </Text>
-                        </View>
-                      ) : null}
-                      <Text style={styles.cardDate}>
-                        {new Date(item.created_at).toLocaleDateString('ru')}
-                      </Text>
-                    </View>
-                  </View>
                 </TouchableOpacity>
-              </SwipeToDeleteRow>
-            );
-          }}
-        />
-      )}
+              ))}
+            </ScrollView>
+          </>
+        }
+        ListEmptyComponent={listEmptyComponent}
+        renderItem={({ item }) => {
+          const statusStyle = getStatusStyle(item.status);
+          return (
+            <SwipeToDeleteRow onDeletePress={() => confirmDelete(item)}>
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() =>
+                  router.push(
+                    withReturnTo(`/(tabs)/readings/${item.id}`, '/(tabs)/readings') as never,
+                  )
+                }
+                activeOpacity={0.75}
+              >
+                {/* Type label row */}
+                <View style={styles.cardTypeRow}>
+                  <Ionicons name="sparkles" size={11} color={colors.primary} />
+                  <Text style={styles.cardTypeLabel}>
+                    {readingTypeLabels[item.reading_type] ?? item.reading_type}
+                  </Text>
+                </View>
+
+                {/* Title */}
+                <Text style={styles.cardTitle}>
+                  {item.title || readingTypeLabels[item.reading_type]}
+                </Text>
+
+                {/* Summary */}
+                {item.summary ? (
+                  <Text style={styles.cardSummary} numberOfLines={2}>
+                    {item.summary}
+                  </Text>
+                ) : null}
+
+                {/* Footer: date + status badge */}
+                <View style={styles.cardFooter}>
+                  <View style={styles.cardFooterLeft}>
+                    {item.status !== 'ready' ? (
+                      <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                        <Text style={[styles.statusBadgeText, { color: statusStyle.fg }]}>
+                          {getStatusLabel(item.status)}
+                        </Text>
+                      </View>
+                    ) : null}
+                    <Text style={styles.cardDate}>
+                      {new Date(item.created_at).toLocaleDateString('ru')}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </SwipeToDeleteRow>
+          );
+        }}
+      />
     </View>
   );
 }

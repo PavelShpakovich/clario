@@ -156,25 +156,6 @@ export default function ChartsListScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header bar */}
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.headerTop}>
-          <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>{tWorkspace('sectionLabel')}</Text>
-            <Text style={styles.pageTitle}>{tWorkspace('heading')}</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() =>
-              router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/charts') as never)
-            }
-          >
-            <Ionicons name="add" size={20} color={colors.primaryForeground} />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.pageDesc}>{tWorkspace('description')}</Text>
-      </View>
-
       {charts.length === 0 ? (
         <View style={styles.emptyWrapper}>
           <View style={styles.emptyState}>
@@ -198,12 +179,31 @@ export default function ChartsListScreen() {
           refreshing={refreshing}
           onRefresh={handleRefresh}
           ListHeaderComponent={
-            <View style={styles.listSectionHeader}>
-              <Text style={styles.listSectionTitle}>{tWorkspace('savedCharts')}</Text>
-              <View style={styles.countBadge}>
-                <Text style={styles.countBadgeText}>{charts.length}</Text>
+            <>
+              <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+                <View style={styles.headerTop}>
+                  <View style={styles.headerText}>
+                    <Text style={styles.eyebrow}>{tWorkspace('sectionLabel')}</Text>
+                    <Text style={styles.pageTitle}>{tWorkspace('heading')}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() =>
+                      router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/charts') as never)
+                    }
+                  >
+                    <Ionicons name="add" size={20} color={colors.primaryForeground} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.pageDesc}>{tWorkspace('description')}</Text>
               </View>
-            </View>
+              <View style={styles.listSectionHeader}>
+                <Text style={styles.listSectionTitle}>{tWorkspace('savedCharts')}</Text>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>{charts.length}</Text>
+                </View>
+              </View>
+            </>
           }
           renderItem={({ item }) => {
             const element = getChartElement(item);

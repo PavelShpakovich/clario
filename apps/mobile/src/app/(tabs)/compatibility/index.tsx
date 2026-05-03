@@ -165,33 +165,33 @@ export default function CompatibilityListScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Page header */}
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>{tCompat('sectionLabel')}</Text>
-            <Text style={styles.pageTitle}>{tCompat('heading')}</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() =>
-              router.push(
-                withReturnTo('/(tabs)/compatibility/new', '/(tabs)/compatibility') as never,
-              )
-            }
-          >
-            <Ionicons name="add" size={20} color={colors.primaryForeground} />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.pageDesc}>{tCompat('description')}</Text>
-      </View>
-
       <FlatList
         data={reports}
         keyExtractor={(r) => r.id}
         contentContainerStyle={styles.list}
         refreshing={refreshing}
         onRefresh={handleRefresh}
+        ListHeaderComponent={
+          <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+            <View style={styles.headerRow}>
+              <View style={styles.headerText}>
+                <Text style={styles.eyebrow}>{tCompat('sectionLabel')}</Text>
+                <Text style={styles.pageTitle}>{tCompat('heading')}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() =>
+                  router.push(
+                    withReturnTo('/(tabs)/compatibility/new', '/(tabs)/compatibility') as never,
+                  )
+                }
+              >
+                <Ionicons name="add" size={20} color={colors.primaryForeground} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.pageDesc}>{tCompat('description')}</Text>
+          </View>
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="heart-outline" size={48} color={colors.border} />
