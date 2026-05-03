@@ -196,7 +196,7 @@ export default function HoroscopeScreen() {
         },
         toastKey: 'mobile-forecast-unlock',
         onSuccess: async () => {
-          await loadForecast();
+          await loadForecast(true);
         },
         onError: (error) => {
           if (
@@ -252,8 +252,7 @@ export default function HoroscopeScreen() {
         },
         toastKey: 'mobile-forecast-regenerate',
         onSuccess: async () => {
-          setLoading(true);
-          await loadForecast();
+          await loadForecast(true);
         },
         onError: (error) => {
           if (

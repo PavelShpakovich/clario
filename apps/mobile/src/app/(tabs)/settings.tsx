@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -109,6 +109,7 @@ export default function SettingsScreen() {
   const [tzPickerOpen, setTzPickerOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const hasLoadedRef = useRef(false);
   const { theme: currentTheme, setTheme } = useTheme();
 
   const tSettings = useTranslations('settingsPage');
@@ -152,6 +153,12 @@ export default function SettingsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (hasLoadedRef.current) {
+        void loadSettings(true);
+        return;
+      }
+
+      hasLoadedRef.current = true;
       void loadSettings();
     }, [loadSettings]),
   );

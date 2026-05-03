@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -89,6 +89,7 @@ export default function CompatibilityListScreen() {
   const insets = useSafeAreaInsets();
   const [reports, setReports] = useState<CompatibilityReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   const tCompat = useTranslations('compatibility');
   const tCommon = useTranslations('common');
@@ -108,6 +109,12 @@ export default function CompatibilityListScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (hasLoadedRef.current) {
+        void loadReports(true);
+        return;
+      }
+
+      hasLoadedRef.current = true;
       void loadReports();
     }, [loadReports]),
   );

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -604,6 +604,7 @@ export default function AdminScreen() {
     user: AdminUser;
     mode: 'grant' | 'revoke';
   } | null>(null);
+  const hasLoadedRef = useRef(false);
 
   // Stable dep-free callback — avoids re-render loop from useTranslations returning new refs
   const loadAll = useCallback(async (p: number, isRefresh = false) => {
@@ -636,6 +637,12 @@ export default function AdminScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (hasLoadedRef.current) {
+        void loadAll(1, true);
+        return;
+      }
+
+      hasLoadedRef.current = true;
       void loadAll(1);
     }, [loadAll]),
   );

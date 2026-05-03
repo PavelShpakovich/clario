@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -131,6 +131,7 @@ export default function StoreScreen() {
 
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const hasLoadedRef = useRef(false);
   const PAGE_SIZE = 5;
 
   const tCredits = useTranslations('credits');
@@ -159,6 +160,12 @@ export default function StoreScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (hasLoadedRef.current) {
+        void loadStatic(true);
+        return;
+      }
+
+      hasLoadedRef.current = true;
       void loadStatic();
     }, [loadStatic]),
   );
