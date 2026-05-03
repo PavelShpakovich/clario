@@ -307,9 +307,8 @@ function createStyles(colors: ReturnType<typeof useColors>) {
 
     // ── Header ──────────────────────────────────────────────────────────────────
     headerBar: {
-      paddingHorizontal: 20,
       paddingTop: 56,
-      paddingBottom: 16,
+      paddingBottom: 8,
     },
     headerTop: {
       flexDirection: 'row',
@@ -325,7 +324,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       fontSize: 13,
       color: colors.mutedForeground,
       lineHeight: 19,
-      paddingBottom: 8,
+      marginTop: 4,
     },
     eyebrow: {
       fontSize: 11,

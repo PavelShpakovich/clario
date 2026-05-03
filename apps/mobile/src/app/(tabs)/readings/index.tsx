@@ -360,16 +360,14 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       backgroundColor: colors.background,
     },
     headerBar: {
-      paddingHorizontal: 20,
       paddingTop: 56,
-      paddingBottom: 12,
+      paddingBottom: 8,
     },
     pageDesc: {
       fontSize: 13,
       color: colors.mutedForeground,
       lineHeight: 19,
       marginTop: 4,
-      paddingBottom: 4,
     },
     eyebrow: {
       fontSize: 11,
@@ -390,7 +388,6 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     searchWrapper: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginHorizontal: 20,
       marginBottom: 10,
       backgroundColor: colors.card,
       borderWidth: 1,
@@ -415,7 +412,6 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       flexShrink: 0,
     },
     filterRow: {
-      paddingLeft: 20,
       paddingRight: 12,
       paddingBottom: 10,
       alignItems: 'center',

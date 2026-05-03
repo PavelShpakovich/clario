@@ -428,10 +428,25 @@ export default function CompatibilityDetailScreen() {
   if (!report) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>{tCompat('generatingErrorTitle')}</Text>
-        <TouchableOpacity onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}>
-          <Text style={styles.linkText}>{tCompat('backToAll')}</Text>
-        </TouchableOpacity>
+        <Ionicons name="heart-dislike-outline" size={44} color={colors.border} />
+        <Text style={styles.fallbackTitle}>{tCompat('notFoundTitle')}</Text>
+        <Text style={styles.fallbackDescription}>{tCompat('notFoundDesc')}</Text>
+        <View style={styles.fallbackActions}>
+          <TouchableOpacity
+            style={styles.fallbackPrimaryButton}
+            onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}
+          >
+            <Text style={styles.fallbackPrimaryButtonText}>
+              {tCompat('backToAll').replace(/^←\s*/, '')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.fallbackSecondaryButton}
+            onPress={() => void loadReport(true)}
+          >
+            <Text style={styles.fallbackSecondaryButtonText}>{tCompat('retryLoad')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -1096,8 +1111,52 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     },
     disclaimersText: { fontSize: 11, color: colors.mutedForeground, lineHeight: 17 },
 
-    // ── Misc ──────────────────────────────────────────────────────────────────────
-    errorText: { fontSize: 16, fontWeight: '600', color: colors.destructive },
-    linkText: { color: colors.primary, fontSize: 14 },
+    // ── Fallback state ───────────────────────────────────────────────────────────
+    fallbackTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.foreground,
+      textAlign: 'center',
+    },
+    fallbackDescription: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      lineHeight: 21,
+      textAlign: 'center',
+      maxWidth: 320,
+    },
+    fallbackActions: {
+      width: '100%',
+      maxWidth: 320,
+      gap: 10,
+      marginTop: 4,
+    },
+    fallbackPrimaryButton: {
+      height: 46,
+      borderRadius: 12,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...cardShadow,
+    },
+    fallbackPrimaryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    fallbackSecondaryButton: {
+      height: 46,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    fallbackSecondaryButtonText: {
+      color: colors.foreground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
   });
 }

@@ -442,10 +442,23 @@ export default function ChartDetailScreen() {
   if (!detail) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>{tChart('notFoundTitle')}</Text>
-        <TouchableOpacity onPress={() => goBackTo(returnTo, '/(tabs)/charts')}>
-          <Text style={styles.linkText}>{tChart('allCharts')}</Text>
-        </TouchableOpacity>
+        <Ionicons name="planet-outline" size={44} color={colors.border} />
+        <Text style={styles.fallbackTitle}>{tChart('notFoundTitle')}</Text>
+        <Text style={styles.fallbackDescription}>{tChart('notFoundDesc')}</Text>
+        <View style={styles.fallbackActions}>
+          <TouchableOpacity
+            style={styles.fallbackPrimaryButton}
+            onPress={() => goBackTo(returnTo, '/(tabs)/charts')}
+          >
+            <Text style={styles.fallbackPrimaryButtonText}>{tChart('allCharts')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.fallbackSecondaryButton}
+            onPress={() => void loadChartDetail(true)}
+          >
+            <Text style={styles.fallbackSecondaryButtonText}>{tChart('retryLoad')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -1940,15 +1953,52 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       textAlign: 'center',
     },
 
-    // ── Error / link ──────────────────────────────────────────────────────────────
-    errorText: {
-      fontSize: 18,
-      color: colors.error,
+    // ── Fallback state ───────────────────────────────────────────────────────────
+    fallbackTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.foreground,
       textAlign: 'center',
     },
-    linkText: {
-      color: colors.primary,
-      fontSize: 15,
+    fallbackDescription: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+      lineHeight: 21,
+      textAlign: 'center',
+      maxWidth: 320,
+    },
+    fallbackActions: {
+      width: '100%',
+      maxWidth: 320,
+      gap: 10,
+      marginTop: 4,
+    },
+    fallbackPrimaryButton: {
+      height: 46,
+      borderRadius: 12,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...cardShadow,
+    },
+    fallbackPrimaryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    fallbackSecondaryButton: {
+      height: 46,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    fallbackSecondaryButtonText: {
+      color: colors.foreground,
+      fontSize: 14,
+      fontWeight: '600',
     },
 
     // ── Modal bottom sheet ────────────────────────────────────────────────────────

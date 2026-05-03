@@ -910,7 +910,6 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 16,
       paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,

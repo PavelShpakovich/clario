@@ -301,16 +301,14 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       backgroundColor: colors.background,
     },
     headerBar: {
-      paddingHorizontal: 20,
       paddingTop: 56,
-      paddingBottom: 12,
+      paddingBottom: 8,
     },
     pageDesc: {
       fontSize: 13,
       color: colors.mutedForeground,
       lineHeight: 19,
-      marginTop: 6,
-      paddingBottom: 4,
+      marginTop: 4,
     },
     headerRow: {
       flexDirection: 'row',

@@ -251,10 +251,23 @@ export default function ReadingDetailScreen() {
   if (!reading) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>{tDetail('notFoundTitle')}</Text>
-        <TouchableOpacity onPress={() => goBackTo(returnTo, '/(tabs)/readings')}>
-          <Text style={styles.linkText}>{tNav('back')}</Text>
-        </TouchableOpacity>
+        <Ionicons name="sparkles-outline" size={44} color={colors.border} />
+        <Text style={styles.fallbackTitle}>{tDetail('notFoundTitle')}</Text>
+        <Text style={styles.fallbackDescription}>{tDetail('notFoundDesc')}</Text>
+        <View style={styles.fallbackActions}>
+          <TouchableOpacity
+            style={styles.fallbackPrimaryButton}
+            onPress={() => goBackTo(returnTo, '/(tabs)/readings')}
+          >
+            <Text style={styles.fallbackPrimaryButtonText}>{tDetail('allReadings')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.fallbackSecondaryButton}
+            onPress={() => void loadReading(true)}
+          >
+            <Text style={styles.fallbackSecondaryButtonText}>{tDetail('retryLoad')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -381,21 +394,6 @@ export default function ReadingDetailScreen() {
             )}
           </TouchableOpacity>
         ) : null}
-
-        {/* Retry — only if error */}
-        {isError ? (
-          <TouchableOpacity
-            style={[styles.primaryButton, retrying && styles.buttonDisabled]}
-            onPress={handleRetry}
-            disabled={retrying}
-          >
-            {retrying ? (
-              <ActivityIndicator color={colors.primaryForeground} />
-            ) : (
-              <Text style={styles.primaryButtonText}>{tGenerating('retryButton')}</Text>
-            )}
-          </TouchableOpacity>
-        ) : null}
       </View>
 
       {/* Generating / pending spinner */}
@@ -429,6 +427,17 @@ export default function ReadingDetailScreen() {
         <View style={styles.errorBanner}>
           <Text style={styles.errorBannerTitle}>{tDetail('errorBannerTitle')}</Text>
           <Text style={styles.errorBannerDesc}>{tDetail('errorBannerDesc')}</Text>
+          <TouchableOpacity
+            style={[styles.retryButton, retrying && styles.buttonDisabled]}
+            onPress={handleRetry}
+            disabled={retrying}
+          >
+            {retrying ? (
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
+            ) : (
+              <Text style={styles.retryButtonText}>{tGenerating('retryButton')}</Text>
+            )}
+          </TouchableOpacity>
         </View>
       ) : null}
 
@@ -674,18 +683,35 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       borderColor: '#fca5a5',
       backgroundColor: colors.destructiveSubtle,
       padding: 16,
-      gap: 4,
+      gap: 8,
+      alignItems: 'center',
       marginBottom: 20,
     },
     errorBannerTitle: {
       fontSize: 14,
       fontWeight: '600',
       color: colors.destructive,
+      textAlign: 'center',
     },
     errorBannerDesc: {
       fontSize: 13,
       color: colors.mutedForeground,
       lineHeight: 19,
+      textAlign: 'center',
+    },
+    retryButton: {
+      backgroundColor: colors.primary,
+      height: 36,
+      borderRadius: 8,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    retryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 14,
+      fontWeight: '600',
     },
 
     // ── Summary ───────────────────────────────────────────────────────────────────
@@ -839,16 +865,52 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       lineHeight: 17,
     },
 
-    // ── Misc ──────────────────────────────────────────────────────────────────────
-    errorText: {
-      fontSize: 18,
+    // ── Fallback state ───────────────────────────────────────────────────────────
+    fallbackTitle: {
+      fontSize: 20,
       fontWeight: '600',
-      color: colors.destructive,
+      color: colors.foreground,
       textAlign: 'center',
     },
-    linkText: {
-      color: colors.primary,
+    fallbackDescription: {
       fontSize: 14,
+      color: colors.mutedForeground,
+      lineHeight: 21,
+      textAlign: 'center',
+      maxWidth: 320,
+    },
+    fallbackActions: {
+      width: '100%',
+      maxWidth: 320,
+      gap: 10,
+      marginTop: 4,
+    },
+    fallbackPrimaryButton: {
+      height: 46,
+      borderRadius: 12,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...cardShadow,
+    },
+    fallbackPrimaryButtonText: {
+      color: colors.primaryForeground,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    fallbackSecondaryButton: {
+      height: 46,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    fallbackSecondaryButtonText: {
+      color: colors.foreground,
+      fontSize: 14,
+      fontWeight: '600',
     },
   });
 }
