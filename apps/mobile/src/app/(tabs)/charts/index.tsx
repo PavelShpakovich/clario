@@ -66,7 +66,7 @@ function ChartsListSkeleton() {
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.container}>
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.headerBar, { paddingTop: insets.top + 8, paddingHorizontal: 20 }]}>
         <View style={styles.headerTop}>
           <View style={styles.headerText}>
             <Skeleton width={70} height={10} />
@@ -93,11 +93,13 @@ function ChartsListSkeleton() {
                 </View>
                 <Skeleton width={'40%'} height={11} style={{ marginTop: 4 }} />
                 <Skeleton width={'70%'} height={11} style={{ marginTop: 3 }} />
-                <View style={styles.bigThreeRow}>
-                  <Skeleton width={64} height={18} borderRadius={9} />
-                  <Skeleton width={64} height={18} borderRadius={9} />
-                  <Skeleton width={64} height={18} borderRadius={9} />
-                </View>
+                {i % 2 === 0 && (
+                  <View style={styles.bigThreeRow}>
+                    <Skeleton width={64} height={18} borderRadius={9} />
+                    <Skeleton width={64} height={18} borderRadius={9} />
+                    <Skeleton width={64} height={18} borderRadius={9} />
+                  </View>
+                )}
               </View>
             </View>
           </View>

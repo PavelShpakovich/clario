@@ -28,7 +28,7 @@ function CompatibilityListSkeleton() {
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.container}>
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.headerBar, { paddingTop: insets.top + 8, paddingHorizontal: 20 }]}>
         <View style={styles.headerRow}>
           <View style={styles.headerText}>
             <Skeleton width={70} height={10} />
@@ -45,15 +45,13 @@ function CompatibilityListSkeleton() {
               <Skeleton width={12} height={12} borderRadius={6} />
               <Skeleton width={80} height={10} />
             </View>
-            <Skeleton width={'75%'} height={15} />
-            <Skeleton width={'90%'} height={11} />
-            <Skeleton width={'65%'} height={11} />
+            <Skeleton width={'75%'} height={15} style={{ marginTop: 6 }} />
+            {i % 2 === 0 && <Skeleton width={'90%'} height={11} style={{ marginTop: 4 }} />}
             <View style={styles.cardFooter}>
               <View style={styles.cardFooterLeft}>
-                <Skeleton width={55} height={18} borderRadius={9} />
+                {i % 3 !== 0 && <Skeleton width={55} height={18} borderRadius={9} />}
                 <Skeleton width={70} height={11} />
               </View>
-              <Skeleton width={18} height={18} borderRadius={9} />
             </View>
           </View>
         ))}

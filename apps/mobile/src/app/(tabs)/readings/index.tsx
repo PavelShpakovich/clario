@@ -30,25 +30,30 @@ function ReadingsListSkeleton() {
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.container}>
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.headerBar, { paddingTop: insets.top + 8, paddingHorizontal: 20 }]}>
         <Skeleton width={70} height={10} />
         <Skeleton width={150} height={20} style={{ marginTop: 6 }} />
-        <Skeleton width={'85%'} height={12} style={{ marginTop: 6 }} />
+        <Skeleton width={'85%'} height={12} style={{ marginTop: 8 }} />
       </View>
-      {/* Search bar skeleton — plain block matching the real input height */}
-      <View style={{ marginHorizontal: 20, marginBottom: 10 }}>
+      {/* Search bar skeleton */}
+      <View style={{ paddingHorizontal: 10, marginBottom: 10 }}>
         <Skeleton width={'100%'} height={40} borderRadius={10} />
       </View>
-      {/* Filter chips — horizontal row */}
+      {/* Filter chips — dynamic based on READING_TYPES */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.filterScroll}
-        contentContainerStyle={[styles.filterRow, { flexDirection: 'row', gap: 8 }]}
-        scrollEnabled={false}
+        contentContainerStyle={[styles.filterRow, { paddingLeft: 12 }]}
       >
-        {[72, 48, 90, 80, 60].map((w, i) => (
-          <Skeleton key={i} width={w} height={30} borderRadius={15} />
+        {['all', 'tarot', 'natal', 'transit', 'synastry'].map((_, i) => (
+          <Skeleton
+            key={i}
+            width={48 + i * 8}
+            height={30}
+            borderRadius={15}
+            style={{ marginRight: 8 }}
+          />
         ))}
       </ScrollView>
       {/* Cards */}
@@ -60,14 +65,12 @@ function ReadingsListSkeleton() {
               <Skeleton width={80} height={10} />
             </View>
             <Skeleton width={'70%'} height={15} style={{ marginTop: 6 }} />
-            <Skeleton width={'90%'} height={11} style={{ marginTop: 4 }} />
-            <Skeleton width={'75%'} height={11} style={{ marginTop: 2 }} />
+            {i % 2 === 0 && <Skeleton width={'90%'} height={11} style={{ marginTop: 4 }} />}
             <View style={styles.cardFooter}>
               <View style={styles.cardFooterLeft}>
-                <Skeleton width={50} height={18} borderRadius={9} />
+                {i % 3 !== 0 && <Skeleton width={50} height={18} borderRadius={9} />}
                 <Skeleton width={70} height={11} />
               </View>
-              <Skeleton width={18} height={18} borderRadius={9} />
             </View>
           </View>
         ))}
