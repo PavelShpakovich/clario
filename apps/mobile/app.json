@@ -30,7 +30,12 @@
       "output": "static"
     },
     "plugins": [
-      ["expo-router", { "root": "src/app" }],
+      [
+        "expo-router",
+        {
+          "root": "src/app"
+        }
+      ],
       "expo-secure-store",
       [
         "expo-notifications",
@@ -45,7 +50,11 @@
     },
     "extra": {
       "router": {
-        "origin": false
+        "origin": false,
+        "root": "src/app"
+      },
+      "eas": {
+        "projectId": "5d4b1503-b818-4dd0-a2a0-5c63fd5678c2"
       }
     }
   }

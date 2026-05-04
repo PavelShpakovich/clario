@@ -102,7 +102,7 @@ export default function HoroscopeScreen() {
       setPreview(data.preview);
       setFullAccessRequired(data.fullAccessRequired);
       setDisplayName(data.displayName ?? '');
-      if (!isRefresh && data.forecast?.status === 'pending') {
+      if (data.forecast?.status === 'pending') {
         void forecastsApi.startGeneration(data.forecast.id);
       }
       return data;
@@ -249,6 +249,11 @@ export default function HoroscopeScreen() {
         toastKey: 'mobile-forecast-regenerate',
         onSuccess: async () => {
           await loadForecast(true);
+          // Ensure we're showing generating state if forecast is pending
+          const updated = await forecastsApi.getDailyForecast();
+          if (updated.forecast?.status === 'pending' || updated.forecast?.status === 'generating') {
+            void forecastsApi.startGeneration(updated.forecast.id);
+          }
         },
         onError: (error) => {
           if (
