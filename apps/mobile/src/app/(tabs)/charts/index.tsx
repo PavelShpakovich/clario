@@ -1,14 +1,14 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
-import { router } from 'expo-router';
+import { openChartDetail, openNewChart, routes } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi } from '@clario/api-client';
 import type { ChartRecord } from '@clario/api-client';
-import { withReturnTo } from '@/lib/navigation';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { SwipeToDeleteRow } from '@/components/SwipeToDeleteRow';
@@ -65,8 +65,13 @@ function ChartsListSkeleton() {
 
   const insets = useSafeAreaInsets();
   return (
-    <View style={styles.container}>
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8, paddingHorizontal: 20 }]}>
+    <View style={[styles.container, { paddingTop: 4 }]}>
+      <View
+        style={[
+          styles.headerBar,
+          { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET, paddingHorizontal: 20 },
+        ]}
+      >
         <View style={styles.headerTop}>
           <View style={styles.headerText}>
             <Skeleton width={70} height={10} />
@@ -165,9 +170,7 @@ export default function ChartsListScreen() {
             <Text style={styles.emptyDesc}>{tWorkspace('noChartsDescription')}</Text>
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() =>
-                router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/charts') as never)
-              }
+              onPress={() => openNewChart(routes.tabs.charts)}
             >
               <Text style={styles.primaryButtonText}>{tWorkspace('createChart')}</Text>
             </TouchableOpacity>
@@ -182,7 +185,9 @@ export default function ChartsListScreen() {
           onRefresh={handleRefresh}
           ListHeaderComponent={
             <>
-              <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+              <View
+                style={[styles.headerBar, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}
+              >
                 <View style={styles.headerTop}>
                   <View style={styles.headerText}>
                     <Text style={styles.eyebrow}>{tWorkspace('sectionLabel')}</Text>
@@ -190,9 +195,7 @@ export default function ChartsListScreen() {
                   </View>
                   <TouchableOpacity
                     style={styles.addButton}
-                    onPress={() =>
-                      router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/charts') as never)
-                    }
+                    onPress={() => openNewChart(routes.tabs.charts)}
                   >
                     <Ionicons name="add" size={20} color={colors.primaryForeground} />
                   </TouchableOpacity>
@@ -221,11 +224,7 @@ export default function ChartsListScreen() {
               <SwipeToDeleteRow onDeletePress={() => confirmDelete(item)}>
                 <TouchableOpacity
                   style={styles.card}
-                  onPress={() =>
-                    router.push(
-                      withReturnTo(`/(tabs)/charts/${item.id}`, '/(tabs)/charts') as never,
-                    )
-                  }
+                  onPress={() => openChartDetail(item.id, routes.tabs.charts)}
                 >
                   {/* Element accent bar */}
                   <View style={[styles.cardAccent, { backgroundColor: elementColors.text }]} />

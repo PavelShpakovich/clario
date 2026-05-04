@@ -8,16 +8,17 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
-import { router } from 'expo-router';
+
+import { openChartsTab, openNewChart, openReadingDetail, routes } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { readingsApi } from '@clario/api-client';
 import type { ReadingRecord } from '@clario/api-client';
-import { withReturnTo } from '@/lib/navigation';
 import { READING_TYPES } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { SwipeToDeleteRow } from '@/components/SwipeToDeleteRow';
@@ -29,10 +30,19 @@ function ReadingsListSkeleton() {
 
   const insets = useSafeAreaInsets();
   return (
-    <View style={styles.container}>
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8, paddingHorizontal: 20 }]}>
-        <Skeleton width={70} height={10} />
-        <Skeleton width={150} height={20} style={{ marginTop: 6 }} />
+    <View style={[styles.container, { paddingTop: 4 }]}>
+      <View
+        style={[
+          styles.headerBar,
+          { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET, paddingHorizontal: 20 },
+        ]}
+      >
+        <View style={styles.headerTop}>
+          <View style={styles.headerText}>
+            <Skeleton width={70} height={10} />
+            <Skeleton width={150} height={20} style={{ marginTop: 6 }} />
+          </View>
+        </View>
         <Skeleton width={'85%'} height={12} style={{ marginTop: 8 }} />
       </View>
       {/* Search bar skeleton */}
@@ -200,16 +210,11 @@ export default function ReadingsListScreen() {
         <View style={styles.emptyButtons}>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() =>
-              router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/readings') as never)
-            }
+            onPress={() => openNewChart(routes.tabs.readings)}
           >
             <Text style={styles.primaryButtonText}>{tReadings('createChart')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.outlineButton}
-            onPress={() => router.push(withReturnTo('/(tabs)/charts', '/(tabs)/readings') as never)}
-          >
+          <TouchableOpacity style={styles.outlineButton} onPress={openChartsTab}>
             <Text style={styles.outlineButtonText}>{tReadings('openCharts')}</Text>
           </TouchableOpacity>
         </View>
@@ -231,9 +236,13 @@ export default function ReadingsListScreen() {
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <>
-            <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
-              <Text style={styles.eyebrow}>{tReadings('sectionLabel')}</Text>
-              <Text style={styles.pageTitle}>{tReadings('heading')}</Text>
+            <View style={[styles.headerBar, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
+              <View style={styles.headerTop}>
+                <View style={styles.headerText}>
+                  <Text style={styles.eyebrow}>{tReadings('sectionLabel')}</Text>
+                  <Text style={styles.pageTitle}>{tReadings('heading')}</Text>
+                </View>
+              </View>
               <Text style={styles.pageDesc}>{tReadings('description')}</Text>
             </View>
 
@@ -299,11 +308,7 @@ export default function ReadingsListScreen() {
             <SwipeToDeleteRow onDeletePress={() => confirmDelete(item)}>
               <TouchableOpacity
                 style={styles.card}
-                onPress={() =>
-                  router.push(
-                    withReturnTo(`/(tabs)/readings/${item.id}`, '/(tabs)/readings') as never,
-                  )
-                }
+                onPress={() => openReadingDetail(item.id, routes.tabs.readings)}
                 activeOpacity={0.75}
               >
                 {/* Type label row */}
@@ -366,6 +371,16 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       paddingTop: 56,
       paddingBottom: 8,
     },
+    headerTop: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      marginBottom: 6,
+    },
+    headerText: {
+      flex: 1,
+      gap: 2,
+    },
     pageDesc: {
       fontSize: 13,
       color: colors.mutedForeground,
@@ -378,7 +393,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       color: colors.primary,
       textTransform: 'uppercase',
       letterSpacing: 2,
-      marginBottom: 4,
+      marginBottom: 2,
     },
     pageTitle: {
       fontSize: 26,

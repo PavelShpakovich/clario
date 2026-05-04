@@ -1,21 +1,20 @@
 import { useCallback, useState, useMemo, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-  ActivityIndicator,
-} from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+  openChartsTab,
+  openCompatibilityDetail,
+  openCompatibilityNew,
+  routes,
+} from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { compatibilityApi } from '@clario/api-client';
 import type { CompatibilityReport } from '@clario/api-client';
-import { withReturnTo } from '@/lib/navigation';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { runToastMutation } from '@/lib/mutation-toast';
 import { useColors, cardShadow } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { SwipeToDeleteRow } from '@/components/SwipeToDeleteRow';
@@ -27,9 +26,14 @@ function CompatibilityListSkeleton() {
 
   const insets = useSafeAreaInsets();
   return (
-    <View style={styles.container}>
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8, paddingHorizontal: 20 }]}>
-        <View style={styles.headerRow}>
+    <View style={[styles.container, { paddingTop: 4 }]}>
+      <View
+        style={[
+          styles.headerBar,
+          { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET, paddingHorizontal: 20 },
+        ]}
+      >
+        <View style={styles.headerTop}>
           <View style={styles.headerText}>
             <Skeleton width={70} height={10} />
             <Skeleton width={140} height={22} style={{ marginTop: 6 }} />
@@ -170,19 +174,15 @@ export default function CompatibilityListScreen() {
         refreshing={refreshing}
         onRefresh={handleRefresh}
         ListHeaderComponent={
-          <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
-            <View style={styles.headerRow}>
+          <View style={[styles.headerBar, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
+            <View style={styles.headerTop}>
               <View style={styles.headerText}>
                 <Text style={styles.eyebrow}>{tCompat('sectionLabel')}</Text>
                 <Text style={styles.pageTitle}>{tCompat('heading')}</Text>
               </View>
               <TouchableOpacity
                 style={styles.addButton}
-                onPress={() =>
-                  router.push(
-                    withReturnTo('/(tabs)/compatibility/new', '/(tabs)/compatibility') as never,
-                  )
-                }
+                onPress={() => openCompatibilityNew(routes.tabs.compatibility)}
               >
                 <Ionicons name="add" size={20} color={colors.primaryForeground} />
               </TouchableOpacity>
@@ -198,20 +198,11 @@ export default function CompatibilityListScreen() {
             <View style={styles.emptyButtons}>
               <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={() =>
-                  router.push(
-                    withReturnTo('/(tabs)/compatibility/new', '/(tabs)/compatibility') as never,
-                  )
-                }
+                onPress={() => openCompatibilityNew(routes.tabs.compatibility)}
               >
                 <Text style={styles.primaryButtonText}>{tCompat('createReport')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.outlineButton}
-                onPress={() =>
-                  router.push(withReturnTo('/(tabs)/charts', '/(tabs)/compatibility') as never)
-                }
-              >
+              <TouchableOpacity style={styles.outlineButton} onPress={openChartsTab}>
                 <Text style={styles.outlineButtonText}>{tCompat('goToCharts')}</Text>
               </TouchableOpacity>
             </View>
@@ -232,14 +223,7 @@ export default function CompatibilityListScreen() {
             <SwipeToDeleteRow onDeletePress={() => handleDelete(item)}>
               <TouchableOpacity
                 style={styles.card}
-                onPress={() =>
-                  router.push(
-                    withReturnTo(
-                      `/(tabs)/compatibility/${item.id}`,
-                      '/(tabs)/compatibility',
-                    ) as never,
-                  )
-                }
+                onPress={() => openCompatibilityDetail(item.id, routes.tabs.compatibility)}
                 activeOpacity={0.75}
               >
                 {/* Type row */}
@@ -308,13 +292,15 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       lineHeight: 19,
       marginTop: 4,
     },
-    headerRow: {
+    headerTop: {
       flexDirection: 'row',
       alignItems: 'flex-end',
       justifyContent: 'space-between',
+      marginBottom: 6,
     },
     headerText: {
-      gap: 4,
+      flex: 1,
+      gap: 2,
     },
     eyebrow: {
       fontSize: 11,
@@ -322,6 +308,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       color: colors.primary,
       textTransform: 'uppercase',
       letterSpacing: 2,
+      marginBottom: 2,
     },
     pageTitle: {
       fontSize: 26,

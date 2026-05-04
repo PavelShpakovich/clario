@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { goBackTo } from '@/lib/navigation';
+import { goBackTo, routes } from '@/lib/navigation';
 import { MarkdownText } from '@/components/MarkdownText';
 import { Skeleton } from '@/components/Skeleton';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,7 @@ import { useTranslations } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import { messages } from '@clario/i18n';
 import { useColors } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { runToastMutation } from '@/lib/mutation-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInsufficientCredits } from '@/lib/insufficient-credits-context';
@@ -181,7 +182,7 @@ export default function ChatScreen() {
     return (
       <View style={styles.container}>
         {/* Header skeleton */}
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={[styles.header, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
           <Skeleton width={120} height={16} borderRadius={8} />
           <Skeleton width={64} height={22} borderRadius={12} />
         </View>
@@ -216,9 +217,9 @@ export default function ChatScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
         <TouchableOpacity
-          onPress={() => goBackTo(returnTo, '/(tabs)/readings')}
+          onPress={() => goBackTo(returnTo, routes.tabs.readings)}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />

@@ -11,8 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { goBackTo, resolveParentRoute, withReturnTo } from '@/lib/navigation';
+import { useLocalSearchParams } from 'expo-router';
+import { goBackTo, openChartDetail, resolveParentRoute, routes } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, locationsApi } from '@clario/api-client';
 import type { CityOption } from '@clario/api-client';
@@ -20,6 +20,7 @@ import { CHART_SUBJECT_TYPES, HOUSE_SYSTEMS } from '@clario/types';
 import { normalizeCreateChartBirthTime, resolveChartTimezone } from '@clario/validation';
 import { useTranslations } from '@/lib/i18n';
 import { useColors } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CityPickerModal } from '@/components/CityPickerModal';
 import { DateTimePickerField } from '@/components/DateTimePickerField';
@@ -137,12 +138,7 @@ export default function NewChartScreen() {
         houseSystem: form.houseSystem,
         locale: 'ru',
       });
-      router.push(
-        withReturnTo(
-          `/(tabs)/charts/${chart.id}`,
-          resolveParentRoute(returnTo, '/(tabs)/charts'),
-        ) as never,
-      );
+      openChartDetail(chart.id, resolveParentRoute(returnTo, routes.tabs.charts));
     } catch {
       setError(tForm('errorToast'));
     } finally {
@@ -173,9 +169,11 @@ export default function NewChartScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.headerBar, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
         <TouchableOpacity
-          onPress={() => (step > 1 ? setStep((s) => s - 1) : goBackTo(returnTo, '/(tabs)/charts'))}
+          onPress={() =>
+            step > 1 ? setStep((s) => s - 1) : goBackTo(returnTo, routes.tabs.charts)
+          }
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />

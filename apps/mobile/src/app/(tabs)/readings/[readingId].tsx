@@ -9,7 +9,14 @@ import {
   RefreshControl,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { goBackTo, withReturnTo } from '@/lib/navigation';
+import {
+  goBackTo,
+  goToRoute,
+  openChartDetail,
+  openReadingChat,
+  resolveParentRoute,
+  routes,
+} from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -20,6 +27,7 @@ import { toast } from '@/lib/toast';
 import { messages } from '@clario/i18n';
 const notifMessages = messages.notifications;
 import { useColors, cardShadow } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleReadyNotification } from '@/lib/notifications';
 import { Skeleton } from '@/components/Skeleton';
@@ -36,11 +44,19 @@ function ReadingDetailSkeleton() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8 }]}
+      contentContainerStyle={[
+        styles.scrollContent,
+        { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET },
+      ]}
       scrollEnabled={false}
     >
       {/* Back button */}
-      <View style={[styles.backButton, { marginTop: insets.top + 8, marginBottom: 16 }]}>
+      <View
+        style={[
+          styles.backButton,
+          { marginTop: insets.top + SCREEN_TOP_INSET_OFFSET, marginBottom: 16 },
+        ]}
+      >
         <Skeleton width={18} height={18} borderRadius={9} />
         <Skeleton width={96} height={14} />
       </View>
@@ -115,7 +131,13 @@ export default function ReadingDetailScreen() {
 
   const tDetail = useTranslations('readingDetail');
   const tGenerating = useTranslations('readingGenerating');
-  const tNav = useTranslations('navigation');
+
+  const tDashboard = useTranslations('dashboard');
+  const backTarget = resolveParentRoute(returnTo, routes.tabs.readings);
+  const backLabel =
+    backTarget === routes.tabs.home ? tDashboard('pageTitle') : tDetail('backToReadings');
+  const fallbackLabel =
+    backTarget === routes.tabs.home ? tDashboard('pageTitle') : tDetail('allReadings');
 
   // Advance step indicator while generating
   useEffect(() => {
@@ -260,9 +282,9 @@ export default function ReadingDetailScreen() {
         <View style={styles.fallbackActions}>
           <TouchableOpacity
             style={styles.fallbackPrimaryButton}
-            onPress={() => goBackTo(returnTo, '/(tabs)/readings')}
+            onPress={() => goToRoute(returnTo, routes.tabs.readings)}
           >
-            <Text style={styles.fallbackPrimaryButtonText}>{tDetail('allReadings')}</Text>
+            <Text style={styles.fallbackPrimaryButtonText}>{fallbackLabel}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.fallbackSecondaryButton}
@@ -297,11 +319,11 @@ export default function ReadingDetailScreen() {
       }
     >
       <TouchableOpacity
-        style={[styles.backButton, { marginTop: insets.top + 8 }]}
-        onPress={() => goBackTo(returnTo, '/(tabs)/readings')}
+        style={[styles.backButton, { marginTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}
+        onPress={() => goToRoute(returnTo, routes.tabs.readings)}
       >
         <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
-        <Text style={styles.backText}>{tDetail('backToReadings')}</Text>
+        <Text style={styles.backText}>{backLabel}</Text>
       </TouchableOpacity>
 
       <View style={styles.titleBlock}>
@@ -348,14 +370,7 @@ export default function ReadingDetailScreen() {
         {reading.chart_id ? (
           <TouchableOpacity
             style={styles.outlineButton}
-            onPress={() =>
-              router.push(
-                withReturnTo(
-                  `/(tabs)/charts/${reading.chart_id}`,
-                  `/(tabs)/readings/${readingId}`,
-                ) as never,
-              )
-            }
+            onPress={() => openChartDetail(reading.chart_id, routes.readings.tabDetail(readingId))}
           >
             <Ionicons name="planet-outline" size={15} color={colors.primary} />
             <Text style={styles.outlineButtonText}>{tDetail('viewChart')}</Text>
@@ -364,17 +379,7 @@ export default function ReadingDetailScreen() {
 
         {/* Ask follow-up — only if ready */}
         {isReady ? (
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() =>
-              router.push(
-                withReturnTo(
-                  `/(tabs)/readings/chat/${readingId}`,
-                  `/(tabs)/readings/${readingId}`,
-                ) as never,
-              )
-            }
-          >
+          <TouchableOpacity style={styles.primaryButton} onPress={() => openReadingChat(readingId)}>
             <Ionicons name="chatbubble-outline" size={15} color={colors.primaryForeground} />
             <Text style={styles.primaryButtonText}>{tDetail('askFollowUp')}</Text>
           </TouchableOpacity>

@@ -1,18 +1,4 @@
 import { useEffect, useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Switch,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { goBackTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, locationsApi } from '@clario/api-client';
 import type { ChartRecord, CityOption } from '@clario/api-client';
@@ -20,6 +6,7 @@ import { CHART_SUBJECT_TYPES, HOUSE_SYSTEMS } from '@clario/types';
 import { normalizeUpdateChartBirthTime, resolveChartTimezone } from '@clario/validation';
 import { useTranslations } from '@/lib/i18n';
 import { useColors } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { CityPickerModal } from '@/components/CityPickerModal';
@@ -55,7 +42,7 @@ function EditChartSkeleton() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Header bar */}
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.headerBar, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
         <Skeleton width={60} height={16} borderRadius={8} />
         <Skeleton width={50} height={13} borderRadius={6} />
       </View>
@@ -212,7 +199,7 @@ export default function EditChartScreen() {
         houseSystem: form.houseSystem,
         notes: null,
       });
-      goBackTo(returnTo, `/(tabs)/charts/${chartId}`);
+      goBackTo(returnTo, routes.charts.detail(chartId));
     } catch {
       setError(tForm('errorToast'));
     } finally {
@@ -247,10 +234,10 @@ export default function EditChartScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.headerBar, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
         <TouchableOpacity
           onPress={() =>
-            step > 1 ? setStep((s) => s - 1) : goBackTo(returnTo, `/(tabs)/charts/${chartId}`)
+            step > 1 ? setStep((s) => s - 1) : goBackTo(returnTo, routes.charts.detail(chartId))
           }
           style={styles.backButton}
         >

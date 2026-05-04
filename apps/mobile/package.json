@@ -7,7 +7,9 @@
     "start": "REACT_NATIVE_PACKAGER_HOSTNAME=localhost expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",
@@ -42,7 +44,13 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@eslint/js": "^9.0.0",
     "@types/react": "~18.2.45",
-    "typescript": "~5.3.3"
+    "eslint": "^9.0.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-native": "^4.1.0",
+    "typescript": "~5.3.3",
+    "typescript-eslint": "^7.0.0"
   }
 }

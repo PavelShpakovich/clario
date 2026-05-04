@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { goBackTo } from '@/lib/navigation';
+import { goBackTo, routes } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { getAuthHeaders, resolveUrl, adminApi } from '@clario/api-client';
 import type {
@@ -22,9 +22,10 @@ import type {
 } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
-import { toast } from '@/lib/toast';
+
 import { runToastMutation } from '@/lib/mutation-toast';
 import { useColors, cardShadow } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { usePullToRefresh } from '@/lib/refresh';
@@ -631,7 +632,7 @@ export default function AdminScreen() {
       setPage(p);
     }
     setUsersLoading(false);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const { refreshing, handleRefresh } = usePullToRefresh(() => loadAll(page, true));
 
@@ -765,9 +766,9 @@ export default function AdminScreen() {
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <>
-            <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+            <View style={[styles.header, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
               <TouchableOpacity
-                onPress={() => goBackTo(returnTo, '/(tabs)/settings')}
+                onPress={() => goBackTo(returnTo, routes.tabs.settings)}
                 style={styles.backBtn}
                 hitSlop={8}
               >

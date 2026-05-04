@@ -1,7 +1,20 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { router } from 'expo-router';
+
 import { useFocusEffect } from '@react-navigation/native';
+import {
+  openCalendar,
+  openChartDetail,
+  openChartsTab,
+  openChartShortcut,
+  openCompatibilityTab,
+  openHoroscope,
+  openNewChart,
+  openReadingShortcut,
+  openReadingsTab,
+  openStore,
+  routes,
+} from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import {
   profileApi,
@@ -15,9 +28,9 @@ import {
 import type { ChartRecord, ReadingRecord, TodaySkyResponse } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
-import { withReturnTo } from '@/lib/navigation';
 import { usePullToRefresh } from '@/lib/refresh';
 
 const SIGN_ELEMENT: Record<string, string> = {
@@ -62,7 +75,7 @@ function DashboardSkeleton() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
-      <View style={[styles.header, { marginTop: insets.top + 12 }]}>
+      <View style={[styles.header, { marginTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
         <View style={styles.headerLeft}>
           <Skeleton width={80} height={10} />
           <Skeleton width={'70%'} height={22} style={{ marginTop: 6 }} />
@@ -184,7 +197,6 @@ export default function DashboardScreen() {
   const tChart = useTranslations('chartDetail');
   const tWorkspace = useTranslations('workspace');
   const tCredits = useTranslations('credits');
-  const tNav = useTranslations('navigation');
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -261,7 +273,7 @@ export default function DashboardScreen() {
         />
       }
     >
-      <View style={[styles.header, { marginTop: insets.top + 12 }]}>
+      <View style={[styles.header, { marginTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
         <View style={styles.headerLeft}>
           <Text style={styles.eyebrow}>{tDashboard('subheading')}</Text>
           <Text style={styles.greeting}>
@@ -271,7 +283,7 @@ export default function DashboardScreen() {
         </View>
         <TouchableOpacity
           style={styles.balanceChip}
-          onPress={() => router.push(withReturnTo('/store', '/(tabs)') as never)}
+          onPress={() => openStore(routes.tabs.home)}
           activeOpacity={0.75}
         >
           <Ionicons name="wallet" size={13} color={colors.primary} style={{ marginRight: 4 }} />
@@ -280,10 +292,7 @@ export default function DashboardScreen() {
       </View>
       {/* Today's Sky widget — taps to calendar */}
       {hasSky && (
-        <TouchableOpacity
-          style={styles.skyWidget}
-          onPress={() => router.push(withReturnTo('/calendar', '/(tabs)') as never)}
-        >
+        <TouchableOpacity style={styles.skyWidget} onPress={() => openCalendar(routes.tabs.home)}>
           <Text style={styles.skyWidgetEyebrow}>{tDashboard('skyToday')}</Text>
           <View style={styles.skyPlanets}>
             {(['sun', 'moon', 'mercury'] as const).map((key) => {
@@ -308,8 +317,6 @@ export default function DashboardScreen() {
           </View>
         </TouchableOpacity>
       )}
-
-      {/* Personal horoscope widget */}
       {hasPrimaryChart && (
         <View style={styles.horoscopeWidget}>
           <View style={styles.horoscopeLeft}>
@@ -327,7 +334,7 @@ export default function DashboardScreen() {
           </View>
           <TouchableOpacity
             style={styles.horoscopeButton}
-            onPress={() => router.push(withReturnTo('/horoscope', '/(tabs)') as never)}
+            onPress={() => openHoroscope(routes.tabs.home)}
           >
             <Text style={styles.horoscopeButtonText}>
               {forecast?.hasContent ? tDashboard('horoscopeRead') : tDashboard('horoscopeOpen')}
@@ -338,21 +345,18 @@ export default function DashboardScreen() {
 
       {/* Stats row */}
       <View style={styles.statsRow}>
-        <TouchableOpacity style={styles.statCard} onPress={() => router.push('/(tabs)/charts')}>
+        <TouchableOpacity style={styles.statCard} onPress={openChartsTab}>
           <Text style={styles.statValue}>{totalCharts}</Text>
           <Text style={styles.statLabel}>{tDashboard('statsCharts')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.statCard, styles.statCardMiddle]}
-          onPress={() => router.push('/(tabs)/readings')}
+          onPress={openReadingsTab}
         >
           <Text style={styles.statValue}>{totalReadings}</Text>
           <Text style={styles.statLabel}>{tDashboard('statsReadings')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => router.push('/(tabs)/compatibility')}
-        >
+        <TouchableOpacity style={styles.statCard} onPress={openCompatibilityTab}>
           <Text style={styles.statValue}>{totalCompatibility}</Text>
           <Text style={styles.statLabel}>{tDashboard('statsCompatibility')}</Text>
         </TouchableOpacity>
@@ -364,21 +368,19 @@ export default function DashboardScreen() {
         <View style={styles.quickActionsButtons}>
           <TouchableOpacity
             style={[styles.quickActionButton, styles.quickActionPrimary]}
-            onPress={() =>
-              router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/charts') as never)
-            }
+            onPress={() => openNewChart(routes.tabs.charts)}
           >
             <Text style={styles.quickActionPrimaryText}>{tDashboard('createNewChart')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.quickActionButton, styles.quickActionOutline]}
-            onPress={() => router.push('/(tabs)/charts')}
+            onPress={openChartsTab}
           >
             <Text style={styles.quickActionOutlineText}>{tDashboard('viewAllCharts')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.quickActionButton, styles.quickActionOutline]}
-            onPress={() => router.push('/(tabs)/readings')}
+            onPress={openReadingsTab}
           >
             <Text style={styles.quickActionOutlineText}>{tDashboard('viewAllReadings')}</Text>
           </TouchableOpacity>
@@ -388,7 +390,7 @@ export default function DashboardScreen() {
       {/* Recent Charts */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{tDashboard('recentCharts')}</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/charts')}>
+        <TouchableOpacity onPress={openChartsTab}>
           <Text style={styles.sectionLink}>{tDashboard('viewAllCharts')} →</Text>
         </TouchableOpacity>
       </View>
@@ -401,9 +403,7 @@ export default function DashboardScreen() {
           <TouchableOpacity
             key={chart.id}
             style={styles.chartCard}
-            onPress={() =>
-              router.push(withReturnTo(`/(tabs)/charts/${chart.id}`, '/(tabs)/charts') as never)
-            }
+            onPress={() => openChartShortcut(chart.id)}
           >
             <View style={styles.chartCardRow}>
               <View style={styles.avatar}>
@@ -431,7 +431,7 @@ export default function DashboardScreen() {
       {/* Recent Readings */}
       <View style={[styles.sectionHeader, { marginTop: 20 }]}>
         <Text style={styles.sectionTitle}>{tDashboard('recentReadings')}</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/readings')}>
+        <TouchableOpacity onPress={openReadingsTab}>
           <Text style={styles.sectionLink}>{tDashboard('viewAllReadings')} →</Text>
         </TouchableOpacity>
       </View>
@@ -444,11 +444,7 @@ export default function DashboardScreen() {
           <TouchableOpacity
             key={reading.id}
             style={styles.readingCard}
-            onPress={() =>
-              router.push(
-                withReturnTo(`/(tabs)/readings/${reading.id}`, '/(tabs)/readings') as never,
-              )
-            }
+            onPress={() => openReadingShortcut(reading.id)}
           >
             <Text style={styles.readingIcon}>✦</Text>
             <View style={styles.readingInfo}>
@@ -477,10 +473,7 @@ export default function DashboardScreen() {
       )}
 
       {/* Store / credits banner */}
-      <TouchableOpacity
-        style={styles.storeBanner}
-        onPress={() => router.push(withReturnTo('/store', '/(tabs)') as never)}
-      >
+      <TouchableOpacity style={styles.storeBanner} onPress={() => openStore(routes.tabs.home)}>
         <Text style={styles.storeBannerLeft}>{tCredits('storeTitle')}</Text>
         <Text style={styles.storeBannerRight}>
           {balance} {tCredits('creditsUnit')} →
@@ -497,7 +490,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       backgroundColor: colors.background,
     },
     content: {
-      padding: 20,
+      paddingHorizontal: 20,
       paddingBottom: 48,
     },
     center: {

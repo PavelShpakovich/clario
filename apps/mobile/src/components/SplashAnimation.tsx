@@ -82,7 +82,7 @@ export function SplashAnimation({ onDone }: { onDone: () => void }) {
         useNativeDriver: true,
       }),
     ]).start(() => onDone());
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Animated.View

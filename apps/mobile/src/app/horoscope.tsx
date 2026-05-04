@@ -9,13 +9,14 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { goBackTo, withReturnTo } from '@/lib/navigation';
+
+import { openCalendar, openNewChart, routes } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { creditsApi, forecastsApi, ApiClientError } from '@clario/api-client';
 import type { DailyForecastRecord, DailyForecastResponse } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { runToastMutation } from '@/lib/mutation-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
@@ -28,23 +29,16 @@ function HoroscopeSkeleton() {
   const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8 }]}
-    >
-      <View style={[styles.headerRow, { marginBottom: 20 }]}>
-        <View style={styles.backRow}>
-          <Skeleton width={18} height={18} borderRadius={9} />
-          <Skeleton width={96} height={14} />
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <View style={[styles.headerBar, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerText}>
+            <Skeleton width={88} height={10} />
+            <Skeleton width={176} height={26} style={{ marginTop: 6 }} />
+          </View>
+          <Skeleton width={36} height={36} borderRadius={8} />
         </View>
-        <Skeleton width={92} height={36} borderRadius={8} />
-      </View>
-
-      <Skeleton width={88} height={11} style={{ marginBottom: 6 }} />
-      <Skeleton width={'62%'} height={28} style={{ marginBottom: 8 }} />
-      <View style={styles.dateRow}>
-        <Skeleton width={14} height={14} borderRadius={7} />
-        <Skeleton width={160} height={13} />
+        <Skeleton width={160} height={13} style={{ marginTop: 8 }} />
       </View>
 
       <View style={styles.keyThemeChip}>
@@ -81,7 +75,6 @@ export default function HoroscopeScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
-  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const [forecast, setForecast] = useState<DailyForecastRecord | null>(null);
   const [preview, setPreview] = useState(false);
   const [fullAccessRequired, setFullAccessRequired] = useState(false);
@@ -299,9 +292,7 @@ export default function HoroscopeScreen() {
       <View style={styles.center}>
         <Ionicons name="planet-outline" size={48} color={colors.border} />
         <Text style={styles.noChartText}>{tHoro('noChartMessage')}</Text>
-        <TouchableOpacity
-          onPress={() => router.push(withReturnTo('/(tabs)/charts/new', '/horoscope') as never)}
-        >
+        <TouchableOpacity onPress={() => openNewChart(routes.horoscope)}>
           <Text style={styles.linkText}>{tWorkspace('createChart')}</Text>
         </TouchableOpacity>
       </View>
@@ -314,19 +305,13 @@ export default function HoroscopeScreen() {
     tHoro('generatingStep3'),
     tHoro('generatingStep4'),
   ];
-  const backLabel = tHoro('backToDashboard').replace(/^←\s*/, '');
 
   // Generating
   if (forecast.status === 'pending' || forecast.status === 'generating') {
     return (
-      <View style={[styles.generatingContainer, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={() => goBackTo(returnTo, '/(tabs)/index')}
-          style={[styles.backRow, styles.generatingBack]}
-        >
-          <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
-          <Text style={styles.backText}>{backLabel}</Text>
-        </TouchableOpacity>
+      <View
+        style={[styles.generatingContainer, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}
+      >
         <View style={styles.generatingContent}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.generatingTitle}>{tHoro('generatingTitle')}</Text>
@@ -347,14 +332,9 @@ export default function HoroscopeScreen() {
   // Error
   if (forecast.status === 'error') {
     return (
-      <View style={[styles.generatingContainer, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={() => goBackTo(returnTo, '/(tabs)/index')}
-          style={[styles.backRow, styles.generatingBack]}
-        >
-          <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
-          <Text style={styles.backText}>{backLabel}</Text>
-        </TouchableOpacity>
+      <View
+        style={[styles.generatingContainer, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}
+      >
         <View style={styles.generatingContent}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
           <Text style={styles.errorTitle}>{tHoro('generatingErrorTitle')}</Text>
@@ -405,35 +385,29 @@ export default function HoroscopeScreen() {
         />
       }
     >
-      <View style={[styles.headerRow, { marginTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={() => goBackTo(returnTo, '/(tabs)/index')}
-          style={styles.backRow}
-        >
-          <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
-          <Text style={styles.backText}>{tHoro('backToDashboard').replace(/^←\s*/, '')}</Text>
-        </TouchableOpacity>
-        {!fullAccessRequired && (
-          <TouchableOpacity
-            style={styles.regenerateButton}
-            onPress={handleRegeneratePress}
-            disabled={regenerating}
-          >
-            {regenerating ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Text style={styles.regenerateText}>{tHoro('regenerate')}</Text>
-            )}
-          </TouchableOpacity>
-        )}
+      <View style={[styles.headerBar, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerText}>
+            <Text style={styles.eyebrow}>{tHoro('pageTitle')}</Text>
+            <Text style={styles.title}>{displayName || tHoro('pageTitle')}</Text>
+          </View>
+          {!fullAccessRequired && (
+            <TouchableOpacity
+              style={styles.regenerateButton}
+              onPress={handleRegeneratePress}
+              disabled={regenerating}
+            >
+              {regenerating ? (
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
+              ) : (
+                <Ionicons name="refresh-outline" size={18} color={colors.primaryForeground} />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+        <Text style={styles.pageDesc}>{today}</Text>
       </View>
 
-      <Text style={styles.eyebrow}>{tHoro('pageTitle')}</Text>
-      <Text style={styles.title}>{displayName || tHoro('pageTitle')}</Text>
-      <View style={styles.dateRow}>
-        <Ionicons name="calendar-outline" size={14} color={colors.mutedForeground} />
-        <Text style={styles.date}>{today}</Text>
-      </View>
       {/* Key theme chip — shown in both preview and full */}
       {keyTheme ? (
         <View style={styles.keyThemeChip}>
@@ -492,10 +466,7 @@ export default function HoroscopeScreen() {
       ) : null}
 
       {/* Calendar link — outline button */}
-      <TouchableOpacity
-        style={styles.calendarLink}
-        onPress={() => router.push(withReturnTo('/calendar', '/horoscope') as never)}
-      >
+      <TouchableOpacity style={styles.calendarLink} onPress={() => openCalendar(routes.horoscope)}>
         <Ionicons name="calendar-outline" size={16} color={colors.foreground} />
         <Text style={styles.calendarLinkText}>{tHoro('calendarLink')}</Text>
       </TouchableOpacity>
@@ -510,7 +481,8 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       backgroundColor: colors.background,
     },
     scrollContent: {
-      padding: 20,
+      paddingHorizontal: 20,
+      paddingTop: 4,
       paddingBottom: 48,
     },
     center: {
@@ -524,7 +496,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     generatingContainer: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: 20,
+      paddingHorizontal: 20,
     },
     generatingBack: {
       alignSelf: 'flex-start',
@@ -552,64 +524,48 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     progressDotActive: {
       backgroundColor: colors.primary,
     },
-    // Header row: back link on left, regenerate on right
-    headerRow: {
+    headerBar: {
+      paddingBottom: 8,
+    },
+    headerTop: {
       flexDirection: 'row',
+      alignItems: 'flex-end',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      marginTop: 40,
-      marginBottom: 20,
+      marginBottom: 6,
     },
-    backRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    backText: {
-      color: colors.mutedForeground,
-      fontSize: 14,
+    headerText: {
+      flex: 1,
+      gap: 2,
     },
     // Regenerate — small outline button (height:36)
     regenerateButton: {
+      width: 36,
       height: 36,
-      paddingHorizontal: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
       borderRadius: 8,
+      backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    regenerateText: {
-      color: colors.foreground,
-      fontSize: 14,
-      fontWeight: '600',
     },
     // Page heading
     eyebrow: {
       fontSize: 11,
       fontWeight: '600',
-      color: colors.mutedForeground,
+      color: colors.primary,
       textTransform: 'uppercase',
       letterSpacing: 2,
-      marginBottom: 4,
+      marginBottom: 2,
     },
     title: {
       fontSize: 26,
       fontWeight: '600',
       color: colors.foreground,
       letterSpacing: -0.5,
-      marginBottom: 4,
     },
-    dateRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginBottom: 16,
-    },
-    date: {
+    pageDesc: {
       fontSize: 13,
       color: colors.mutedForeground,
-      textTransform: 'capitalize',
+      lineHeight: 19,
+      marginTop: 4,
     },
     // Key theme chip
     keyThemeChip: {
@@ -623,7 +579,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       borderRadius: 10,
       paddingHorizontal: 12,
       paddingVertical: 8,
-      marginBottom: 12,
+      marginBottom: 16,
     },
     keyThemeText: {
       fontSize: 13,

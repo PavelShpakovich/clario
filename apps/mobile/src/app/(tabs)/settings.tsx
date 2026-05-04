@@ -11,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { openAdmin, openStore, routes, withReturnTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { profileApi, preferencesApi, getAuthHeaders, resolveUrl } from '@clario/api-client';
 import type { UserPreferencesResponse } from '@clario/api-client';
@@ -19,6 +20,7 @@ import { useTranslations } from '@/lib/i18n';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { runToastMutation } from '@/lib/mutation-toast';
 import { useColors, cardShadow } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useTheme } from '@/lib/theme-context';
 import type { ThemePreference } from '@/lib/theme-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +28,6 @@ import { TONE_STYLES } from '@clario/types';
 import { TimezonePickerModal, timezoneLabel } from '@/components/TimezonePickerModal';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import { Skeleton } from '@/components/Skeleton';
-import { withReturnTo } from '@/lib/navigation';
 import { usePullToRefresh } from '@/lib/refresh';
 
 function SettingsSkeleton() {
@@ -37,10 +38,14 @@ function SettingsSkeleton() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Page header */}
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
-        <Skeleton width={70} height={10} />
-        <Skeleton width={130} height={24} style={{ marginTop: 6 }} />
-        <Skeleton width={'80%'} height={13} style={{ marginTop: 6 }} />
+      <View style={[styles.headerBar, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerText}>
+            <Skeleton width={70} height={10} />
+            <Skeleton width={130} height={20} style={{ marginTop: 6 }} />
+          </View>
+        </View>
+        <Skeleton width={'80%'} height={13} style={{ marginTop: 8 }} />
       </View>
 
       {/* Profile card */}
@@ -251,9 +256,13 @@ export default function SettingsScreen() {
         />
       }
     >
-      <View style={[styles.headerBar, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.eyebrow}>{tSettings('sectionLabel')}</Text>
-        <Text style={styles.pageTitle}>{tSettings('heading')}</Text>
+      <View style={[styles.headerBar, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerText}>
+            <Text style={styles.eyebrow}>{tSettings('sectionLabel')}</Text>
+            <Text style={styles.pageTitle}>{tSettings('heading')}</Text>
+          </View>
+        </View>
         <Text style={styles.pageDesc}>{tSettings('description')}</Text>
       </View>
       {/* Profile card */}
@@ -456,7 +465,7 @@ export default function SettingsScreen() {
       {/* Store link */}
       <TouchableOpacity
         style={styles.outlineButton}
-        onPress={() => router.push(withReturnTo('/store', '/(tabs)/settings') as never)}
+        onPress={() => openStore(routes.tabs.settings)}
       >
         <Ionicons name="storefront-outline" size={16} color={colors.primary} />
         <Text style={styles.outlineButtonText}>{tCredits('storeTitle')}</Text>
@@ -473,7 +482,7 @@ export default function SettingsScreen() {
       {isAdmin && (
         <TouchableOpacity
           style={styles.outlineButton}
-          onPress={() => router.push(withReturnTo('/admin', '/(tabs)/settings') as never)}
+          onPress={() => openAdmin(routes.tabs.settings)}
         >
           <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
           <Text style={styles.outlineButtonText}>{tAdmin('title')}</Text>
@@ -532,6 +541,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     },
     content: {
       paddingHorizontal: 20,
+      paddingTop: 4,
       paddingBottom: 48,
       gap: 12,
     },
@@ -544,7 +554,16 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     headerBar: {
       paddingTop: 56,
       paddingBottom: 8,
-      gap: 4,
+    },
+    headerTop: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      marginBottom: 6,
+    },
+    headerText: {
+      flex: 1,
+      gap: 2,
     },
     eyebrow: {
       fontSize: 11,
@@ -552,6 +571,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       color: colors.primary,
       textTransform: 'uppercase',
       letterSpacing: 2,
+      marginBottom: 2,
     },
     pageTitle: {
       fontSize: 26,
@@ -560,9 +580,9 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       letterSpacing: -0.5,
     },
     pageDesc: {
-      fontSize: 14,
+      fontSize: 13,
       color: colors.mutedForeground,
-      lineHeight: 20,
+      lineHeight: 19,
       marginTop: 4,
     },
     card: {

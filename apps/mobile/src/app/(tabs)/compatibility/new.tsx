@@ -1,26 +1,14 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Modal,
-  FlatList,
-  Pressable,
-} from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { goBackTo, resolveParentRoute, withReturnTo } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, compatibilityApi, ApiClientError } from '@clario/api-client';
 import type { ChartRecord } from '@clario/api-client';
 import { COMPATIBILITY_TYPES } from '@clario/types';
 import type { CompatibilityType } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
-import { toast } from '@/lib/toast';
+
 import { runToastMutation } from '@/lib/mutation-toast';
 import { useColors, cardShadow } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInsufficientCredits } from '@/lib/insufficient-credits-context';
 import { Skeleton } from '@/components/Skeleton';
@@ -39,7 +27,7 @@ function NewCompatibilitySkeleton() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 8 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}
       scrollEnabled={false}
     >
       {/* Back row */}
@@ -155,11 +143,9 @@ export default function NewCompatibilityScreen() {
         },
         toastKey: 'mobile-compatibility-create',
         onSuccess: ({ report }) => {
-          router.push(
-            withReturnTo(
-              `/(tabs)/compatibility/${report.id}`,
-              resolveParentRoute(returnTo, '/(tabs)/compatibility'),
-            ) as never,
+          openCompatibilityDetail(
+            report.id,
+            resolveParentRoute(returnTo, routes.tabs.compatibility),
           );
         },
         onError: (error) => {
@@ -207,9 +193,11 @@ export default function NewCompatibilityScreen() {
 
   if (submitting) {
     return (
-      <View style={[styles.generatingContainer, { paddingTop: insets.top + 8 }]}>
+      <View
+        style={[styles.generatingContainer, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}
+      >
         <TouchableOpacity
-          onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}
+          onPress={() => goBackTo(returnTo, routes.tabs.compatibility)}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
@@ -238,15 +226,13 @@ export default function NewCompatibilityScreen() {
         <Ionicons name="planet-outline" size={48} color={colors.border} />
         <Text style={styles.notEnoughText}>{tCompat('notEnoughCharts')}</Text>
         <TouchableOpacity
-          onPress={() =>
-            router.push(withReturnTo('/(tabs)/charts/new', '/(tabs)/compatibility') as never)
-          }
+          onPress={() => openNewChart(routes.tabs.compatibility)}
           style={styles.linkButton}
         >
           <Text style={styles.linkText}>{tCompat('createReport')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}
+          onPress={() => goBackTo(returnTo, routes.tabs.compatibility)}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
@@ -262,9 +248,9 @@ export default function NewCompatibilityScreen() {
     <>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Back row */}
-        <View style={[styles.backRow, { marginTop: insets.top + 8 }]}>
+        <View style={[styles.backRow, { marginTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
           <TouchableOpacity
-            onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}
+            onPress={() => goBackTo(returnTo, routes.tabs.compatibility)}
             style={styles.backButton}
           >
             <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />

@@ -1,6 +1,8 @@
 // Metro config for pnpm monorepo
 // Required so Metro can follow pnpm symlinks and find workspace packages.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { getDefaultConfig } = require('expo/metro-config');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require('path');
 
 const projectRoot = __dirname;

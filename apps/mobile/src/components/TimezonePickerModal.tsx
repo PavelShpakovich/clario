@@ -91,12 +91,11 @@ export function timezoneLabel(tz: string): string {
 interface Props {
   visible: boolean;
   value: string;
-  placeholder: string;
   onSelect: (value: string) => void;
   onClose: () => void;
 }
 
-export function TimezonePickerModal({ visible, value, placeholder, onSelect, onClose }: Props) {
+export function TimezonePickerModal({ visible, value, onSelect, onClose }: Props) {
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 

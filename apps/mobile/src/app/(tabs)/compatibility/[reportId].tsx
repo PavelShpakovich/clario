@@ -8,8 +8,8 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { goBackTo, withReturnTo } from '@/lib/navigation';
+import { useLocalSearchParams } from 'expo-router';
+import { goBackTo, openChartDetail, routes } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, {
   Path,
@@ -26,6 +26,7 @@ import { useTranslations } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
+import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleReadyNotification } from '@/lib/notifications';
 import { Skeleton } from '@/components/Skeleton';
@@ -42,7 +43,7 @@ function CompatibilityDetailSkeleton() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={[styles.topBar, { marginTop: insets.top + 8 }]}>
+      <View style={[styles.topBar, { marginTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
         <View style={styles.backButton}>
           <Skeleton width={18} height={18} borderRadius={9} />
           <Skeleton width={84} height={13} />
@@ -159,9 +160,6 @@ interface GaugeProps {
 }
 
 function SpeedometerGauge({ score, accent }: GaugeProps) {
-  const colors = useColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-
   const cx = 130,
     cy = 130,
     r = 90,
@@ -434,7 +432,7 @@ export default function CompatibilityDetailScreen() {
         <View style={styles.fallbackActions}>
           <TouchableOpacity
             style={styles.fallbackPrimaryButton}
-            onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}
+            onPress={() => goBackTo(returnTo, routes.tabs.compatibility)}
           >
             <Text style={styles.fallbackPrimaryButtonText}>
               {tCompat('backToAll').replace(/^←\s*/, '')}
@@ -500,10 +498,10 @@ export default function CompatibilityDetailScreen() {
         />
       }
     >
-      <View style={[styles.topBar, { marginTop: insets.top + 8 }]}>
+      <View style={[styles.topBar, { marginTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => goBackTo(returnTo, '/(tabs)/compatibility')}
+          onPress={() => goBackTo(returnTo, routes.tabs.compatibility)}
         >
           <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
           <Text style={styles.backText}>{tCompat('backToAll').replace(/^←\s*/, '')}</Text>
@@ -512,12 +510,7 @@ export default function CompatibilityDetailScreen() {
           <TouchableOpacity
             style={styles.chartLinkButton}
             onPress={() =>
-              router.push(
-                withReturnTo(
-                  `/(tabs)/charts/${report.primary_chart_id}`,
-                  `/(tabs)/compatibility/${reportId}`,
-                ) as never,
-              )
+              openChartDetail(report.primary_chart_id, routes.compatibility.detail(reportId))
             }
           >
             <Text style={styles.chartLinkText} numberOfLines={1}>
@@ -527,12 +520,7 @@ export default function CompatibilityDetailScreen() {
           <TouchableOpacity
             style={styles.chartLinkButton}
             onPress={() =>
-              router.push(
-                withReturnTo(
-                  `/(tabs)/charts/${report.secondary_chart_id}`,
-                  `/(tabs)/compatibility/${reportId}`,
-                ) as never,
-              )
+              openChartDetail(report.secondary_chart_id, routes.compatibility.detail(reportId))
             }
           >
             <Text style={styles.chartLinkText} numberOfLines={1}>

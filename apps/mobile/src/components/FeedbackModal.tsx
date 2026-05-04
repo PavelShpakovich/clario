@@ -28,7 +28,6 @@ export function FeedbackModal({ visible, onClose }: Props) {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const t = useTranslations('feedback');
-  const tCommon = useTranslations('common');
   const [formState, setFormState] = useState<FormState>('idle');
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);

@@ -72,7 +72,6 @@ export default function AuthCallbackScreen() {
     // is fully mounted before we attempt to navigate (cold-start via deep link).
     const t = setTimeout(() => void process(), 0);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
