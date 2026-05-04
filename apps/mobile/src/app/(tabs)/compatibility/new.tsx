@@ -1,11 +1,22 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Modal,
+  FlatList,
+} from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, compatibilityApi, ApiClientError } from '@clario/api-client';
 import type { ChartRecord } from '@clario/api-client';
 import { COMPATIBILITY_TYPES } from '@clario/types';
 import type { CompatibilityType } from '@clario/types';
 import { useTranslations } from '@/lib/i18n';
-
+import { goBackTo, openCompatibilityDetail, resolveParentRoute, routes } from '@/lib/navigation';
 import { runToastMutation } from '@/lib/mutation-toast';
 import { useColors, cardShadow } from '@/lib/colors';
 import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';

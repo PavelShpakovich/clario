@@ -160,6 +160,7 @@ interface GaugeProps {
 }
 
 function SpeedometerGauge({ score, accent }: GaugeProps) {
+  const colors = useColors();
   const cx = 130,
     cy = 130,
     r = 90,

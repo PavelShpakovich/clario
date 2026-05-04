@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { openChartDetail, openNewChart, routes } from '@/lib/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi } from '@clario/api-client';
@@ -9,6 +10,7 @@ import { useConfirm } from '@/components/ConfirmDialog';
 import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
+import { getChartElement, getElementColors } from '@/lib/chart-utils';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { SwipeToDeleteRow } from '@/components/SwipeToDeleteRow';
@@ -16,48 +18,6 @@ import { usePullToRefresh } from '@/lib/refresh';
 
 const subjectTypeLabelsMap = messages.workspace.subjectTypes as Record<string, string>;
 const signsMap = messages.chartDetail.signs as Record<string, string>;
-
-// Map zodiac sign keys to their classical element
-const SIGN_ELEMENT: Record<string, 'fire' | 'earth' | 'air' | 'water'> = {
-  aries: 'fire',
-  leo: 'fire',
-  sagittarius: 'fire',
-  taurus: 'earth',
-  virgo: 'earth',
-  capricorn: 'earth',
-  gemini: 'air',
-  libra: 'air',
-  aquarius: 'air',
-  cancer: 'water',
-  scorpio: 'water',
-  pisces: 'water',
-};
-
-type Element = 'fire' | 'earth' | 'air' | 'water';
-
-function getElementColors(
-  element: Element | null,
-  colors: ReturnType<typeof useColors>,
-): { bg: string; text: string } {
-  switch (element) {
-    case 'fire':
-      return { bg: colors.fireSubtle, text: colors.fire };
-    case 'earth':
-      return { bg: colors.earthSubtle, text: colors.earth };
-    case 'air':
-      return { bg: colors.airSubtle, text: colors.air };
-    case 'water':
-      return { bg: colors.waterSubtle, text: colors.water };
-    default:
-      return { bg: colors.primaryTint, text: colors.primary };
-  }
-}
-
-function getChartElement(chart: ChartRecord): Element | null {
-  const sunSign = chart.big_three?.sun;
-  if (!sunSign) return null;
-  return SIGN_ELEMENT[sunSign.toLowerCase()] ?? null;
-}
 
 function ChartsListSkeleton() {
   const colors = useColors();
@@ -121,6 +81,7 @@ export default function ChartsListScreen() {
   const insets = useSafeAreaInsets();
   const [charts, setCharts] = useState<ChartRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   const tWorkspace = useTranslations('workspace');
   const tCommon = useTranslations('common');
@@ -138,9 +99,17 @@ export default function ChartsListScreen() {
 
   const { refreshing, handleRefresh } = usePullToRefresh(() => loadCharts(true));
 
-  useEffect(() => {
-    void loadCharts();
-  }, [loadCharts]);
+  useFocusEffect(
+    useCallback(() => {
+      if (hasLoadedRef.current) {
+        void loadCharts(true);
+        return;
+      }
+
+      hasLoadedRef.current = true;
+      void loadCharts();
+    }, [loadCharts]),
+  );
 
   async function confirmDelete(chart: ChartRecord) {
     const ok = await confirm({
@@ -213,7 +182,7 @@ export default function ChartsListScreen() {
           renderItem={({ item }) => {
             const element = getChartElement(item);
             const elementColors = getElementColors(element, colors);
-            const initial = (item.label ?? item.person_name ?? '?')[0]?.toUpperCase() ?? '?';
+            const initial = (item.person_name ?? '?')[0]?.toUpperCase() ?? '?';
             const bigThree = item.big_three;
             const birthTimeLine =
               item.birth_time_known && item.birth_time

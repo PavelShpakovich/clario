@@ -36,6 +36,9 @@ export default async function TermsPage() {
     { title: t('section10Title'), body: t('section10Body') },
     { title: t('section11Title'), body: t('section11Body') },
     { title: t('section12Title'), body: t('section12Body') },
+    { title: t('section13Title'), body: t('section13Body') },
+    { title: t('section14Title'), body: t('section14Body') },
+    { title: t('section15Title'), body: t('section15Body') },
   ];
 
   return (

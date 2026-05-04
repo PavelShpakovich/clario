@@ -29,6 +29,7 @@ import type { ChartRecord, ReadingRecord, TodaySkyResponse } from '@clario/api-c
 import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
+import { getChartElement, getElementColors } from '@/lib/chart-utils';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { usePullToRefresh } from '@/lib/refresh';
@@ -406,9 +407,17 @@ export default function DashboardScreen() {
             onPress={() => openChartShortcut(chart.id)}
           >
             <View style={styles.chartCardRow}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{chart.person_name.charAt(0).toUpperCase()}</Text>
-              </View>
+              {(() => {
+                const element = getChartElement(chart);
+                const elementColors = getElementColors(element, colors);
+                return (
+                  <View style={[styles.avatar, { backgroundColor: elementColors.bg }]}>
+                    <Text style={[styles.avatarText, { color: elementColors.text }]}>
+                      {chart.person_name.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                );
+              })()}
               <View style={styles.chartCardInfo}>
                 <Text style={styles.chartCardLabel}>{chart.label}</Text>
                 <Text style={styles.chartCardSub}>{chart.person_name}</Text>

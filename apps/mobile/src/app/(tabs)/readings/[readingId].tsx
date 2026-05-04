@@ -44,10 +44,7 @@ function ReadingDetailSkeleton() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[
-        styles.scrollContent,
-        { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET },
-      ]}
+      contentContainerStyle={styles.scrollContent}
       scrollEnabled={false}
     >
       {/* Back button */}

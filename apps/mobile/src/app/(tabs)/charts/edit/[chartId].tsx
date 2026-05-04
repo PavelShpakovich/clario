@@ -1,4 +1,17 @@
 import { useEffect, useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Switch,
+} from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { chartsApi, locationsApi } from '@clario/api-client';
 import type { ChartRecord, CityOption } from '@clario/api-client';
@@ -7,6 +20,7 @@ import { normalizeUpdateChartBirthTime, resolveChartTimezone } from '@clario/val
 import { useTranslations } from '@/lib/i18n';
 import { useColors } from '@/lib/colors';
 import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
+import { goBackTo, routes } from '@/lib/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '@/components/Skeleton';
 import { CityPickerModal } from '@/components/CityPickerModal';

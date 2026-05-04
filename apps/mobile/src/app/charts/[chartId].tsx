@@ -29,6 +29,7 @@ import { runToastMutation } from '@/lib/mutation-toast';
 import { messages } from '@clario/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { SCREEN_TOP_INSET_OFFSET } from '@/lib/layout';
+import { getSignElement, getElementColors } from '@/lib/chart-utils';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChartWheel } from '@/components/ChartWheel';
 import type { WheelPosition, WheelAspect } from '@/components/ChartWheel';
@@ -43,12 +44,9 @@ function ChartDetailSkeleton() {
 
   const insets = useSafeAreaInsets();
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}
-    >
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Nav row with back button */}
-      <View style={styles.navRow}>
+      <View style={[styles.navRow, { marginTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Skeleton width={18} height={18} borderRadius={9} />
           <Skeleton width={90} height={14} />
@@ -461,7 +459,7 @@ export default function ChartDetailScreen() {
         <View style={styles.fallbackActions}>
           <TouchableOpacity
             style={styles.fallbackPrimaryButton}
-            onPress={() => goToRoute(returnTo, routes.tabs.charts)}
+            onPress={() => goBackTo(returnTo, routes.tabs.charts)}
           >
             <Text style={styles.fallbackPrimaryButtonText}>{backLabel}</Text>
           </TouchableOpacity>
@@ -508,6 +506,10 @@ export default function ChartDetailScreen() {
   const sunSign = sunPos ? (signLabels[sunPos.sign_key] ?? sunPos.sign_key) : '';
   const moonSign = moonPos ? (signLabels[moonPos.sign_key] ?? moonPos.sign_key) : '';
   const ascSign = ascPos ? (signLabels[ascPos.sign_key] ?? ascPos.sign_key) : '';
+
+  // ── Avatar element colors ──────────────────────────────────────────────────
+  const chartElement = sunPos ? getSignElement(sunPos.sign_key) : null;
+  const avatarColors = getElementColors(chartElement, colors);
 
   // ── Element / modality balance ─────────────────────────────────────────────
   const balancePlanets = allLatestPositions.filter((p) => BALANCE_BODIES.includes(p.body_key));
@@ -600,7 +602,7 @@ export default function ChartDetailScreen() {
         <View style={[styles.navRow, { marginTop: insets.top + SCREEN_TOP_INSET_OFFSET }]}>
           <TouchableOpacity
             style={styles.navLink}
-            onPress={() => goToRoute(returnTo, routes.tabs.charts)}
+            onPress={() => goBackTo(returnTo, routes.tabs.charts)}
           >
             <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
             <Text style={styles.navLinkTextMuted}>{backLabel}</Text>
@@ -614,8 +616,8 @@ export default function ChartDetailScreen() {
         <View style={styles.heroCard}>
           {/* Avatar + identity */}
           <View style={styles.heroRow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initial}</Text>
+            <View style={[styles.avatar, { backgroundColor: avatarColors.bg }]}>
+              <Text style={[styles.avatarText, { color: avatarColors.text }]}>{initial}</Text>
             </View>
             <View style={styles.heroInfo}>
               <Text style={styles.personName}>{chart.person_name}</Text>
@@ -1275,7 +1277,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       backgroundColor: colors.background,
     },
     content: {
-      padding: 20,
+      paddingHorizontal: 20,
       paddingBottom: 56,
       gap: 12,
     },
@@ -1329,7 +1331,6 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: colors.primaryTint,
       alignItems: 'center',
       justifyContent: 'center',
       flexShrink: 0,
@@ -1337,7 +1338,6 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     avatarText: {
       fontSize: 22,
       fontWeight: '700',
-      color: colors.primary,
     },
     heroInfo: {
       flex: 1,
