@@ -26,15 +26,18 @@ function CalendarSkeleton() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 8 }]}
       scrollEnabled={false}
     >
-      {/* Header row */}
-      <View style={[styles.headerRow, { marginBottom: 16 }]}>
-        <View style={{ flex: 1, gap: 8 }}>
-          <Skeleton width={80} height={11} borderRadius={4} />
-          <Skeleton width={160} height={26} borderRadius={6} />
-          <Skeleton width={'85%'} height={13} borderRadius={6} />
-          <Skeleton width={'65%'} height={13} borderRadius={6} />
-        </View>
-        <Skeleton width={80} height={34} borderRadius={8} style={{ marginTop: 24 }} />
+      {/* Back button */}
+      <View style={styles.backButton}>
+        <Skeleton width={18} height={18} borderRadius={9} />
+        <Skeleton width={70} height={14} />
+      </View>
+
+      {/* Header */}
+      <View style={[styles.headerSection, { marginBottom: 16 }]}>
+        <Skeleton width={80} height={11} borderRadius={4} style={{ marginBottom: 4 }} />
+        <Skeleton width={160} height={26} borderRadius={6} style={{ marginBottom: 4 }} />
+        <Skeleton width={'85%'} height={13} borderRadius={6} style={{ marginBottom: 4 }} />
+        <Skeleton width={'65%'} height={13} borderRadius={6} />
       </View>
 
       {/* Legend */}
@@ -154,19 +157,18 @@ export default function CalendarScreen() {
         />
       }
     >
-      <View style={styles.headerRow}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.eyebrow}>{tCal('eyebrow')}</Text>
-          <Text style={styles.heading}>{tCal('heading')}</Text>
-          <Text style={styles.description}>{tCal('description')}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => goBackTo(returnTo, '/(tabs)/index')}
-        >
-          <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
-          <Text style={styles.backText}>{tNav('back')}</Text>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => goBackTo(returnTo, '/(tabs)/index')}
+      >
+        <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
+        <Text style={styles.backText}>{tNav('back')}</Text>
+      </TouchableOpacity>
+
+      <View style={styles.headerSection}>
+        <Text style={styles.eyebrow}>{tCal('eyebrow')}</Text>
+        <Text style={styles.heading}>{tCal('heading')}</Text>
+        <Text style={styles.description}>{tCal('description')}</Text>
       </View>
       {/* Legend */}
       <View style={styles.legend}>
@@ -271,15 +273,18 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       backgroundColor: colors.background,
     },
     // Header
-    headerRow: {
+    backButton: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      gap: 12,
+      alignItems: 'center',
+      gap: 4,
       marginBottom: 16,
     },
-    headerLeft: {
-      flex: 1,
+    backText: {
+      fontSize: 14,
+      color: colors.mutedForeground,
+    },
+    headerSection: {
+      marginBottom: 16,
     },
     eyebrow: {
       fontSize: 11,
@@ -300,16 +305,6 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       fontSize: 14,
       color: colors.mutedForeground,
       lineHeight: 20,
-    },
-    backButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      marginTop: 24,
-    },
-    backText: {
-      fontSize: 14,
-      color: colors.mutedForeground,
     },
     // Legend
     legend: {

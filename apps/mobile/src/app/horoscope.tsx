@@ -28,8 +28,11 @@ function HoroscopeSkeleton() {
   const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={[styles.headerRow, { marginTop: insets.top + 8 }]}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8 }]}
+    >
+      <View style={[styles.headerRow, { marginBottom: 20 }]}>
         <View style={styles.backRow}>
           <Skeleton width={18} height={18} borderRadius={9} />
           <Skeleton width={96} height={14} />

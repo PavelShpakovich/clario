@@ -39,8 +39,11 @@ function ReadingDetailSkeleton() {
       contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8 }]}
       scrollEnabled={false}
     >
-      {/* Back */}
-      <Skeleton width={120} height={16} borderRadius={8} style={{ marginBottom: 20 }} />
+      {/* Back button */}
+      <View style={[styles.backButton, { marginTop: insets.top + 8, marginBottom: 16 }]}>
+        <Skeleton width={18} height={18} borderRadius={9} />
+        <Skeleton width={96} height={14} />
+      </View>
 
       {/* Title block */}
       <View style={[styles.titleBlock, { gap: 8 }]}>

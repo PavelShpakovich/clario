@@ -36,11 +36,14 @@ function ChartDetailSkeleton() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 8 }]}
     >
-      {/* Nav row */}
+      {/* Nav row with back button */}
       <View style={styles.navRow}>
-        <Skeleton width={90} height={14} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Skeleton width={18} height={18} borderRadius={9} />
+          <Skeleton width={90} height={14} />
+        </View>
         <Skeleton width={70} height={14} />
       </View>
       {/* Hero card */}
