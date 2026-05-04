@@ -912,8 +912,6 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
       gap: 8,
     },
     backBtn: { padding: 4 },
