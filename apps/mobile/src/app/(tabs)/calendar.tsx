@@ -1,14 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { calendarApi } from '@clario/api-client';
 import type { CalendarDay } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
@@ -168,10 +161,11 @@ export default function CalendarScreen() {
           <Text style={styles.description}>{tCal('description')}</Text>
         </View>
         <TouchableOpacity
-          style={styles.horoscopeLink}
+          style={styles.backButton}
           onPress={() => goBackTo(returnTo, '/(tabs)/index')}
         >
-          <Text style={styles.horoscopeLinkText}>{tNav('back')}</Text>
+          <Ionicons name="chevron-back" size={18} color={colors.mutedForeground} />
+          <Text style={styles.backText}>{tNav('back')}</Text>
         </TouchableOpacity>
       </View>
       {/* Legend */}
@@ -307,18 +301,15 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       color: colors.mutedForeground,
       lineHeight: 20,
     },
-    horoscopeLink: {
+    backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
       marginTop: 24,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 7,
     },
-    horoscopeLinkText: {
-      fontSize: 13,
-      fontWeight: '500',
-      color: colors.foreground,
+    backText: {
+      fontSize: 14,
+      color: colors.mutedForeground,
     },
     // Legend
     legend: {
