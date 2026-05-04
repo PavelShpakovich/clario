@@ -15,6 +15,8 @@ import { authApi, profileApi } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { AuthBackground } from '@/components/AuthBackground';
+import { useEffect } from 'react';
+import { toast } from '@/lib/toast';
 
 export default function LoginScreen() {
   const colors = useColors();
@@ -33,6 +35,14 @@ export default function LoginScreen() {
   const tCommon = useTranslations('common');
   const tAuth = useTranslations('auth');
   const tValidation = useTranslations('validation');
+
+  useEffect(() => {
+    if (verified === 'true') {
+      toast.success(tAuth('emailVerified'));
+    } else if (reset === 'success') {
+      toast.success(tAuth('passwordUpdated'));
+    }
+  }, [verified, reset, tAuth]);
 
   async function handleLogin() {
     if (!email.trim()) {
@@ -194,18 +204,8 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            {/* Verified banner */}
-            {reset === 'success' ? (
-              <View style={styles.successBanner}>
-                <Text style={styles.successBannerText}>{tAuth('passwordUpdated')}</Text>
-              </View>
-            ) : null}
-
-            {verified === 'true' ? (
-              <View style={styles.successBanner}>
-                <Text style={styles.successBannerText}>{tAuth('emailVerified')}</Text>
-              </View>
-            ) : verified === 'error' ? (
+            {/* Verification error banner */}
+            {verified === 'error' ? (
               <View style={styles.errorBanner}>
                 <Text style={styles.errorBannerText}>{tAuth('emailVerificationError')}</Text>
               </View>

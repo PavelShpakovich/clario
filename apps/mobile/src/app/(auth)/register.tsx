@@ -15,6 +15,7 @@ import { authApi } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { AuthBackground } from '@/components/AuthBackground';
+import { toast } from '@/lib/toast';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
@@ -32,7 +33,6 @@ export default function RegisterScreen() {
   const [otp, setOtp] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
 
   const tCommon = useTranslations('common');
   const tAuth = useTranslations('auth');
@@ -77,7 +77,7 @@ export default function RegisterScreen() {
     setResending(true);
     await authApi.resendVerificationEmail(email.trim());
     setResending(false);
-    setResent(true);
+    toast.success(tAuth('resendVerificationSuccess'));
   }
 
   async function handleVerifyOtp() {
@@ -146,12 +146,7 @@ export default function RegisterScreen() {
                 />
               </View>
 
-              {/* Success/Error banners */}
-              {resent ? (
-                <View style={styles.successBanner}>
-                  <Text style={styles.successBannerText}>{tAuth('resendVerificationSuccess')}</Text>
-                </View>
-              ) : null}
+              {/* Error banner */}
               {error ? (
                 <View style={styles.errorBanner}>
                   <Text style={styles.errorBannerText}>{error}</Text>

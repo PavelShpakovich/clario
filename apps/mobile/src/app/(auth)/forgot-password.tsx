@@ -15,6 +15,7 @@ import { authApi } from '@clario/api-client';
 import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { AuthBackground } from '@/components/AuthBackground';
+import { toast } from '@/lib/toast';
 
 type Step = 'email' | 'otp' | 'password';
 
@@ -27,6 +28,7 @@ export default function ForgotPasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>('email');
   const [resetToken, setResetToken] = useState<string | null>(null);
@@ -119,17 +121,17 @@ export default function ForgotPasswordScreen() {
   }
 
   async function handleResendOtp() {
-    setLoading(true);
+    setResending(true);
     setError(null);
 
     try {
       await authApi.requestPasswordReset(email.trim());
-      setError(null);
       setOtp('');
+      toast.success(tAuth('resendVerificationSuccess'));
     } catch {
       setError(tAuth('error'));
     } finally {
-      setLoading(false);
+      setResending(false);
     }
   }
 
@@ -194,7 +196,7 @@ export default function ForgotPasswordScreen() {
 
             {step === 'otp' && (
               <>
-                <Text style={styles.title}>{tAuth('verifyEmail')}</Text>
+                <Text style={styles.title}>{tAuth('verifyEmailTitle')}</Text>
                 <Text style={styles.subtitle}>{tAuth('resetPasswordOtpDescription')}</Text>
 
                 {/* OTP field */}
@@ -237,11 +239,13 @@ export default function ForgotPasswordScreen() {
 
                 {/* Resend button */}
                 <TouchableOpacity
-                  style={[styles.secondaryButton, loading && styles.buttonDisabled]}
+                  style={[styles.secondaryButton, resending && styles.buttonDisabled]}
                   onPress={handleResendOtp}
-                  disabled={loading}
+                  disabled={resending}
                 >
-                  <Text style={styles.secondaryButtonText}>{tAuth('resendCode')}</Text>
+                  <Text style={styles.secondaryButtonText}>
+                    {resending ? tAuth('sending') : tAuth('resendCode')}
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
@@ -417,6 +421,21 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     },
     buttonText: {
       color: colors.primaryForeground,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    secondaryButton: {
+      backgroundColor: 'transparent',
+      borderColor: colors.primary,
+      borderWidth: 1,
+      borderRadius: 8,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 8,
+    },
+    secondaryButtonText: {
+      color: colors.primary,
       fontSize: 15,
       fontWeight: '600',
     },

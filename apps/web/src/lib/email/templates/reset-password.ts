@@ -118,16 +118,19 @@ export function renderPasswordResetOtpHtml({ otp }: { otp: string }): string {
               <p style="margin:0 0 32px;font-size:15px;line-height:1.6;color:#475569;">
                 ${c.body}
               </p>
-              <!-- OTP Code Box -->
-              <div style="text-align:center;margin:32px 0;padding:24px;background-color:#f0f7ff;border-radius:8px;border:1px solid #e0e7ff;">
-                <p style="margin:0 0 12px;font-size:13px;color:#64748b;letter-spacing:0.5px;">
-                  ${c.codeLabel}
-                </p>
-                <p style="margin:0;font-size:32px;font-weight:700;color:#1e293b;letter-spacing:6px;font-family:'Courier New',monospace;word-spacing:8px;">
-                  ${otp.split('').join(' ')}
-                </p>
-              </div>
-              <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;line-height:1.5;">
+              <p style="margin:0 0 12px;font-size:13px;color:#64748b;font-weight:500;">
+                ${c.codeLabel}
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:16px 0 32px;">
+                    <div style="display:inline-block;background:#f1f5f9;border:2px solid #e2e8f0;padding:20px 32px;border-radius:8px;font-family:'Courier New',monospace;letter-spacing:4px;">
+                      <span style="font-size:32px;font-weight:700;color:#1e293b;letter-spacing:6px;">${otp}</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.5;">
                 ${c.expiry}
               </p>
               <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.5;">
