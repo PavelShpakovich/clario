@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { createSupabaseClient } from '@/lib/supabase/client';
-import { authApi } from '@clario/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -88,14 +87,10 @@ export function SetPasswordForm() {
         throw error;
       }
 
-      // The user proved inbox access by clicking the recovery link — confirm
-      // their email now so signIn succeeds even if they never verified before.
+      // The user proved inbox access by clicking the recovery link
       const {
         data: { session: recoverySession },
       } = await supabase.auth.getSession();
-      if (recoverySession?.access_token) {
-        await authApi.confirmPasswordReset(recoverySession.access_token);
-      }
 
       await supabase.auth.signOut({ scope: 'local' });
 

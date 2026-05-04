@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withApiHandler } from '@/lib/api/handler';
 import { ValidationError } from '@/lib/errors';
-import { env } from '@/lib/env';
-import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/email/resend';
 import {
-  renderResetPasswordHtml,
+  renderPasswordResetOtpHtml,
   RESET_PASSWORD_SUBJECT,
 } from '@/lib/email/templates/reset-password';
 import { logger } from '@/lib/logger';
 import { checkRateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
+import { issuePasswordResetToken } from '@/lib/auth/password-reset';
+import { findAuthUserByEmail } from '@/lib/auth/user-accounts';
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -31,38 +31,33 @@ export const POST = withApiHandler(async (req) => {
     });
   }
 
-  const { email, source } = body.data;
-  const isMobile = source === 'mobile';
+  const { email } = body.data;
 
-  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-    type: 'recovery',
-    email,
-    options: {
-      redirectTo: isMobile
-        ? `${env.NEXT_PUBLIC_APP_URL}/auth/callback?source=mobile`
-        : `${env.NEXT_PUBLIC_APP_URL}/set-password`,
-    },
-  });
-
-  if (error || !data?.properties?.action_link) {
-    // Log internally but return success to the client — never reveal whether
-    // an email address is registered.
-    logger.error({ error, email }, 'Failed to generate password reset link');
-    return NextResponse.json({ success: true });
+  // Check if user exists (but don't reveal whether they do)
+  try {
+    const user = await findAuthUserByEmail(email);
+    if (!user) {
+      // User doesn't exist, but return success anyway to avoid leaking emails
+      logger.info({ email }, 'Password reset requested for non-existent user');
+      return NextResponse.json({ success: true }, { headers: rateLimitHeaders(rl) });
+    }
+  } catch (err) {
+    logger.info({ email }, 'Error checking if user exists for password reset');
+    return NextResponse.json({ success: true }, { headers: rateLimitHeaders(rl) });
   }
 
-  // Wrap the Supabase one-time verify URL in a bounce page on our domain.
-  // This prevents Microsoft Safe Links from pre-fetching the Supabase endpoint
-  // (which would consume the token before the user clicks), causing otp_expired.
-  // The bounce page uses only JS to navigate — no plain <a href> to Supabase.
-  const encodedLink = Buffer.from(data.properties.action_link).toString('base64url');
-  const bounceUrl = `${env.NEXT_PUBLIC_APP_URL}/auth/reset-confirm?u=${encodedLink}`;
+  try {
+    const { otp } = await issuePasswordResetToken(email);
 
-  await sendEmail({
-    to: email,
-    subject: RESET_PASSWORD_SUBJECT,
-    html: renderResetPasswordHtml({ resetUrl: bounceUrl }),
-  });
+    await sendEmail({
+      to: email,
+      subject: RESET_PASSWORD_SUBJECT,
+      html: renderPasswordResetOtpHtml({ otp }),
+    });
 
-  return NextResponse.json({ success: true }, { headers: rateLimitHeaders(rl) });
+    return NextResponse.json({ success: true }, { headers: rateLimitHeaders(rl) });
+  } catch (error) {
+    logger.error({ error, email }, 'Failed to send password reset OTP');
+    return NextResponse.json({ success: true }, { headers: rateLimitHeaders(rl) });
+  }
 });

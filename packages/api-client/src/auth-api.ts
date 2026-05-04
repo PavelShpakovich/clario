@@ -22,18 +22,12 @@ class AuthApi {
     // so there is no error to surface here.
   }
 
-  async confirmPasswordReset(accessToken: string): Promise<void> {
-    const response = await fetch(resolveUrl('/api/auth/password/confirm-reset'), {
+  async verifyOtp(email: string, otp: string): Promise<{ success: true }> {
+    return fetchJson<{ success: true }>('/api/auth/verify-otp', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp }),
     });
-
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      throw new Error(data.error ?? 'Failed to confirm password reset');
-    }
   }
 
   async requestPasswordReset(email: string): Promise<void> {
@@ -41,6 +35,25 @@ class AuthApi {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, source: 'mobile' }),
+    });
+  }
+
+  async verifyPasswordResetOtp(
+    email: string,
+    otp: string,
+  ): Promise<{ success: true; resetToken: string }> {
+    return fetchJson<{ success: true; resetToken: string }>('/api/auth/password/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp }),
+    });
+  }
+
+  async updatePassword(resetToken: string, newPassword: string): Promise<{ success: true }> {
+    return fetchJson<{ success: true }>('/api/auth/password/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resetToken, newPassword }),
     });
   }
 }

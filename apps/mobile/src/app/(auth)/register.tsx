@@ -29,6 +29,8 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
 
@@ -78,6 +80,37 @@ export default function RegisterScreen() {
     setResent(true);
   }
 
+  async function handleVerifyOtp() {
+    if (!otp.trim()) {
+      setError(tAuth('otpLabel'));
+      return;
+    }
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setError(tAuth('otpInvalid'));
+      return;
+    }
+
+    setVerifying(true);
+    setError(null);
+
+    try {
+      await authApi.verifyOtp(email.trim(), otp.trim());
+      // OTP verified successfully
+      router.replace('/(auth)/login?verified=true');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : tAuth('error');
+      if (message.includes('Invalid') || message.includes('invalid')) {
+        setError(tAuth('otpInvalid'));
+      } else if (message.includes('expired')) {
+        setError(tAuth('otpExpired'));
+      } else {
+        setError(message);
+      }
+    } finally {
+      setVerifying(false);
+    }
+  }
+
   if (sent) {
     return (
       <KeyboardAvoidingView
@@ -96,20 +129,58 @@ export default function RegisterScreen() {
               <Text style={styles.subtitle}>
                 {tAuth('verifyEmailDescription', { email: email.trim() })}
               </Text>
+
+              {/* OTP Input */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>{tAuth('otpLabel')}</Text>
+                <TextInput
+                  style={[styles.input, error ? styles.inputError : null]}
+                  placeholder={tAuth('otpPlaceholder')}
+                  placeholderTextColor={colors.placeholder}
+                  value={otp}
+                  onChangeText={setOtp}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  editable={!verifying}
+                  autoFocus
+                />
+              </View>
+
+              {/* Success/Error banners */}
               {resent ? (
                 <View style={styles.successBanner}>
                   <Text style={styles.successBannerText}>{tAuth('resendVerificationSuccess')}</Text>
                 </View>
               ) : null}
+              {error ? (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorBannerText}>{error}</Text>
+                </View>
+              ) : null}
+
+              {/* Verify button */}
               <TouchableOpacity
-                style={[styles.button, resending && styles.buttonDisabled]}
-                onPress={handleResend}
-                disabled={resending || resent}
+                style={[styles.button, verifying && styles.buttonDisabled]}
+                onPress={handleVerifyOtp}
+                disabled={verifying}
               >
                 <Text style={styles.buttonText}>
-                  {resending ? tAuth('signingIn') : tAuth('resendVerification')}
+                  {verifying ? tAuth('verifying') : tAuth('verifyButton')}
                 </Text>
               </TouchableOpacity>
+
+              {/* Resend button */}
+              <TouchableOpacity
+                style={[styles.secondaryButton, resending && styles.buttonDisabled]}
+                onPress={handleResend}
+                disabled={resending}
+              >
+                <Text style={styles.secondaryButtonText}>
+                  {resending ? tAuth('sending') : tAuth('resendVerification')}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Back to login */}
               <TouchableOpacity
                 style={styles.footerLinkContainer}
                 onPress={() => router.replace('/(auth)/login')}
@@ -398,6 +469,21 @@ function createStyles(colors: ReturnType<typeof useColors>) {
     },
     buttonText: {
       color: colors.primaryForeground,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    secondaryButton: {
+      backgroundColor: 'transparent',
+      borderColor: colors.primary,
+      borderWidth: 1,
+      borderRadius: 8,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 8,
+    },
+    secondaryButtonText: {
+      color: colors.primary,
       fontSize: 15,
       fontWeight: '600',
     },

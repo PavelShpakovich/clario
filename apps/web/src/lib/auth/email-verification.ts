@@ -3,7 +3,7 @@ import 'server-only';
 import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
+const EMAIL_VERIFICATION_TTL_MS = 15 * 60 * 1000; // 15 minutes for OTP
 
 type EmailVerificationTokenRow = {
   id: string;
@@ -21,15 +21,16 @@ export async function issueEmailVerificationToken(input: {
   userId: string;
   email: string;
 }): Promise<string> {
-  const token = crypto.randomBytes(32).toString('hex');
-  const tokenHash = sha256(token);
+  // Generate 6-digit OTP
+  const otp = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
+  const otpHash = sha256(otp);
   const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS).toISOString();
 
   const { error } = await supabaseAdmin.from('email_verification_tokens').upsert(
     {
       user_id: input.userId,
       email: input.email,
-      token_hash: tokenHash,
+      token_hash: otpHash, // Store hash of OTP, not the OTP itself
       expires_at: expiresAt,
       consumed_at: null,
     },
@@ -40,7 +41,8 @@ export async function issueEmailVerificationToken(input: {
     throw error;
   }
 
-  return token;
+  // Return plain OTP to be sent in email
+  return otp;
 }
 
 export async function findEmailVerificationToken(
@@ -61,17 +63,18 @@ export async function findEmailVerificationToken(
   return row;
 }
 
-export async function consumeEmailVerificationToken(token: string): Promise<{
+export async function consumeEmailVerificationToken(otp: string): Promise<{
   userId: string;
   email: string;
 } | null> {
   const now = new Date().toISOString();
-  const tokenHash = sha256(token);
+  // Hash the plain OTP to match against stored hash
+  const otpHash = sha256(otp);
 
   const { data: row, error: consumeError } = await supabaseAdmin
     .from('email_verification_tokens')
     .update({ consumed_at: now })
-    .eq('token_hash', tokenHash)
+    .eq('token_hash', otpHash)
     .is('consumed_at', null)
     .gt('expires_at', now)
     .select('user_id, email')

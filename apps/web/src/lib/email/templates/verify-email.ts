@@ -1,18 +1,16 @@
 const content = {
-  title: 'Подтвердите ваш email — Clario',
+  title: 'Код подтверждения — Clario',
   heading: 'Подтвердите ваш email',
-  body: 'Спасибо за регистрацию в Clario! Нажмите на кнопку ниже, чтобы подтвердить ваш адрес электронной почты и активировать аккаунт.',
-  button: 'Подтвердить email',
-  fallbackLabel: 'Если кнопка не работает, скопируйте и вставьте ссылку в браузер:',
+  body: 'Спасибо за регистрацию в Clario! Используйте код ниже, чтобы подтвердить ваш адрес электронной почты и активировать аккаунт.',
+  codeLabel: 'Ваш код подтверждения:',
   expiry:
-    'Ссылка действительна в течение 24 часов. Если вы не регистрировались в Clario — просто проигнорируйте это письмо.',
+    'Код действителен в течение 15 минут. Если вы не регистрировались в Clario — просто проигнорируйте это письмо.',
   copyright: `© ${new Date().getFullYear()} Clario. Все права защищены.`,
 };
 
-export const VERIFY_EMAIL_SUBJECT = 'Подтвердите ваш email — Clario';
+export const VERIFY_EMAIL_SUBJECT = 'Код подтверждения — Clario';
 
-export function renderVerifyEmailHtml({ confirmUrl }: { confirmUrl: string }): string {
-  const escapedUrl = confirmUrl.replace(/"/g, '&quot;');
+export function renderVerifyEmailHtml({ otp }: { otp: string }): string {
   const c = content;
 
   return `<!DOCTYPE html>
@@ -37,25 +35,21 @@ export function renderVerifyEmailHtml({ confirmUrl }: { confirmUrl: string }): s
           <tr>
             <td style="background:#ffffff;padding:40px;border:1px solid #e2e8f0;border-top:none;">
               <h2 style="margin:0 0 16px;font-size:20px;font-weight:600;color:#1e293b;">${c.heading}</h2>
-              <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#475569;">
+              <p style="margin:0 0 32px;font-size:15px;line-height:1.6;color:#475569;">
                 ${c.body}
+              </p>
+              <p style="margin:0 0 12px;font-size:13px;color:#64748b;font-weight:500;">
+                ${c.codeLabel}
               </p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="padding:8px 0 32px;">
-                    <a href="${escapedUrl}"
-                       style="display:inline-block;background:#1e293b;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:8px;letter-spacing:0.1px;">
-                      ${c.button}
-                    </a>
+                  <td align="center" style="padding:16px 0 32px;">
+                    <div style="display:inline-block;background:#f1f5f9;border:2px solid #e2e8f0;padding:20px 32px;border-radius:8px;font-family:'Courier New',monospace;letter-spacing:4px;">
+                      <span style="font-size:32px;font-weight:700;color:#1e293b;letter-spacing:6px;">${otp}</span>
+                    </div>
                   </td>
                 </tr>
               </table>
-              <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;">
-                ${c.fallbackLabel}
-              </p>
-              <p style="margin:0 0 32px;font-size:13px;word-break:break-all;">
-                <a href="${escapedUrl}" style="color:#3b82f6;text-decoration:none;">${escapedUrl}</a>
-              </p>
               <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.5;">
                 ${c.expiry}
               </p>

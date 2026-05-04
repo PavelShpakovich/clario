@@ -16,20 +16,26 @@ import { useTranslations } from '@/lib/i18n';
 import { useColors, cardShadow } from '@/lib/colors';
 import { AuthBackground } from '@/components/AuthBackground';
 
+type Step = 'email' | 'otp' | 'password';
+
 export default function ForgotPasswordScreen() {
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
+  const [step, setStep] = useState<Step>('email');
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
   const tAuth = useTranslations('auth');
   const tValidation = useTranslations('validation');
   const tCommon = useTranslations('common');
 
-  async function handleSend() {
+  async function handleSendReset() {
     if (!email.trim()) {
       setError(tValidation('emailRequired'));
       return;
@@ -40,7 +46,86 @@ export default function ForgotPasswordScreen() {
 
     try {
       await authApi.requestPasswordReset(email.trim());
-      setSent(true);
+      setStep('otp');
+    } catch {
+      setError(tAuth('error'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyOtp() {
+    if (!otp.trim()) {
+      setError(tAuth('otpLabel'));
+      return;
+    }
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setError(tAuth('otpInvalid'));
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { resetToken: token } = await authApi.verifyPasswordResetOtp(email.trim(), otp.trim());
+      setResetToken(token);
+      setStep('password');
+      setError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : tAuth('error');
+      if (message.includes('Invalid') || message.includes('invalid')) {
+        setError(tAuth('otpInvalid'));
+      } else if (message.includes('expired')) {
+        setError(tAuth('otpExpired'));
+      } else {
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleUpdatePassword() {
+    if (!newPassword) {
+      setError(tValidation('passwordRequired'));
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError(tValidation('passwordTooShort'));
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError(tValidation('passwordsDoNotMatch'));
+      return;
+    }
+    if (!resetToken) {
+      setError(tAuth('error'));
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await authApi.updatePassword(resetToken, newPassword);
+      router.replace('/(auth)/login?reset=success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : tAuth('error');
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResendOtp() {
+    setLoading(true);
+    setError(null);
+
+    try {
+      await authApi.requestPasswordReset(email.trim());
+      setError(null);
+      setOtp('');
     } catch {
       setError(tAuth('error'));
     } finally {
@@ -62,15 +147,11 @@ export default function ForgotPasswordScreen() {
             <Text style={styles.eyebrow}>{tCommon('appName')}</Text>
 
             {/* Card header */}
-            <Text style={styles.title}>
-              {sent ? tAuth('forgotPasswordSentTitle') : tAuth('forgotPasswordTitle')}
-            </Text>
-            <Text style={styles.subtitle}>
-              {sent ? tAuth('forgotPasswordSentDescription') : tAuth('forgotPasswordDescription')}
-            </Text>
-
-            {sent ? null : (
+            {step === 'email' && (
               <>
+                <Text style={styles.title}>{tAuth('forgotPasswordTitle')}</Text>
+                <Text style={styles.subtitle}>{tAuth('forgotPasswordDescription')}</Text>
+
                 {/* Email field */}
                 <View style={styles.fieldsContainer}>
                   <View style={styles.fieldGroup}>
@@ -99,13 +180,122 @@ export default function ForgotPasswordScreen() {
                 {/* Submit */}
                 <TouchableOpacity
                   style={[styles.button, loading && styles.buttonDisabled]}
-                  onPress={handleSend}
+                  onPress={handleSendReset}
                   disabled={loading}
                 >
                   {loading ? (
                     <ActivityIndicator color={colors.primaryForeground} />
                   ) : (
-                    <Text style={styles.buttonText}>{tAuth('sendResetLink')}</Text>
+                    <Text style={styles.buttonText}>{tAuth('sendResetCode')}</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
+
+            {step === 'otp' && (
+              <>
+                <Text style={styles.title}>{tAuth('verifyEmail')}</Text>
+                <Text style={styles.subtitle}>{tAuth('resetPasswordOtpDescription')}</Text>
+
+                {/* OTP field */}
+                <View style={styles.fieldsContainer}>
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>{tAuth('otpLabel')}</Text>
+                    <TextInput
+                      style={[styles.input, error ? styles.inputError : null]}
+                      placeholder={tAuth('otpPlaceholder')}
+                      placeholderTextColor={colors.placeholder}
+                      value={otp}
+                      onChangeText={setOtp}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      editable={!loading}
+                      autoFocus
+                    />
+                  </View>
+                </View>
+
+                {/* Error banner */}
+                {error ? (
+                  <View style={styles.errorBanner}>
+                    <Text style={styles.errorBannerText}>{error}</Text>
+                  </View>
+                ) : null}
+
+                {/* Verify button */}
+                <TouchableOpacity
+                  style={[styles.button, loading && styles.buttonDisabled]}
+                  onPress={handleVerifyOtp}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={colors.primaryForeground} />
+                  ) : (
+                    <Text style={styles.buttonText}>{tAuth('verifyButton')}</Text>
+                  )}
+                </TouchableOpacity>
+
+                {/* Resend button */}
+                <TouchableOpacity
+                  style={[styles.secondaryButton, loading && styles.buttonDisabled]}
+                  onPress={handleResendOtp}
+                  disabled={loading}
+                >
+                  <Text style={styles.secondaryButtonText}>{tAuth('resendCode')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {step === 'password' && (
+              <>
+                <Text style={styles.title}>{tAuth('setNewPassword')}</Text>
+                <Text style={styles.subtitle}>{tAuth('setPasswordDescription')}</Text>
+
+                {/* Password fields */}
+                <View style={styles.fieldsContainer}>
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>{tAuth('newPassword')}</Text>
+                    <TextInput
+                      style={[styles.input, error ? styles.inputError : null]}
+                      placeholder={tAuth('passwordPlaceholder')}
+                      placeholderTextColor={colors.placeholder}
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      secureTextEntry
+                      editable={!loading}
+                    />
+                  </View>
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>{tAuth('confirmPassword')}</Text>
+                    <TextInput
+                      style={[styles.input, error ? styles.inputError : null]}
+                      placeholder={tAuth('passwordPlaceholder')}
+                      placeholderTextColor={colors.placeholder}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry
+                      editable={!loading}
+                    />
+                  </View>
+                </View>
+
+                {/* Error banner */}
+                {error ? (
+                  <View style={styles.errorBanner}>
+                    <Text style={styles.errorBannerText}>{error}</Text>
+                  </View>
+                ) : null}
+
+                {/* Update button */}
+                <TouchableOpacity
+                  style={[styles.button, loading && styles.buttonDisabled]}
+                  onPress={handleUpdatePassword}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={colors.primaryForeground} />
+                  ) : (
+                    <Text style={styles.buttonText}>{tAuth('updatePassword')}</Text>
                   )}
                 </TouchableOpacity>
               </>

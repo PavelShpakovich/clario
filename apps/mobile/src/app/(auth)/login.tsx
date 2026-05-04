@@ -26,6 +26,8 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showResend, setShowResend] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
 
   const tCommon = useTranslations('common');
@@ -82,13 +84,63 @@ export default function LoginScreen() {
     try {
       setResending(true);
       await authApi.resendVerificationEmail(email.trim());
-      setShowResend(false);
       setError(null);
-      router.replace('/(auth)/login?verified=true');
+      setOtp('');
+      // Stay on same screen, OTP will be sent
     } catch {
       setError(tAuth('error'));
     } finally {
       setResending(false);
+    }
+  }
+
+  async function handleVerifyOtp() {
+    if (!otp.trim()) {
+      setError(tAuth('otpLabel'));
+      return;
+    }
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setError(tAuth('otpInvalid'));
+      return;
+    }
+
+    setVerifying(true);
+    setError(null);
+
+    try {
+      await authApi.verifyOtp(email.trim(), otp.trim());
+      // OTP verified successfully
+      setShowResend(false);
+      setOtp('');
+      setError(null);
+      // Now try logging in with the verified email
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (signInError) {
+        setError(tAuth('error'));
+        return;
+      }
+
+      const profile = await profileApi.getProfile(true);
+      if (!profile.onboarding_completed_at) {
+        router.replace('/onboarding');
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : tAuth('error');
+      if (message.includes('Invalid') || message.includes('invalid')) {
+        setError(tAuth('otpInvalid'));
+      } else if (message.includes('expired')) {
+        setError(tAuth('otpExpired'));
+      } else {
+        setError(message);
+      }
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -180,15 +232,45 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {showResend ? (
-              <TouchableOpacity
-                style={[styles.secondaryButton, resending && styles.buttonDisabled]}
-                onPress={handleResendVerification}
-                disabled={resending}
-              >
-                <Text style={styles.secondaryButtonText}>
-                  {resending ? tAuth('sending') : tAuth('resendVerification')}
-                </Text>
-              </TouchableOpacity>
+              <>
+                {/* OTP Input Section */}
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>{tAuth('otpLabel')}</Text>
+                  <TextInput
+                    style={[styles.input, error ? styles.inputError : null]}
+                    placeholder={tAuth('otpPlaceholder')}
+                    placeholderTextColor={colors.placeholder}
+                    value={otp}
+                    onChangeText={setOtp}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    editable={!verifying}
+                    autoFocus
+                  />
+                </View>
+
+                {/* Verify OTP button */}
+                <TouchableOpacity
+                  style={[styles.button, verifying && styles.buttonDisabled]}
+                  onPress={handleVerifyOtp}
+                  disabled={verifying}
+                >
+                  <Text style={styles.buttonText}>
+                    {verifying ? tAuth('verifying') : tAuth('verifyButton')}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Resend OTP button */}
+                <TouchableOpacity
+                  style={[styles.secondaryButton, resending && styles.buttonDisabled]}
+                  onPress={handleResendVerification}
+                  disabled={resending}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    {resending ? tAuth('sending') : tAuth('resendVerification')}
+                  </Text>
+                </TouchableOpacity>
+              </>
             ) : null}
 
             {/* Forgot password */}
@@ -323,14 +405,14 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       marginTop: 4,
     },
     secondaryButton: {
+      backgroundColor: 'transparent',
+      borderColor: colors.primary,
+      borderWidth: 1,
       borderRadius: 8,
       height: 40,
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 10,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
+      marginTop: 8,
     },
     buttonDisabled: {
       opacity: 0.5,
@@ -341,7 +423,7 @@ function createStyles(colors: ReturnType<typeof useColors>) {
       fontWeight: '600',
     },
     secondaryButtonText: {
-      color: colors.foreground,
+      color: colors.primary,
       fontSize: 15,
       fontWeight: '600',
     },
