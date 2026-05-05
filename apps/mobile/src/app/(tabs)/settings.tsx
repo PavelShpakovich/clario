@@ -388,7 +388,10 @@ export default function SettingsScreen() {
             <Switch
               value={prefs.allow_spiritual_tone}
               onValueChange={(v) => updatePref({ allow_spiritual_tone: v })}
-              trackColor={{ true: colors.primary }}
+              trackColor={{ false: colors.muted, true: colors.primary }}
+              thumbColor={
+                prefs.allow_spiritual_tone ? colors.primaryForeground : colors.mutedForeground
+              }
             />
           </View>
 
@@ -400,7 +403,10 @@ export default function SettingsScreen() {
             <Switch
               value={prefs.content_focus_love}
               onValueChange={(v) => updatePref({ content_focus_love: v })}
-              trackColor={{ true: colors.primary }}
+              trackColor={{ false: colors.muted, true: colors.primary }}
+              thumbColor={
+                prefs.content_focus_love ? colors.primaryForeground : colors.mutedForeground
+              }
             />
           </View>
           <View style={styles.toggleRow}>
@@ -408,7 +414,10 @@ export default function SettingsScreen() {
             <Switch
               value={prefs.content_focus_career}
               onValueChange={(v) => updatePref({ content_focus_career: v })}
-              trackColor={{ true: colors.primary }}
+              trackColor={{ false: colors.muted, true: colors.primary }}
+              thumbColor={
+                prefs.content_focus_career ? colors.primaryForeground : colors.mutedForeground
+              }
             />
           </View>
           <View style={styles.toggleRow}>
@@ -416,7 +425,10 @@ export default function SettingsScreen() {
             <Switch
               value={prefs.content_focus_growth}
               onValueChange={(v) => updatePref({ content_focus_growth: v })}
-              trackColor={{ true: colors.primary }}
+              trackColor={{ false: colors.muted, true: colors.primary }}
+              thumbColor={
+                prefs.content_focus_growth ? colors.primaryForeground : colors.mutedForeground
+              }
             />
           </View>
           <Text style={styles.prefsHint}>{tSettings('preferencesHint')}</Text>
